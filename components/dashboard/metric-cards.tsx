@@ -27,7 +27,11 @@ interface MetricCardProps {
   icon: string;
 }
 
-export function MetricCards({ metrics }: { metrics: MetricCardProps[] }) {
+export function MetricCards({
+  metrics,
+}: {
+  metrics: readonly MetricCardProps[];
+}) {
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       {metrics.map((metric) => {

@@ -24,7 +24,7 @@ interface HeatmapItem {
   region: string;
 }
 
-export function RiskHeatmap({ data }: { data: HeatmapItem[] }) {
+export function RiskHeatmap({ data }: { data: readonly HeatmapItem[] }) {
   const getColor = (score: number) => {
     if (score > 80) return "#ef4444"; // red-500
     if (score > 50) return "#f97316"; // orange-500
@@ -41,7 +41,7 @@ export function RiskHeatmap({ data }: { data: HeatmapItem[] }) {
       </CardHeader>
       <CardContent className="pl-2">
         <ResponsiveContainer width="100%" height={350}>
-          <BarChart data={data}>
+          <BarChart data={[...data]}>
             <XAxis
               dataKey="name"
               stroke="#888888"
@@ -61,7 +61,7 @@ export function RiskHeatmap({ data }: { data: HeatmapItem[] }) {
               contentStyle={{ borderRadius: "8px" }}
             />
             <Bar dataKey="score" radius={[4, 4, 0, 0]}>
-              {data.map((entry, index) => (
+              {[...data].map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={getColor(entry.score)} />
               ))}
             </Bar>

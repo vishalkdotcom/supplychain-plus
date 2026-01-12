@@ -3,11 +3,13 @@
 import * as React from "react";
 import {
   IconBrandOpenai,
+  IconBuilding,
   IconChartBar,
   IconDashboard,
   IconMessage,
   IconSchool,
   IconSettings,
+  IconSparkles,
 } from "@tabler/icons-react";
 import {
   Sidebar,
@@ -21,36 +23,46 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
+  SidebarSeparator,
 } from "@/components/ui/sidebar";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-// This is sample data.
-const data = {
-  navMain: [
-    {
-      title: "Control Center",
-      url: "/",
-      icon: IconDashboard,
-      isActive: true,
-    },
-    {
-      title: "Connect (Cases)",
-      url: "/connect",
-      icon: IconMessage,
-    },
-    {
-      title: "Engage (Surveys)",
-      url: "/engage",
-      icon: IconChartBar,
-    },
-    {
-      title: "Educate (Training)",
-      url: "/educate",
-      icon: IconSchool,
-    },
-  ],
-};
+const primaryNav = [
+  {
+    title: "Control Center",
+    url: "/",
+    icon: IconDashboard,
+  },
+  {
+    title: "Suppliers",
+    url: "/suppliers",
+    icon: IconBuilding,
+  },
+  {
+    title: "AI Assistant",
+    url: "/ai",
+    icon: IconSparkles,
+  },
+];
+
+const moduleNav = [
+  {
+    title: "Connect (Cases)",
+    url: "/connect",
+    icon: IconMessage,
+  },
+  {
+    title: "Engage (Surveys)",
+    url: "/engage",
+    icon: IconChartBar,
+  },
+  {
+    title: "Educate (Training)",
+    url: "/educate",
+    icon: IconSchool,
+  },
+];
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
@@ -76,14 +88,41 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Modules</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {data.navMain.map((item) => (
+              {primaryNav.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     asChild
-                    isActive={pathname === item.url}
+                    isActive={
+                      pathname === item.url ||
+                      pathname.startsWith(item.url + "/")
+                    }
+                    tooltip={item.title}
+                  >
+                    <Link href={item.url}>
+                      <item.icon />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        <SidebarSeparator />
+        <SidebarGroup>
+          <SidebarGroupLabel>Modules</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {moduleNav.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={
+                      pathname === item.url ||
+                      pathname.startsWith(item.url + "/")
+                    }
                     tooltip={item.title}
                   >
                     <Link href={item.url}>
