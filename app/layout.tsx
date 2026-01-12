@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
+import { QueryProvider } from "@/components/providers/query-provider";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/app-sidebar";
 
-const inter = Inter({subsets:['latin'],variable:'--font-sans'});
+const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,7 +32,17 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <QueryProvider>
+          <SidebarProvider>
+            <AppSidebar />
+            <div className="flex flex-1 flex-col overflow-hidden">
+              <main className="flex-1 overflow-y-auto p-6 md:p-8">
+                <SidebarTrigger className="mb-4 md:hidden" />
+                {children}
+              </main>
+            </div>
+          </SidebarProvider>
+        </QueryProvider>
       </body>
     </html>
   );
