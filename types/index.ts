@@ -75,7 +75,13 @@ export interface Case {
   supplierName: string;
   topic: string;
   severity: "high" | "medium" | "low";
-  status: "new" | "triage" | "assigned" | "in_progress" | "resolved" | "verified";
+  status:
+    | "new"
+    | "triage"
+    | "assigned"
+    | "in_progress"
+    | "resolved"
+    | "verified";
   assignee?: string;
   aiSummary: string;
   fullContent: string;
@@ -128,6 +134,7 @@ export interface Course {
   enrollments: number;
   completionRate: number; // 0-100
   aiStatus: "generated" | "drafting" | "processing" | "manual";
+  aiGenerated: boolean;
   source?: string;
   relevantFor: string[]; // Case types this training addresses
   languages: string[];

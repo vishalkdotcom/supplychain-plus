@@ -1,13 +1,7 @@
 "use client";
 
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { useState } from "react";
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,45 +12,246 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { IconSparkles, IconPencilPlus } from "@tabler/icons-react";
-import { MOCK_SURVEYS } from "@/lib/mock-data";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  IconArrowRight,
+  IconCheck,
+  IconLoader,
+  IconSearch,
+  IconSparkles,
+  IconWand,
+} from "@tabler/icons-react";
+import { MOCK_SURVEYS, MOCK_SUPPLIERS } from "@/lib/mock-suppliers";
+
+// Mock generated survey questions
+const MOCK_GENERATED_QUESTIONS = [
+  {
+    id: 1,
+    text: "Do you know where the nearest fire exit is located from your work station?",
+    type: "yes_no",
+  },
+  {
+    id: 2,
+    text: "Have you participated in a fire drill in the past 6 months?",
+    type: "yes_no",
+  },
+  {
+    id: 3,
+    text: "Rate your confidence in knowing what to do during a fire emergency:",
+    type: "likert",
+    options: ["Not confident", "Somewhat confident", "Very confident"],
+  },
+  {
+    id: 4,
+    text: "Are fire safety signs clearly visible in your work area?",
+    type: "yes_no",
+  },
+  {
+    id: 5,
+    text: "What would help you feel safer regarding fire emergencies?",
+    type: "open_text",
+  },
+];
+
+const AVAILABLE_LANGUAGES = [
+  { code: "en", name: "English" },
+  { code: "vi", name: "Vietnamese" },
+  { code: "bn", name: "Bengali" },
+  { code: "zh", name: "Mandarin" },
+  { code: "km", name: "Khmer" },
+];
 
 export default function EngagePage() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [supplierFilter, setSupplierFilter] = useState<string>("all");
+  const [designerPrompt, setDesignerPrompt] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [selectedLanguages, setSelectedLanguages] = useState<string[]>(["en"]);
+
+  const suppliers = [...new Set(MOCK_SURVEYS.map((s) => s.supplierName))];
+
+  const filteredSurveys = MOCK_SURVEYS.filter((s) => {
+    const matchesSearch =
+      s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      s.aiInsight.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSupplier =
+      supplierFilter === "all" || s.supplierName === supplierFilter;
+    return matchesSearch && matchesSupplier;
+  });
+
+  const handleGenerate = () => {
+    if (!designerPrompt.trim()) return;
+    setIsGenerating(true);
+    setTimeout(() => {
+      setIsGenerating(false);
+      setShowPreview(true);
+    }, 1500);
+  };
+
+  const toggleLanguage = (code: string) => {
+    setSelectedLanguages((prev) =>
+      prev.includes(code)
+        ? prev.filter((l) => l !== code)
+        : [...prev, code]
+    );
+  };
+
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-3xl font-bold tracking-tight">Engage Insights</h1>
-          <p className="text-muted-foreground">
-            Survey analysis and effortless design.
-          </p>
-        </div>
-        <Button className="gap-2">
-          <IconPencilPlus className="w-4 h-4" />
-          Design New Survey
-        </Button>
+      <div className="flex flex-col gap-2">
+        <h1 className="text-3xl font-bold tracking-tight">Engage Insights</h1>
+        <p className="text-muted-foreground">
+          AI-powered survey design and analysis.
+        </p>
       </div>
 
-      <div className="flex gap-4">
-        <Card className="flex-1 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/20 dark:to-purple-950/20 border-indigo-100 dark:border-indigo-900">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <IconSparkles className="w-5 h-5 text-indigo-500" />
-              AI Designer
-            </CardTitle>
-            <CardDescription>
-              Type a topic to generate a survey instantly.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-2">
-              <Input placeholder="E.g., 'Fire safety awareness for Vietnam factories'..." />
-              <Button variant="secondary">Generate</Button>
+      {/* AI Designer Card */}
+      <Card className="border-indigo-200 bg-gradient-to-br from-indigo-50/50 to-purple-50/50">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <IconSparkles className="w-5 h-5 text-indigo-500" />
+            AI Survey Designer
+          </CardTitle>
+          <CardDescription>
+            Describe what you need and AI will generate a complete survey.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex gap-2">
+            <Input
+              placeholder="E.g., 'Fire safety awareness for Vietnam factories'..."
+              value={designerPrompt}
+              onChange={(e) => setDesignerPrompt(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleGenerate()}
+              className="flex-1 bg-white"
+            />
+            <Button onClick={handleGenerate} disabled={isGenerating}>
+              {isGenerating ? (
+                <>
+                  <IconLoader className="w-4 h-4 mr-2 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <IconWand className="w-4 h-4 mr-2" />
+                  Generate
+                </>
+              )}
+            </Button>
+          </div>
+
+          {/* Preview Panel */}
+          {showPreview && (
+            <div className="mt-4 p-4 rounded-lg bg-white border space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-semibold">
+                    Generated: &quot;Fire Safety Awareness Survey&quot;
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    {MOCK_GENERATED_QUESTIONS.length} questions • Ready for
+                    review
+                  </p>
+                </div>
+                <Badge variant="secondary" className="gap-1">
+                  <IconCheck className="w-3 h-3" />
+                  AI Generated
+                </Badge>
+              </div>
+
+              {/* Questions Preview */}
+              <div className="space-y-3 border-t pt-4">
+                {MOCK_GENERATED_QUESTIONS.map((q, idx) => (
+                  <div
+                    key={q.id}
+                    className="flex items-start gap-3 p-3 rounded-lg bg-muted/50"
+                  >
+                    <span className="flex items-center justify-center w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 text-xs font-medium shrink-0">
+                      {idx + 1}
+                    </span>
+                    <div className="flex-1">
+                      <p className="text-sm">{q.text}</p>
+                      <Badge variant="outline" className="mt-1 text-xs">
+                        {q.type.replace("_", " ")}
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Languages */}
+              <div className="border-t pt-4">
+                <p className="text-sm font-medium mb-2">Languages:</p>
+                <div className="flex flex-wrap gap-2">
+                  {AVAILABLE_LANGUAGES.map((lang) => (
+                    <label
+                      key={lang.code}
+                      className="flex items-center gap-2 cursor-pointer"
+                    >
+                      <Checkbox
+                        checked={selectedLanguages.includes(lang.code)}
+                        onCheckedChange={() => toggleLanguage(lang.code)}
+                      />
+                      <span className="text-sm">{lang.name}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-2 border-t pt-4">
+                <Button variant="outline" className="flex-1">
+                  Edit Questions
+                </Button>
+                <Button variant="outline" className="flex-1">
+                  Save as Draft
+                </Button>
+                <Button className="flex-1">Deploy to Suppliers</Button>
+              </div>
             </div>
-          </CardContent>
-        </Card>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1 max-w-sm">
+          <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search surveys..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <Select value={supplierFilter} onValueChange={setSupplierFilter}>
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder="All Suppliers" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Suppliers</SelectItem>
+            {suppliers.map((supplier) => (
+              <SelectItem key={supplier} value={supplier}>
+                {supplier}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
+      <p className="text-sm text-muted-foreground">
+        Showing {filteredSurveys.length} of {MOCK_SURVEYS.length} surveys
+      </p>
+
+      {/* Survey List */}
       <Card>
         <CardHeader>
           <CardTitle>Recent Surveys</CardTitle>
@@ -64,52 +259,58 @@ export default function EngagePage() {
             Performance and risk analysis of deployed surveys.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[100px]">ID</TableHead>
-                <TableHead>Title</TableHead>
-                <TableHead>Responses</TableHead>
-                <TableHead>Risk Score</TableHead>
-                <TableHead className="w-[400px]">AI Insight</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {MOCK_SURVEYS.map((survey) => (
-                <TableRow key={survey.id}>
-                  <TableCell className="font-medium">{survey.id}</TableCell>
-                  <TableCell>{survey.title}</TableCell>
-                  <TableCell>{survey.responses}</TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={
-                        survey.risk_score > 50 ? "destructive" : "outline"
-                      }
-                    >
-                      {survey.risk_score}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-2 items-start">
-                      <IconSparkles className="w-4 h-4 mt-1 text-purple-500 shrink-0" />
-                      <span className="text-sm text-muted-foreground">
-                        {survey.ai_insight}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell>{survey.status}</TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="sm">
-                      Analyze
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+        <CardContent className="space-y-3">
+          {filteredSurveys.map((survey) => (
+            <div
+              key={survey.id}
+              className="flex items-start justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors"
+            >
+              <div className="flex-1 min-w-0 space-y-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-medium">{survey.title}</span>
+                  <Badge variant="outline">{survey.status}</Badge>
+                  <Badge
+                    variant={survey.riskScore > 50 ? "destructive" : "secondary"}
+                  >
+                    Risk: {survey.riskScore}
+                  </Badge>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  {survey.supplierName} • {survey.responses.toLocaleString()}{" "}
+                  responses
+                </p>
+                <div className="flex items-start gap-2">
+                  <IconSparkles className="w-4 h-4 mt-0.5 text-purple-500 shrink-0" />
+                  <span className="text-sm text-muted-foreground">
+                    {survey.aiInsight}
+                  </span>
+                </div>
+                {survey.themes.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {survey.themes.slice(0, 4).map((theme) => (
+                      <Badge
+                        key={theme.name}
+                        variant={
+                          theme.sentiment === "negative"
+                            ? "destructive"
+                            : theme.sentiment === "positive"
+                              ? "secondary"
+                              : "outline"
+                        }
+                        className="text-xs"
+                      >
+                        {theme.name}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <Button variant="ghost" size="sm">
+                Analyze
+                <IconArrowRight className="w-4 h-4 ml-1" />
+              </Button>
+            </div>
+          ))}
         </CardContent>
       </Card>
     </div>
