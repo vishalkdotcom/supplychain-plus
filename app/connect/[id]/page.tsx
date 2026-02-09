@@ -1,6 +1,6 @@
 "use client";
 
-import { use } from "react";
+import { use, useState } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import {
@@ -58,7 +58,7 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
   ];
 
   const currentStepIndex = statusSteps.findIndex(
-    (s) => s.key === caseData.status
+    (s) => s.key === caseData.status,
   );
 
   const getSeverityVariant = (severity: string) => {
@@ -69,6 +69,28 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
         return "default" as const;
       default:
         return "secondary" as const;
+    }
+  };
+
+  const [aiSummary, setAiSummary] = useState<string>(caseData.aiSummary);
+  const [isLoadingSummary, setIsLoadingSummary] = useState(false);
+
+  const handleGenerateSummary = async () => {
+    setIsLoadingSummary(true);
+    try {
+      const response = await fetch("/api/ai/summarize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ caseText: caseData.fullContent }),
+      });
+      const data = await response.json();
+      if (data.summary) {
+        setAiSummary(data.summary);
+      }
+    } catch (error) {
+      console.error("Failed to generate summary:", error);
+    } finally {
+      setIsLoadingSummary(false);
     }
   };
 
@@ -126,8 +148,8 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
                       isComplete
                         ? "bg-green-500 text-white"
                         : isCurrent
-                        ? "bg-indigo-600 text-white"
-                        : "bg-muted text-muted-foreground"
+                          ? "bg-indigo-600 text-white"
+                          : "bg-muted text-muted-foreground"
                     }`}
                   >
                     {isComplete ? <IconCheck className="h-4 w-4" /> : idx + 1}
@@ -180,13 +202,29 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
           {/* AI Summary */}
           <Card className="border-indigo-200 bg-indigo-50/30">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <IconRobot className="h-5 w-5 text-indigo-600" />
-                AI Summary
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <IconRobot className="h-5 w-5 text-indigo-600" />
+                  AI Summary
+                </CardTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleGenerateSummary}
+                  disabled={isLoadingSummary}
+                >
+                  {isLoadingSummary ? "Generating..." : "Refresh Summary"}
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
-              <p className="text-sm">{caseData.aiSummary}</p>
+              {isLoadingSummary ? (
+                <div className="flex items-center justify-center py-4">
+                  <div className="animate-spin h-5 w-5 border-2 border-indigo-600 border-t-transparent rounded-full"></div>
+                </div>
+              ) : (
+                <p className="text-sm">{aiSummary}</p>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -250,7 +288,7 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm text-muted-foreground italic">
-                      "{caseData.aiGuidance.draftResponse}"
+                      &quot;{caseData.aiGuidance.draftResponse}&quot;
                     </p>
                     <Button className="mt-4 w-full" variant="outline">
                       Use This Response

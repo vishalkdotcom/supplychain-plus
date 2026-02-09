@@ -1,6 +1,5 @@
 import type {
   Supplier,
-  RiskBreakdown,
   TimelineEvent,
   AIRecommendation,
   Case,
@@ -21,6 +20,7 @@ export const MOCK_SUPPLIERS: Supplier[] = [
     name: "Tiruppur Textiles Ltd",
     region: "South Asia",
     country: "India",
+    location: "Tirupur, Tamil Nadu",
     workerCount: 2400,
     contactName: "Arun Krishnamurthy",
     contactEmail: "arun.k@tiruppur-textiles.com",
@@ -60,6 +60,7 @@ export const MOCK_SUPPLIERS: Supplier[] = [
     name: "Dhaka Garments International",
     region: "South Asia",
     country: "Bangladesh",
+    location: "Dhaka",
     workerCount: 5200,
     contactName: "Fatima Rahman",
     contactEmail: "f.rahman@dhaka-garments.bd",
@@ -93,6 +94,7 @@ export const MOCK_SUPPLIERS: Supplier[] = [
     name: "Ho Chi Minh Apparel Co",
     region: "Southeast Asia",
     country: "Vietnam",
+    location: "Ho Chi Minh City",
     workerCount: 1800,
     contactName: "Nguyen Van Minh",
     contactEmail: "minh.nguyen@hcm-apparel.vn",
@@ -120,6 +122,7 @@ export const MOCK_SUPPLIERS: Supplier[] = [
     name: "Shenzhen Manufacturing Hub",
     region: "East Asia",
     country: "China",
+    location: "Shenzhen, Guangdong",
     workerCount: 8500,
     contactName: "Wei Chen",
     contactEmail: "w.chen@shenzhen-mfg.cn",
@@ -165,6 +168,7 @@ export const MOCK_SUPPLIERS: Supplier[] = [
     name: "Jakarta Footwear Factory",
     region: "Southeast Asia",
     country: "Indonesia",
+    location: "Jakarta",
     workerCount: 3200,
     contactName: "Dewi Susanto",
     contactEmail: "d.susanto@jkt-footwear.id",
@@ -198,6 +202,7 @@ export const MOCK_SUPPLIERS: Supplier[] = [
     name: "Mumbai Textile Works",
     region: "South Asia",
     country: "India",
+    location: "Mumbai, Maharashtra",
     workerCount: 1500,
     contactName: "Priya Sharma",
     contactEmail: "p.sharma@mumbai-textile.in",
@@ -231,6 +236,7 @@ export const MOCK_SUPPLIERS: Supplier[] = [
     name: "Colombo Garment Exports",
     region: "South Asia",
     country: "Sri Lanka",
+    location: "Colombo",
     workerCount: 2100,
     contactName: "Chaminda Perera",
     contactEmail: "c.perera@colombo-exports.lk",
@@ -258,6 +264,7 @@ export const MOCK_SUPPLIERS: Supplier[] = [
     name: "Phnom Penh Stitching Co",
     region: "Southeast Asia",
     country: "Cambodia",
+    location: "Phnom Penh",
     workerCount: 4100,
     contactName: "Sokha Chea",
     contactEmail: "s.chea@pp-stitching.kh",
@@ -291,6 +298,7 @@ export const MOCK_SUPPLIERS: Supplier[] = [
     name: "Yangon Apparel Ltd",
     region: "Southeast Asia",
     country: "Myanmar",
+    location: "Yangon",
     workerCount: 2800,
     contactName: "Kyaw Win",
     contactEmail: "k.win@yangon-apparel.mm",
@@ -318,6 +326,7 @@ export const MOCK_SUPPLIERS: Supplier[] = [
     name: "Karachi Knits International",
     region: "South Asia",
     country: "Pakistan",
+    location: "Karachi",
     workerCount: 3600,
     contactName: "Ahmed Hassan",
     contactEmail: "a.hassan@karachi-knits.pk",
@@ -1110,19 +1119,19 @@ export function getSurveysBySupplier(supplierId: string): Survey[] {
 
 export function getTimelineBySupplier(supplierId: string): TimelineEvent[] {
   return MOCK_TIMELINE_EVENTS.filter((e) => e.supplierId === supplierId).sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
   );
 }
 
 export function getRecommendationsBySupplier(
-  supplierId: string
+  supplierId: string,
 ): AIRecommendation[] {
   return MOCK_AI_RECOMMENDATIONS.filter((r) => r.supplierId === supplierId);
 }
 
 export function getHighRiskSuppliers(): Supplier[] {
   return MOCK_SUPPLIERS.filter((s) => s.riskLevel === "high").sort(
-    (a, b) => b.riskScore - a.riskScore
+    (a, b) => b.riskScore - a.riskScore,
   );
 }
 

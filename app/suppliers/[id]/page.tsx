@@ -25,6 +25,8 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import { Button } from "@/components/ui/button";
+import { IconFileText } from "@tabler/icons-react";
 
 interface SupplierDetailPageProps {
   params: Promise<{ id: string }>;
@@ -47,7 +49,7 @@ export default function SupplierDetailPage({
 
   // Get training data for this supplier
   const supplierTraining = MOCK_SUPPLIER_TRAINING.filter(
-    (t) => t.supplierId === id
+    (t) => t.supplierId === id,
   ).map((t) => {
     const course = MOCK_COURSES.find((c) => c.id === t.courseId);
     return {
@@ -73,7 +75,24 @@ export default function SupplierDetailPage({
 
       {/* Hero + Risk Card */}
       <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 space-y-4">
+          <div className="flex justify-end">
+            <Button
+              variant="outline"
+              onClick={() => {
+                import("@/lib/hrdd-export").then(({ generateHRDDReport }) => {
+                  generateHRDDReport({
+                    supplier: supplier,
+                    generatedDate: new Date().toLocaleDateString(),
+                    auditorName: "Current User", // In real app, get from auth context
+                  });
+                });
+              }}
+            >
+              <IconFileText className="w-4 h-4 mr-2" />
+              Export HRDD Report
+            </Button>
+          </div>
           <SupplierHero supplier={supplier} />
         </div>
         <div>

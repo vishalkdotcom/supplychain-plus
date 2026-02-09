@@ -1,15 +1,16 @@
-"use client";
+import { useMemo } from "react";
 
 import type { Supplier } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import {
   IconAlertTriangle,
   IconMessage,
   IconChartBar,
   IconSchool,
   IconActivity,
+  IconTrendingUp,
+  IconTrendingDown,
+  IconMinus,
 } from "@tabler/icons-react";
 
 interface RiskBreakdownProps {
@@ -60,20 +61,59 @@ export function RiskBreakdown({ supplier }: RiskBreakdownProps) {
     },
   ];
 
+  // Mock previous score for trend calculation (in real app, fetch from history)
+  const previousRiskScore = useMemo(() => {
+    // Deterministic mock value based on risk score
+    const pseudoRandom = (riskScore * 13) % 10;
+    return Math.max(0, Math.min(100, riskScore + (pseudoRandom > 5 ? 5 : -5)));
+  }, [riskScore]);
+  const trend =
+    riskScore < previousRiskScore
+      ? "improving"
+      : riskScore > previousRiskScore
+        ? "worsening"
+        : "stable";
+
   return (
     <Card
       className={`border-2 ${
         riskLevel === "high"
           ? "border-red-200 bg-red-50/30"
           : riskLevel === "medium"
-          ? "border-orange-200 bg-orange-50/30"
-          : "border-green-200 bg-green-50/30"
+            ? "border-orange-200 bg-orange-50/30"
+            : "border-green-200 bg-green-50/30"
       }`}
     >
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center justify-between text-base">
           <span>Why {riskLevel.toUpperCase()} Risk?</span>
-          <span className="text-2xl font-bold">{riskScore}</span>
+          <div className="flex items-center gap-2">
+            <div
+              className={`flex items-center text-sm font-normal px-2 py-0.5 rounded-full ${
+                trend === "improving"
+                  ? "bg-green-100 text-green-700"
+                  : trend === "worsening"
+                    ? "bg-red-100 text-red-700"
+                    : "bg-gray-100 text-gray-700"
+              }`}
+            >
+              {trend === "improving" && (
+                <IconTrendingDown className="w-3 h-3 mr-1" />
+              )}
+              {trend === "worsening" && (
+                <IconTrendingUp className="w-3 h-3 mr-1" />
+              )}
+              {trend === "stable" && <IconMinus className="w-3 h-3 mr-1" />}
+              <span>
+                {trend === "improving"
+                  ? "Improving"
+                  : trend === "worsening"
+                    ? "Degrading"
+                    : "Stable"}
+              </span>
+            </div>
+            <span className="text-2xl font-bold">{riskScore}</span>
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -91,7 +131,7 @@ export function RiskBreakdown({ supplier }: RiskBreakdownProps) {
               <div className="relative h-1.5 rounded-full bg-secondary overflow-hidden">
                 <div
                   className={`absolute left-0 top-0 h-full rounded-full transition-all ${getRiskColor(
-                    score.value
+                    score.value,
                   )}`}
                   style={{ width: `${score.value}%` }}
                 />
@@ -111,7 +151,7 @@ export function RiskBreakdown({ supplier }: RiskBreakdownProps) {
                 <div
                   key={idx}
                   className={`flex items-start gap-2 p-2 rounded-md border ${getImpactColor(
-                    reason.impact
+                    reason.impact,
                   )}`}
                 >
                   <IconAlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />

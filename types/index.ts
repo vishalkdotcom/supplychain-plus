@@ -9,6 +9,7 @@ export interface Supplier {
   name: string;
   region: string;
   country: string;
+  location: string;
   workerCount: number;
   contactName: string;
   contactEmail: string;

@@ -87,20 +87,34 @@ export default function EngagePage() {
     return matchesSearch && matchesSupplier;
   });
 
-  const handleGenerate = () => {
+  const [generatedQuestions, setGeneratedQuestions] = useState(
+    MOCK_GENERATED_QUESTIONS,
+  );
+
+  const handleGenerate = async () => {
     if (!designerPrompt.trim()) return;
     setIsGenerating(true);
-    setTimeout(() => {
+    try {
+      const response = await fetch("/api/ai/survey", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: designerPrompt }),
+      });
+      const data = await response.json();
+      if (data.questions && Array.isArray(data.questions)) {
+        setGeneratedQuestions(data.questions);
+        setShowPreview(true);
+      }
+    } catch (error) {
+      console.error("Failed to generate survey:", error);
+    } finally {
       setIsGenerating(false);
-      setShowPreview(true);
-    }, 1500);
+    }
   };
 
   const toggleLanguage = (code: string) => {
     setSelectedLanguages((prev) =>
-      prev.includes(code)
-        ? prev.filter((l) => l !== code)
-        : [...prev, code]
+      prev.includes(code) ? prev.filter((l) => l !== code) : [...prev, code],
     );
   };
 
@@ -157,8 +171,7 @@ export default function EngagePage() {
                     Generated: &quot;Fire Safety Awareness Survey&quot;
                   </h3>
                   <p className="text-sm text-muted-foreground">
-                    {MOCK_GENERATED_QUESTIONS.length} questions • Ready for
-                    review
+                    {generatedQuestions.length} questions • Ready for review
                   </p>
                 </div>
                 <Badge variant="secondary" className="gap-1">
@@ -167,9 +180,8 @@ export default function EngagePage() {
                 </Badge>
               </div>
 
-              {/* Questions Preview */}
               <div className="space-y-3 border-t pt-4">
-                {MOCK_GENERATED_QUESTIONS.map((q, idx) => (
+                {generatedQuestions.map((q, idx) => (
                   <div
                     key={q.id}
                     className="flex items-start gap-3 p-3 rounded-lg bg-muted/50"
@@ -179,9 +191,16 @@ export default function EngagePage() {
                     </span>
                     <div className="flex-1">
                       <p className="text-sm">{q.text}</p>
-                      <Badge variant="outline" className="mt-1 text-xs">
-                        {q.type.replace("_", " ")}
-                      </Badge>
+                      <div className="flex flex-wrap gap-2 mt-1">
+                        <Badge variant="outline" className="text-xs">
+                          {q.type.replace("_", " ")}
+                        </Badge>
+                        {q.options && q.options.length > 0 && (
+                          <span className="text-xs text-muted-foreground">
+                            Options: {q.options.join(", ")}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -270,7 +289,9 @@ export default function EngagePage() {
                   <span className="font-medium">{survey.title}</span>
                   <Badge variant="outline">{survey.status}</Badge>
                   <Badge
-                    variant={survey.riskScore > 50 ? "destructive" : "secondary"}
+                    variant={
+                      survey.riskScore > 50 ? "destructive" : "secondary"
+                    }
                   >
                     Risk: {survey.riskScore}
                   </Badge>
