@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { query as pgQuery } from "@/lib/db/postgres";
+import { wcGlobalQuery } from "@/lib/db/postgres-wc-global";
 import { Supplier } from "@/types";
 
 export async function GET(
@@ -25,6 +26,18 @@ export async function GET(
       );
     }
 
+    // 2. Get worker count from wc_global.mdl_participant
+    let workerCount = 0;
+    try {
+      const workerRes = await wcGlobalQuery(
+        `SELECT COUNT(*) as count FROM mdl_participant WHERE client_id = $1 AND is_deleted = false`,
+        [parseInt(id)],
+      );
+      workerCount = parseInt(workerRes.rows[0]?.count || "0");
+    } catch (err) {
+      console.error("Error fetching worker count from wc_global:", err);
+    }
+
     const row = supplierRes.rows[0];
     const supplier: Supplier = {
       id: String(row.client_key),
@@ -32,7 +45,7 @@ export async function GET(
       region: "Global",
       country: row.country || "Unknown",
       location: row.country || "Unknown",
-      workerCount: 0,
+      workerCount,
       contactName: "N/A",
       contactEmail: "n/a",
       riskScore: row.risk_score || 50,

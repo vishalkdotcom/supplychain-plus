@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { query } from "@/lib/db/postgres";
+import { wcGlobalQuery } from "@/lib/db/postgres-wc-global";
 import { Supplier } from "@/types";
 
 export async function GET() {
@@ -23,13 +24,35 @@ export async function GET() {
       LIMIT 100
     `);
 
+    // Fetch worker counts from wc_global.mdl_participant grouped by client_id
+    const clientKeys = result.rows
+      .map((r: any) => parseInt(r.client_key))
+      .filter(Boolean);
+    const workerCountMap: Record<number, number> = {};
+    if (clientKeys.length > 0) {
+      try {
+        const workerRes = await wcGlobalQuery(
+          `SELECT client_id, COUNT(*) as count 
+           FROM mdl_participant 
+           WHERE client_id = ANY($1) AND is_deleted = false 
+           GROUP BY client_id`,
+          [clientKeys],
+        );
+        for (const row of workerRes.rows) {
+          workerCountMap[row.client_id] = parseInt(row.count);
+        }
+      } catch (err) {
+        console.error("Error fetching worker counts from wc_global:", err);
+      }
+    }
+
     const suppliers: Supplier[] = result.rows.map((row: any) => ({
       id: String(row.client_key),
       name: row.name,
       region: "Global",
       country: row.country || "Unknown",
       location: row.country || "Unknown",
-      workerCount: 0,
+      workerCount: workerCountMap[parseInt(row.client_key)] || 0,
       contactName: "N/A",
       contactEmail: "n/a",
       riskScore: row.risk_score || 50,
