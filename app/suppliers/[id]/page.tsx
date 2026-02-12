@@ -23,6 +23,7 @@ import {
   fetchSurveys,
   fetchRecommendations,
   fetchTimeline,
+  fetchTraining,
 } from "@/lib/api";
 import { SupplierHero } from "@/components/suppliers/supplier-hero";
 
@@ -58,6 +59,11 @@ export default function SupplierDetailPage({
   const { data: timeline } = useQuery({
     queryKey: ["timeline", id],
     queryFn: () => fetchTimeline(id),
+  });
+
+  const { data: training } = useQuery({
+    queryKey: ["training", id],
+    queryFn: () => fetchTraining(id),
   });
 
   if (isLoading) {
@@ -127,7 +133,11 @@ export default function SupplierDetailPage({
       )}
 
       {/* Cross-Module Panel */}
-      <CrossModulePanel cases={cases} surveys={surveys} training={[]} />
+      <CrossModulePanel
+        cases={cases}
+        surveys={surveys}
+        training={training || []}
+      />
 
       {/* Timeline */}
       {timelineEvents.length > 0 && (

@@ -65,6 +65,13 @@ export async function fetchRecommendations(): Promise<AIRecommendation[]> {
   return res.json();
 }
 
+// Training
+export async function fetchTraining(supplierId: string) {
+  const res = await fetch(`/api/suppliers/${supplierId}/training`);
+  if (!res.ok) throw new Error("Failed to fetch training data");
+  return res.json();
+}
+
 export async function fetchTimeline(
   supplierId?: string,
 ): Promise<TimelineEvent[]> {
