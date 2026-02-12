@@ -2,17 +2,6 @@
 
 import { use } from "react";
 import { notFound } from "next/navigation";
-import Link from "next/link";
-import {
-  getSupplierById,
-  getCasesBySupplier,
-  getSurveysBySupplier,
-  getTimelineBySupplier,
-  getRecommendationsBySupplier,
-  MOCK_SUPPLIER_TRAINING,
-  MOCK_COURSES,
-} from "@/lib/mock-suppliers";
-import { SupplierHero } from "@/components/suppliers/supplier-hero";
 import { RiskBreakdown } from "@/components/suppliers/risk-breakdown";
 import { CrossModulePanel } from "@/components/suppliers/cross-module-panel";
 import { SupplierTimeline } from "@/components/suppliers/supplier-timeline";
@@ -27,6 +16,15 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { IconFileText } from "@tabler/icons-react";
+import { useQuery } from "@tanstack/react-query";
+import {
+  fetchSupplier,
+  fetchCases,
+  fetchSurveys,
+  fetchRecommendations,
+  fetchTimeline,
+} from "@/lib/api";
+import { SupplierHero } from "@/components/suppliers/supplier-hero";
 
 interface SupplierDetailPageProps {
   params: Promise<{ id: string }>;
@@ -36,27 +34,50 @@ export default function SupplierDetailPage({
   params,
 }: SupplierDetailPageProps) {
   const { id } = use(params);
-  const supplier = getSupplierById(id);
+
+  const { data: supplier, isLoading } = useQuery({
+    queryKey: ["suppliers", id],
+    queryFn: () => fetchSupplier(id),
+  });
+
+  const { data: allCases } = useQuery({
+    queryKey: ["cases"],
+    queryFn: fetchCases,
+  });
+
+  const { data: allSurveys } = useQuery({
+    queryKey: ["surveys"],
+    queryFn: fetchSurveys,
+  });
+
+  const { data: recommendations } = useQuery({
+    queryKey: ["recommendations"],
+    queryFn: fetchRecommendations,
+  });
+
+  const { data: timeline } = useQuery({
+    queryKey: ["timeline", id],
+    queryFn: () => fetchTimeline(id),
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
 
   if (!supplier) {
     notFound();
   }
 
-  const cases = getCasesBySupplier(id);
-  const surveys = getSurveysBySupplier(id);
-  const timeline = getTimelineBySupplier(id);
-  const recommendations = getRecommendationsBySupplier(id);
-
-  // Get training data for this supplier
-  const supplierTraining = MOCK_SUPPLIER_TRAINING.filter(
-    (t) => t.supplierId === id,
-  ).map((t) => {
-    const course = MOCK_COURSES.find((c) => c.id === t.courseId);
-    return {
-      ...t,
-      courseName: course?.title || "Unknown Course",
-    };
-  });
+  // Filter cases and surveys for this supplier
+  const cases = allCases?.filter((c) => c.supplierId === id) || [];
+  const surveys = allSurveys?.filter((s) => s.supplierId === id) || [];
+  const supplierRecommendations =
+    recommendations?.filter((r) => r.supplierId === id) || [];
+  const timelineEvents = timeline || [];
 
   return (
     <div className="space-y-6">
@@ -101,19 +122,17 @@ export default function SupplierDetailPage({
       </div>
 
       {/* AI Recommendations */}
-      {recommendations.length > 0 && (
-        <AIRecommendations recommendations={recommendations} />
+      {supplierRecommendations.length > 0 && (
+        <AIRecommendations recommendations={supplierRecommendations} />
       )}
 
       {/* Cross-Module Panel */}
-      <CrossModulePanel
-        cases={cases}
-        surveys={surveys}
-        training={supplierTraining}
-      />
+      <CrossModulePanel cases={cases} surveys={surveys} training={[]} />
 
       {/* Timeline */}
-      {timeline.length > 0 && <SupplierTimeline events={timeline} />}
+      {timelineEvents.length > 0 && (
+        <SupplierTimeline events={timelineEvents} />
+      )}
     </div>
   );
 }

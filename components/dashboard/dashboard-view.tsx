@@ -22,21 +22,58 @@ import {
   IconTrendingUp,
   IconUsers,
 } from "@tabler/icons-react";
+import { useQuery } from "@tanstack/react-query";
 import {
-  getHighRiskSuppliers,
-  MOCK_AI_RECOMMENDATIONS,
-  MOCK_ACTIVITY_STREAM,
-  MOCK_DASHBOARD_METRICS,
-  MOCK_SUPPLIERS,
-} from "@/lib/mock-suppliers";
+  fetchMetrics,
+  fetchActivities,
+  fetchSuppliers,
+  fetchRecommendations,
+} from "@/lib/api";
 
 export function DashboardView() {
-  const highRiskSuppliers = getHighRiskSuppliers();
-  const metrics = MOCK_DASHBOARD_METRICS;
-  const activities = MOCK_ACTIVITY_STREAM.slice(0, 5);
-  const topRecommendations = MOCK_AI_RECOMMENDATIONS.filter(
-    (r) => r.urgency === "immediate"
-  ).slice(0, 3);
+  const { data: metrics, isLoading: isMetricsLoading } = useQuery({
+    queryKey: ["metrics"],
+    queryFn: fetchMetrics,
+  });
+
+  const { data: activities, isLoading: isActivitiesLoading } = useQuery({
+    queryKey: ["activities"],
+    queryFn: fetchActivities,
+  });
+
+  const { data: suppliers, isLoading: isSuppliersLoading } = useQuery({
+    queryKey: ["suppliers"],
+    queryFn: fetchSuppliers,
+  });
+
+  const { data: recommendations, isLoading: isRecommendationsLoading } =
+    useQuery({
+      queryKey: ["recommendations"],
+      queryFn: fetchRecommendations,
+    });
+
+  const highRiskSuppliers =
+    suppliers
+      ?.filter((s) => s.riskLevel === "high")
+      .sort((a, b) => b.riskScore - a.riskScore) || [];
+  const topRecommendations = (recommendations || [])
+    .filter((r) => r.urgency === "immediate")
+    .slice(0, 3);
+
+  if (
+    isMetricsLoading ||
+    isActivitiesLoading ||
+    isSuppliersLoading ||
+    isRecommendationsLoading
+  ) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
+
+  if (!metrics) return null;
 
   return (
     <div className="space-y-6">
@@ -191,8 +228,8 @@ export function DashboardView() {
               </CardHeader>
               <CardContent className="space-y-3">
                 {topRecommendations.map((rec) => {
-                  const supplier = MOCK_SUPPLIERS.find(
-                    (s) => s.id === rec.supplierId
+                  const supplier = suppliers?.find(
+                    (s) => s.id === rec.supplierId,
                   );
                   return (
                     <div
@@ -226,15 +263,15 @@ export function DashboardView() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {activities.map((activity) => (
+            {activities?.map((activity) => (
               <Link
                 key={activity.id}
                 href={
                   activity.linkedType === "supplier" && activity.supplierId
                     ? `/suppliers/${activity.supplierId}`
                     : activity.linkedType === "case" && activity.linkedId
-                    ? `/connect/${activity.linkedId}`
-                    : "#"
+                      ? `/connect/${activity.linkedId}`
+                      : "#"
                 }
                 className="flex items-start gap-3 group"
               >
@@ -243,10 +280,10 @@ export function DashboardView() {
                     activity.module === "connect"
                       ? "bg-blue-100 text-blue-600"
                       : activity.module === "engage"
-                      ? "bg-purple-100 text-purple-600"
-                      : activity.module === "educate"
-                      ? "bg-green-100 text-green-600"
-                      : "bg-indigo-100 text-indigo-600"
+                        ? "bg-purple-100 text-purple-600"
+                        : activity.module === "educate"
+                          ? "bg-green-100 text-green-600"
+                          : "bg-indigo-100 text-indigo-600"
                   }`}
                 >
                   {activity.module === "connect" ? (

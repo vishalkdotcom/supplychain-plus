@@ -11,7 +11,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { SupplierCard } from "@/components/suppliers/supplier-card";
-import { MOCK_SUPPLIERS, getSuppliersByRisk } from "@/lib/mock-suppliers";
+import { useQuery } from "@tanstack/react-query";
+import { fetchSuppliers } from "@/lib/api";
 import { IconSearch } from "@tabler/icons-react";
 
 export default function SuppliersPage() {
@@ -19,9 +20,13 @@ export default function SuppliersPage() {
   const [regionFilter, setRegionFilter] = useState<string>("all");
   const [riskFilter, setRiskFilter] = useState<string>("all");
 
-  const suppliers = getSuppliersByRisk();
+  const { data: suppliersData, isLoading } = useQuery({
+    queryKey: ["suppliers"],
+    queryFn: fetchSuppliers,
+  });
 
-  const regions = [...new Set(MOCK_SUPPLIERS.map((s) => s.region))];
+  const suppliers = suppliersData || [];
+  const regions: string[] = [...new Set(suppliers.map((s) => s.region))];
 
   const filteredSuppliers = suppliers.filter((supplier) => {
     const matchesSearch =
@@ -33,6 +38,14 @@ export default function SuppliersPage() {
       riskFilter === "all" || supplier.riskLevel === riskFilter;
     return matchesSearch && matchesRegion && matchesRisk;
   });
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

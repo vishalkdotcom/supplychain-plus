@@ -4,11 +4,6 @@ import { use, useState } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import {
-  MOCK_CASES,
-  getCasesBySupplier,
-  MOCK_COURSES,
-} from "@/lib/mock-suppliers";
-import {
   Card,
   CardContent,
   CardDescription,
@@ -35,6 +30,8 @@ import {
   IconSparkles,
   IconUser,
 } from "@tabler/icons-react";
+import { useQuery } from "@tanstack/react-query";
+import { fetchCase } from "@/lib/api";
 
 interface CaseDetailPageProps {
   params: Promise<{ id: string }>;
@@ -42,7 +39,24 @@ interface CaseDetailPageProps {
 
 export default function CaseDetailPage({ params }: CaseDetailPageProps) {
   const { id } = use(params);
-  const caseData = MOCK_CASES.find((c) => c.id === id);
+  const { data: caseData, isLoading } = useQuery({
+    queryKey: ["cases", id],
+    queryFn: () => fetchCase(id),
+  });
+
+  const [aiSummary, setAiSummary] = useState<string>("");
+  const [isLoadingSummary, setIsLoadingSummary] = useState(false);
+
+  // Sync aiSummary with loaded case data
+  const displaySummary = aiSummary || caseData?.aiSummary || "";
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
 
   if (!caseData) {
     notFound();
@@ -71,9 +85,6 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
         return "secondary" as const;
     }
   };
-
-  const [aiSummary, setAiSummary] = useState<string>(caseData.aiSummary);
-  const [isLoadingSummary, setIsLoadingSummary] = useState(false);
 
   const handleGenerateSummary = async () => {
     setIsLoadingSummary(true);
@@ -223,7 +234,7 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
                   <div className="animate-spin h-5 w-5 border-2 border-indigo-600 border-t-transparent rounded-full"></div>
                 </div>
               ) : (
-                <p className="text-sm">{aiSummary}</p>
+                <p className="text-sm">{displaySummary}</p>
               )}
             </CardContent>
           </Card>

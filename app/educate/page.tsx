@@ -25,11 +25,8 @@ import {
   IconUpload,
   IconWand,
 } from "@tabler/icons-react";
-import {
-  MOCK_COURSES,
-  MOCK_AI_RECOMMENDATIONS,
-  MOCK_SUPPLIERS,
-} from "@/lib/mock-suppliers";
+import { useQuery } from "@tanstack/react-query";
+import { fetchCourses, fetchSuppliers, fetchRecommendations } from "@/lib/api";
 
 // Mock processing pipeline states
 const MOCK_PIPELINE_ITEMS = [
@@ -64,25 +61,52 @@ export default function EducatePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isDragging, setIsDragging] = useState(false);
 
-  // Training recommendations based on AI analysis
-  const trainingRecommendations = MOCK_AI_RECOMMENDATIONS.filter(
-    (r) => r.category === "training"
-  ).map((rec) => {
-    const supplier = MOCK_SUPPLIERS.find((s) => s.id === rec.supplierId);
-    return { ...rec, supplierName: supplier?.name || "Unknown" };
+  const { data: coursesData, isLoading: isCoursesLoading } = useQuery({
+    queryKey: ["courses"],
+    queryFn: fetchCourses,
   });
 
-  const filteredCourses = MOCK_COURSES.filter(
+  const { data: suppliersData, isLoading: isSuppliersLoading } = useQuery({
+    queryKey: ["suppliers"],
+    queryFn: fetchSuppliers,
+  });
+
+  const { data: recommendationsData, isLoading: isRecommendationsLoading } =
+    useQuery({
+      queryKey: ["recommendations"],
+      queryFn: fetchRecommendations,
+    });
+
+  const courses = coursesData || [];
+  const suppliers = suppliersData || [];
+
+  // Training recommendations based on AI analysis
+  const trainingRecommendations = (recommendationsData || [])
+    .filter((r) => r.category === "training")
+    .map((rec) => {
+      const supplier = suppliers.find((s) => s.id === rec.supplierId);
+      return { ...rec, supplierName: supplier?.name || "Unknown" };
+    });
+
+  const filteredCourses = courses.filter(
     (c) =>
       c.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       c.relevantFor.some((tag) =>
-        tag.toLowerCase().includes(searchQuery.toLowerCase())
-      )
+        tag.toLowerCase().includes(searchQuery.toLowerCase()),
+      ),
   );
+
+  if (isCoursesLoading || isSuppliersLoading || isRecommendationsLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
 
   const getStepStatus = (
     pipelineStatus: PipelineStatus,
-    stepKey: PipelineStatus
+    stepKey: PipelineStatus,
   ) => {
     const statusOrder: PipelineStatus[] = [
       "uploading",
@@ -183,8 +207,8 @@ export default function EducatePage() {
                             status === "done"
                               ? "bg-green-500 text-white"
                               : status === "current"
-                              ? "bg-indigo-500 text-white"
-                              : "bg-muted text-muted-foreground"
+                                ? "bg-indigo-500 text-white"
+                                : "bg-muted text-muted-foreground"
                           }`}
                         >
                           {status === "done" ? (

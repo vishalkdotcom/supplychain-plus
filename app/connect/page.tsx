@@ -19,16 +19,23 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { IconArrowRight, IconRobot, IconSearch } from "@tabler/icons-react";
-import { MOCK_CASES, MOCK_SUPPLIERS } from "@/lib/mock-suppliers";
+import { useQuery } from "@tanstack/react-query";
+import { fetchCases } from "@/lib/api";
 
 export default function ConnectPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [supplierFilter, setSupplierFilter] = useState<string>("all");
   const [severityFilter, setSeverityFilter] = useState<string>("all");
 
-  const suppliers = [...new Set(MOCK_CASES.map((c) => c.supplierName))];
+  const { data: casesData, isLoading } = useQuery({
+    queryKey: ["cases"],
+    queryFn: fetchCases,
+  });
 
-  const filteredCases = MOCK_CASES.filter((c) => {
+  const cases = casesData || [];
+  const suppliers = [...new Set(cases.map((c) => c.supplierName))];
+
+  const filteredCases = cases.filter((c) => {
     const matchesSearch =
       c.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
       c.topic.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -39,6 +46,14 @@ export default function ConnectPage() {
       severityFilter === "all" || c.severity === severityFilter;
     return matchesSearch && matchesSupplier && matchesSeverity;
   });
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
 
   const getSeverityVariant = (severity: string) => {
     switch (severity) {
@@ -100,7 +115,7 @@ export default function ConnectPage() {
       </div>
 
       <p className="text-sm text-muted-foreground">
-        Showing {filteredCases.length} of {MOCK_CASES.length} cases
+        Showing {filteredCases.length} of {cases.length} cases
       </p>
 
       <Card>

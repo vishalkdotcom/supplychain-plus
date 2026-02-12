@@ -9,11 +9,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { IconBuilding, IconBuildingSkyscraper } from "@tabler/icons-react";
-import { MOCK_SUPPLIERS } from "@/lib/mock-suppliers";
+import { useQuery } from "@tanstack/react-query";
+import { fetchSuppliers } from "@/lib/api";
 
 export function ViewToggle() {
   const { viewMode, setViewMode, currentSupplierId, setCurrentSupplierId } =
     useView();
+
+  const { data: suppliers } = useQuery({
+    queryKey: ["suppliers"],
+    queryFn: fetchSuppliers,
+  });
 
   const handleViewChange = (value: string) => {
     if (value === "brand") {
@@ -22,8 +28,8 @@ export function ViewToggle() {
     } else {
       // If switching to supplier view, default to first supplier
       setViewMode("supplier");
-      if (!currentSupplierId) {
-        setCurrentSupplierId(MOCK_SUPPLIERS[0].id);
+      if (!currentSupplierId && suppliers && suppliers.length > 0) {
+        setCurrentSupplierId(suppliers[0].id);
       }
     }
   };
@@ -63,7 +69,7 @@ export function ViewToggle() {
             <SelectValue placeholder="Select supplier" />
           </SelectTrigger>
           <SelectContent>
-            {MOCK_SUPPLIERS.map((supplier) => (
+            {suppliers?.map((supplier) => (
               <SelectItem key={supplier.id} value={supplier.id}>
                 {supplier.name}
               </SelectItem>

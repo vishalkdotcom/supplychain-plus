@@ -4,28 +4,18 @@ import { useState } from "react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   IconArrowRight,
   IconBuilding,
-  IconChartBar,
-  IconMessage,
   IconSchool,
   IconSend,
   IconSparkles,
 } from "@tabler/icons-react";
-import {
-  getHighRiskSuppliers,
-  MOCK_AI_RECOMMENDATIONS,
-  MOCK_SUPPLIERS,
-} from "@/lib/mock-suppliers";
+import { useQuery } from "@tanstack/react-query";
+import { fetchSuppliers, fetchRecommendations } from "@/lib/api";
+import type { Supplier, AIRecommendation } from "@/types";
 
 const SUGGESTED_QUERIES = [
   "Show suppliers at risk this month",
@@ -39,14 +29,24 @@ interface MockResponse {
   type: "supplier_list" | "recommendation" | "narrative";
   title: string;
   content: string;
-  suppliers?: typeof MOCK_SUPPLIERS;
-  recommendations?: typeof MOCK_AI_RECOMMENDATIONS;
+  suppliers?: Supplier[];
+  recommendations?: AIRecommendation[];
 }
 
 export default function AIAssistantPage() {
   const [query, setQuery] = useState("");
   const [response, setResponse] = useState<MockResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  const { data: suppliers } = useQuery({
+    queryKey: ["suppliers"],
+    queryFn: fetchSuppliers,
+  });
+
+  const { data: recommendations } = useQuery({
+    queryKey: ["recommendations"],
+    queryFn: fetchRecommendations,
+  });
 
   const handleSubmit = (inputQuery?: string) => {
     const q = inputQuery || query;
@@ -55,18 +55,25 @@ export default function AIAssistantPage() {
     setIsLoading(true);
     setQuery(q);
 
+    const allSuppliers = suppliers || [];
+    const allRecommendations = recommendations || [];
+
     // Simulate AI response
     setTimeout(() => {
       if (
         q.toLowerCase().includes("risk") ||
         q.toLowerCase().includes("attention")
       ) {
+        const highRiskSuppliers = allSuppliers
+          .filter((s) => s.riskLevel === "high")
+          .sort((a, b) => b.riskScore - a.riskScore);
+
         setResponse({
           type: "supplier_list",
           title: "Suppliers Requiring Attention",
           content:
-            "Based on cross-module analysis, I've identified 3 high-risk suppliers that need immediate focus:",
-          suppliers: getHighRiskSuppliers(),
+            "Based on cross-module analysis, I've identified high-risk suppliers that need immediate focus:",
+          suppliers: highRiskSuppliers,
         });
       } else if (
         q.toLowerCase().includes("training") ||
@@ -77,8 +84,8 @@ export default function AIAssistantPage() {
           title: "Training Recommendations",
           content:
             "Based on recent case patterns and survey results, here are my training recommendations:",
-          recommendations: MOCK_AI_RECOMMENDATIONS.filter(
-            (r) => r.category === "training"
+          recommendations: allRecommendations.filter(
+            (r) => r.category === "training",
           ),
         });
       } else if (
@@ -218,8 +225,8 @@ The factory remains at elevated risk (Score: 78) due to incomplete harassment tr
             {response.type === "recommendation" && response.recommendations && (
               <div className="space-y-3 mt-4">
                 {response.recommendations.map((rec) => {
-                  const supplier = MOCK_SUPPLIERS.find(
-                    (s) => s.id === rec.supplierId
+                  const supplier = suppliers?.find(
+                    (s) => s.id === rec.supplierId,
                   );
                   return (
                     <div

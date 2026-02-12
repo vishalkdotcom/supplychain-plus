@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,7 +27,8 @@ import {
   IconSparkles,
   IconWand,
 } from "@tabler/icons-react";
-import { MOCK_SURVEYS, MOCK_SUPPLIERS } from "@/lib/mock-suppliers";
+import { useQuery } from "@tanstack/react-query";
+import { fetchSurveys } from "@/lib/api";
 
 // Mock generated survey questions
 const MOCK_GENERATED_QUESTIONS = [
@@ -76,9 +76,15 @@ export default function EngagePage() {
   const [showPreview, setShowPreview] = useState(false);
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>(["en"]);
 
-  const suppliers = [...new Set(MOCK_SURVEYS.map((s) => s.supplierName))];
+  const { data: surveysData, isLoading } = useQuery({
+    queryKey: ["surveys"],
+    queryFn: fetchSurveys,
+  });
 
-  const filteredSurveys = MOCK_SURVEYS.filter((s) => {
+  const surveys = surveysData || [];
+  const suppliers: string[] = [...new Set(surveys.map((s) => s.supplierName))];
+
+  const filteredSurveys = surveys.filter((s) => {
     const matchesSearch =
       s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       s.aiInsight.toLowerCase().includes(searchQuery.toLowerCase());
@@ -90,6 +96,14 @@ export default function EngagePage() {
   const [generatedQuestions, setGeneratedQuestions] = useState(
     MOCK_GENERATED_QUESTIONS,
   );
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
 
   const handleGenerate = async () => {
     if (!designerPrompt.trim()) return;
@@ -267,7 +281,7 @@ export default function EngagePage() {
       </div>
 
       <p className="text-sm text-muted-foreground">
-        Showing {filteredSurveys.length} of {MOCK_SURVEYS.length} surveys
+        Showing {filteredSurveys.length} of {surveys.length} surveys
       </p>
 
       {/* Survey List */}
