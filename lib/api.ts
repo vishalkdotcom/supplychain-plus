@@ -23,8 +23,11 @@ export async function fetchSupplier(id: string): Promise<Supplier> {
   return res.json();
 }
 
-export async function fetchCases(): Promise<Case[]> {
-  const res = await fetch(`${API_BASE}/cases`);
+export async function fetchCases(supplierId?: string): Promise<Case[]> {
+  const url = supplierId
+    ? `${API_BASE}/cases?supplierId=${supplierId}`
+    : `${API_BASE}/cases`;
+  const res = await fetch(url);
   if (!res.ok) throw new Error("Failed to fetch cases");
   return res.json();
 }
@@ -35,8 +38,11 @@ export async function fetchCase(id: string): Promise<Case> {
   return res.json();
 }
 
-export async function fetchSurveys(): Promise<Survey[]> {
-  const res = await fetch(`${API_BASE}/surveys`);
+export async function fetchSurveys(supplierId?: string): Promise<Survey[]> {
+  const url = supplierId
+    ? `${API_BASE}/surveys?supplierId=${supplierId}`
+    : `${API_BASE}/surveys`;
+  const res = await fetch(url);
   if (!res.ok) throw new Error("Failed to fetch surveys");
   return res.json();
 }

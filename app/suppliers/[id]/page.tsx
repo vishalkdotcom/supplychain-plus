@@ -43,12 +43,12 @@ export default function SupplierDetailPage({
 
   const { data: allCases } = useQuery({
     queryKey: ["cases"],
-    queryFn: fetchCases,
+    queryFn: () => fetchCases(),
   });
 
   const { data: allSurveys } = useQuery({
     queryKey: ["surveys"],
-    queryFn: fetchSurveys,
+    queryFn: () => fetchSurveys(),
   });
 
   const { data: recommendations } = useQuery({

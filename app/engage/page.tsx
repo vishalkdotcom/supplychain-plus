@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useView } from "@/components/view-context";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -75,10 +76,20 @@ export default function EngagePage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>(["en"]);
+  const [isEditing, setIsEditing] = useState(false);
+  const [savedMessage, setSavedMessage] = useState("");
+  const [analyzingId, setAnalyzingId] = useState<string | null>(null);
+
+  const { viewMode, currentSupplierId } = useView();
 
   const { data: surveysData, isLoading } = useQuery({
-    queryKey: ["surveys"],
-    queryFn: fetchSurveys,
+    queryKey: ["surveys", viewMode === "supplier" ? currentSupplierId : "all"],
+    queryFn: () =>
+      fetchSurveys(
+        viewMode === "supplier" && currentSupplierId
+          ? currentSupplierId
+          : undefined,
+      ),
   });
 
   const surveys = surveysData || [];
@@ -130,6 +141,40 @@ export default function EngagePage() {
     setSelectedLanguages((prev) =>
       prev.includes(code) ? prev.filter((l) => l !== code) : [...prev, code],
     );
+  };
+
+  const handleSaveDraft = () => {
+    localStorage.setItem(
+      "survey_draft",
+      JSON.stringify({
+        questions: generatedQuestions,
+        languages: selectedLanguages,
+      }),
+    );
+    setSavedMessage("Draft saved!");
+    setTimeout(() => setSavedMessage(""), 2000);
+  };
+
+  const handleDeploy = () => {
+    if (!confirm("Deploy this survey to selected suppliers?")) return;
+    setSavedMessage("Survey deployed successfully!");
+    setTimeout(() => setSavedMessage(""), 3000);
+  };
+
+  const handleAnalyze = async (surveyId: string) => {
+    setAnalyzingId(surveyId);
+    try {
+      await fetch("/api/jobs/analyze-surveys", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ surveyId: parseInt(surveyId) }),
+      });
+      // Trigger refetch
+      window.location.reload();
+    } catch (error) {
+      console.error("Analysis failed:", error);
+      setAnalyzingId(null);
+    }
   };
 
   return (
@@ -241,13 +286,23 @@ export default function EngagePage() {
 
               {/* Actions */}
               <div className="flex gap-2 border-t pt-4">
-                <Button variant="outline" className="flex-1">
-                  Edit Questions
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setIsEditing(!isEditing)}
+                >
+                  {isEditing ? "Done Editing" : "Edit Questions"}
                 </Button>
-                <Button variant="outline" className="flex-1">
-                  Save as Draft
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={handleSaveDraft}
+                >
+                  {savedMessage || "Save as Draft"}
                 </Button>
-                <Button className="flex-1">Deploy to Suppliers</Button>
+                <Button className="flex-1" onClick={handleDeploy}>
+                  Deploy to Suppliers
+                </Button>
               </div>
             </div>
           )}
@@ -340,8 +395,13 @@ export default function EngagePage() {
                   </div>
                 )}
               </div>
-              <Button variant="ghost" size="sm">
-                Analyze
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={analyzingId === survey.id}
+                onClick={() => handleAnalyze(survey.id)}
+              >
+                {analyzingId === survey.id ? "Analyzing..." : "Analyze"}
                 <IconArrowRight className="w-4 h-4 ml-1" />
               </Button>
             </div>

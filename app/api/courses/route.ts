@@ -4,26 +4,40 @@ import { Course } from "@/types";
 
 export async function GET() {
   try {
-    const result: any = await query(`
+    const result = (await query(`
       SELECT 
-        id, 
-        fullname, 
-        shortname, 
-        summary, 
-        timecreated 
-      FROM mdl_course 
-      WHERE id > 1 
-      ORDER BY timecreated DESC 
+        c.id, 
+        c.fullname, 
+        c.shortname, 
+        c.summary, 
+        c.timecreated,
+        (SELECT COUNT(*) FROM mdl_user_enrolments ue
+         JOIN mdl_enrol e ON ue.enrolid = e.id
+         WHERE e.courseid = c.id) as enrolled,
+        (SELECT COUNT(*) FROM mdl_course_completions cc
+         WHERE cc.course = c.id AND cc.timecompleted IS NOT NULL) as completed
+      FROM mdl_course c
+      WHERE c.id > 1 
+      ORDER BY c.timecreated DESC 
       LIMIT 20
-    `);
+    `)) as Array<{
+      id: number;
+      fullname: string;
+      shortname: string;
+      summary: string;
+      timecreated: number;
+      enrolled: number;
+      completed: number;
+    }>;
 
-    const courses: Course[] = result.map((row: any) => ({
+    const courses: Course[] = result.map((row) => ({
       id: String(row.id),
       title: row.fullname,
       description:
         row.summary?.replace(/<[^>]*>/g, "") || "No description available.",
-      enrollments: Math.floor(Math.random() * 1000) + 100, // Placeholder as enrollment count join is complex
-      completionRate: Math.floor(Math.random() * 100), // Placeholder
+      enrollments: row.enrolled || 0,
+      completionRate:
+        row.enrolled > 0 ? Math.round((row.completed / row.enrolled) * 100) : 0,
       aiStatus: "manual",
       aiGenerated: false,
       relevantFor: ["General Compliance"],

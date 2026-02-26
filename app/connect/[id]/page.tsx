@@ -46,6 +46,7 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
 
   const [aiSummary, setAiSummary] = useState<string>("");
   const [isLoadingSummary, setIsLoadingSummary] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   // Sync aiSummary with loaded case data
   const displaySummary = aiSummary || caseData?.aiSummary || "";
@@ -301,8 +302,18 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
                     <p className="text-sm text-muted-foreground italic">
                       &quot;{caseData.aiGuidance.draftResponse}&quot;
                     </p>
-                    <Button className="mt-4 w-full" variant="outline">
-                      Use This Response
+                    <Button
+                      className="mt-4 w-full"
+                      variant="outline"
+                      onClick={() => {
+                        navigator.clipboard.writeText(
+                          caseData.aiGuidance!.draftResponse || "",
+                        );
+                        setCopied(true);
+                        setTimeout(() => setCopied(false), 2000);
+                      }}
+                    >
+                      {copied ? "✓ Copied to Clipboard" : "Use This Response"}
                     </Button>
                   </CardContent>
                 </Card>
@@ -328,9 +339,13 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
                           className="flex items-center justify-between p-2 rounded-lg bg-muted/50"
                         >
                           <span className="text-sm">{training}</span>
-                          <Button size="sm" variant="ghost">
-                            Deploy
-                          </Button>
+                          <Link
+                            href={`/educate?topic=${encodeURIComponent(training)}`}
+                          >
+                            <Button size="sm" variant="ghost">
+                              Deploy
+                            </Button>
+                          </Link>
                         </div>
                       ))}
                     </CardContent>

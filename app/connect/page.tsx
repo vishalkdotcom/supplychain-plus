@@ -21,15 +21,23 @@ import {
 import { IconArrowRight, IconRobot, IconSearch } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchCases } from "@/lib/api";
+import { useView } from "@/components/view-context";
 
 export default function ConnectPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [supplierFilter, setSupplierFilter] = useState<string>("all");
   const [severityFilter, setSeverityFilter] = useState<string>("all");
 
+  const { viewMode, currentSupplierId } = useView();
+
   const { data: casesData, isLoading } = useQuery({
-    queryKey: ["cases"],
-    queryFn: fetchCases,
+    queryKey: ["cases", viewMode === "supplier" ? currentSupplierId : "all"],
+    queryFn: () =>
+      fetchCases(
+        viewMode === "supplier" && currentSupplierId
+          ? currentSupplierId
+          : undefined,
+      ),
   });
 
   const cases = casesData || [];

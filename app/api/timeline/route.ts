@@ -1,136 +1,142 @@
 import { NextResponse } from "next/server";
+import { query as sqlQuery } from "@/lib/db/sql-server";
+import { query as pgQuery } from "@/lib/db/postgres";
+import { query as mysqlQuery } from "@/lib/db/mysql";
 import { TimelineEvent } from "@/types";
-
-// TODO: Replace with real timeline aggregation from cases/surveys/training
-const TIMELINE_EVENTS: TimelineEvent[] = [
-  // Tiruppur Textiles story
-  {
-    id: "1",
-    supplierId: "1",
-    date: "2025-11-15",
-    type: "problem",
-    module: "connect",
-    title: "Overtime complaints surge",
-    description: "12 cases filed about unpaid overtime in sewing department",
-  },
-  {
-    id: "2",
-    supplierId: "1",
-    date: "2025-11-20",
-    type: "action",
-    module: "educate",
-    title: "Wage training deployed",
-    description: "Rolled out 'Wage & Hours 101' to all workers",
-  },
-  {
-    id: "3",
-    supplierId: "1",
-    date: "2025-12-10",
-    type: "outcome",
-    module: "engage",
-    title: "Survey shows improvement",
-    description: "Wage understanding questions improved by 20%",
-  },
-  {
-    id: "4",
-    supplierId: "1",
-    date: "2026-01-09",
-    type: "problem",
-    module: "connect",
-    title: "New overtime case filed",
-    description:
-      "Despite training, calculation issues persist - systemic problem suspected",
-  },
-  // Shenzhen story
-  {
-    id: "5",
-    supplierId: "4",
-    date: "2025-12-01",
-    type: "problem",
-    module: "connect",
-    title: "Harassment complaint filed",
-    description: "First report against Line 4 supervisor",
-  },
-  {
-    id: "6",
-    supplierId: "4",
-    date: "2025-12-20",
-    type: "alert",
-    module: "engage",
-    title: "Survey reveals widespread fear",
-    description: "68% of workers report fear of speaking up",
-  },
-  {
-    id: "7",
-    supplierId: "4",
-    date: "2026-01-05",
-    type: "action",
-    module: "system",
-    title: "Brand escalation",
-    description: "Elevated to GlobalWear compliance team for review",
-  },
-  {
-    id: "8",
-    supplierId: "4",
-    date: "2026-01-08",
-    type: "problem",
-    module: "connect",
-    title: "Additional harassment reports",
-    description: "4 more workers come forward with similar complaints",
-  },
-  // Ho Chi Minh success story
-  {
-    id: "9",
-    supplierId: "3",
-    date: "2025-06-01",
-    type: "problem",
-    module: "engage",
-    title: "Low engagement scores",
-    description: "Initial survey showed 45% satisfaction",
-  },
-  {
-    id: "10",
-    supplierId: "3",
-    date: "2025-07-15",
-    type: "action",
-    module: "educate",
-    title: "Comprehensive training program",
-    description:
-      "Launched supervisor communication training + worker rights modules",
-  },
-  {
-    id: "11",
-    supplierId: "3",
-    date: "2025-09-01",
-    type: "action",
-    module: "system",
-    title: "Monthly town halls started",
-    description: "Management commits to regular worker feedback sessions",
-  },
-  {
-    id: "12",
-    supplierId: "3",
-    date: "2025-12-20",
-    type: "outcome",
-    module: "engage",
-    title: "89% satisfaction achieved",
-    description: "Annual survey shows dramatic improvement",
-  },
-];
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const supplierId = searchParams.get("supplierId");
 
-  let events = TIMELINE_EVENTS;
-  if (supplierId) {
-    events = events.filter((e) => e.supplierId === supplierId);
+  const events: TimelineEvent[] = [];
+  let eventId = 1;
+
+  try {
+    // 1. Case events from SQL Server
+    try {
+      let caseWhere = "WHERE c.Deleted = 0";
+      if (supplierId) caseWhere += ` AND co.Id = ${parseInt(supplierId)}`;
+
+      const caseResult = await sqlQuery(`
+        SELECT TOP 20
+          c.Id, c.Name as Title, c.Created, c.Priority,
+          co.Id as CompanyId, co.Name as CompanyName,
+          csct.Name as StatusName, ctct.Name as TypeName
+        FROM [Case] c
+        LEFT JOIN Company co ON c.CompanyId = co.Id
+        LEFT JOIN CaseStatusCultureText csct ON c.CaseStatusId = csct.CaseStatusId AND csct.CultureCodeId = 1
+        LEFT JOIN CaseTypeCultureText ctct ON c.CaseTypeId = ctct.CaseTypeId AND ctct.CultureCodeId = 1
+        ${caseWhere}
+        ORDER BY c.Created DESC
+      `);
+
+      for (const row of caseResult.recordset) {
+        events.push({
+          id: String(eventId++),
+          supplierId: String(row.CompanyId || ""),
+          date: new Date(row.Created).toISOString().split("T")[0],
+          type: row.Priority === 1 ? "alert" : "problem",
+          module: "connect",
+          title: row.Title || `Case #${row.Id}`,
+          description: `${row.TypeName || "Case"} - ${row.StatusName || "Open"} (${row.Priority === 1 ? "High" : row.Priority === 2 ? "Medium" : "Low"} priority)`,
+        });
+      }
+    } catch {
+      // SQL Server may be unavailable
+    }
+
+    // 2. Survey events from PostgreSQL
+    try {
+      let surveyWhere = "";
+      if (supplierId)
+        surveyWhere = `WHERE c.client_key = '${parseInt(supplierId)}'`;
+
+      const surveyResult = await pgQuery(`
+        SELECT s.id, s.name, s.status, s.from_date, s.to_date,
+               c.client_key, c.name as client_name
+        FROM survey_mdlsurvey s
+        LEFT JOIN clients_clientinfo c ON s.client_id = c.id
+        ${surveyWhere}
+        ORDER BY s.created_date DESC
+        LIMIT 10
+      `);
+
+      for (const row of surveyResult.rows) {
+        const statusLabel =
+          row.status === 1 ? "Active" : row.status === 2 ? "Closed" : "Draft";
+        events.push({
+          id: String(eventId++),
+          supplierId: String(row.client_key || ""),
+          date: row.from_date
+            ? new Date(row.from_date).toISOString().split("T")[0]
+            : new Date().toISOString().split("T")[0],
+          type:
+            row.status === 2
+              ? "outcome"
+              : row.status === 1
+                ? "action"
+                : "action",
+          module: "engage",
+          title: row.name || "Survey",
+          description: `Survey ${statusLabel} - ${row.client_name || "Unknown supplier"}`,
+        });
+      }
+    } catch {
+      // PostgreSQL may be unavailable
+    }
+
+    // 3. Training events from MySQL
+    try {
+      const courseResult = (await mysqlQuery(`
+        SELECT c.id, c.fullname, c.timecreated,
+          (SELECT COUNT(*) FROM mdl_user_enrolments ue
+           JOIN mdl_enrol e ON ue.enrolid = e.id
+           WHERE e.courseid = c.id) as enrolled
+        FROM mdl_course c
+        WHERE c.id > 1
+        ORDER BY c.timecreated DESC
+        LIMIT 10
+      `)) as Array<{
+        id: number;
+        fullname: string;
+        timecreated: number;
+        enrolled: number;
+      }>;
+
+      for (const row of courseResult) {
+        events.push({
+          id: String(eventId++),
+          supplierId: "", // Courses are global
+          date: new Date(row.timecreated * 1000).toISOString().split("T")[0],
+          type: "action",
+          module: "educate",
+          title: `Training: ${row.fullname}`,
+          description: `Course deployed with ${row.enrolled || 0} enrollments`,
+        });
+      }
+    } catch {
+      // MySQL may be unavailable
+    }
+
+    // Filter by supplier if needed
+    let filteredEvents = events;
+    if (supplierId) {
+      filteredEvents = events.filter(
+        (e) => e.supplierId === supplierId || e.supplierId === "",
+      );
+    }
+
+    // Sort by date descending
+    filteredEvents.sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+    );
+
+    return NextResponse.json(filteredEvents.slice(0, 30));
+  } catch (error) {
+    console.error("Error fetching timeline:", error);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 },
+    );
   }
-
-  // Sort newest first
-  events.sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
-  );
-
-  return NextResponse.json(events);
 }

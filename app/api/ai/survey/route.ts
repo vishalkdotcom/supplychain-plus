@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
-import { llmService } from "@/lib/llm-service";
+import { generateText, Output } from "ai";
+import { model } from "@/lib/ai/provider";
+import { surveyQuestionSchema } from "@/lib/ai/schemas";
+import { SURVEY_GENERATION_PROMPT } from "@/lib/ai/prompts";
 
 export async function POST(request: Request) {
   try {
@@ -12,8 +15,14 @@ export async function POST(request: Request) {
       );
     }
 
-    const questions = await llmService.generateSurveyQuestions(prompt);
-    return NextResponse.json({ questions });
+    const { output } = await generateText({
+      model,
+      system: SURVEY_GENERATION_PROMPT,
+      prompt,
+      output: Output.array({ element: surveyQuestionSchema }),
+    });
+
+    return NextResponse.json({ questions: output || [] });
   } catch (error) {
     console.error("API Error in survey generation:", error);
     return NextResponse.json(

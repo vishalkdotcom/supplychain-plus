@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -60,6 +60,8 @@ const PIPELINE_STEPS: { key: PipelineStatus; label: string }[] = [
 export default function EducatePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isDragging, setIsDragging] = useState(false);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: coursesData, isLoading: isCoursesLoading } = useQuery({
     queryKey: ["courses"],
@@ -147,20 +149,39 @@ export default function EducatePage() {
           onDrop={(e) => {
             e.preventDefault();
             setIsDragging(false);
-            // Mock upload handling
+            const file = e.dataTransfer.files[0];
+            if (file && file.type === "application/pdf") {
+              setUploadedFile(file);
+            }
           }}
         >
           <CardContent className="flex flex-col items-center justify-center h-[200px] gap-4">
             <div className="p-4 rounded-full bg-indigo-100">
               <IconUpload className="w-8 h-8 text-indigo-600" />
             </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) setUploadedFile(file);
+              }}
+            />
             <div className="text-center">
-              <h3 className="font-semibold text-lg">Drop Policy PDF Here</h3>
+              <h3 className="font-semibold text-lg">
+                {uploadedFile ? uploadedFile.name : "Drop Policy PDF Here"}
+              </h3>
               <p className="text-sm text-muted-foreground">
-                AI will generate lessons, quizzes, and translations.
+                {uploadedFile
+                  ? `${(uploadedFile.size / 1024).toFixed(0)} KB — Ready for processing`
+                  : "AI will generate lessons, quizzes, and translations."}
               </p>
             </div>
-            <Button>Select File</Button>
+            <Button onClick={() => fileInputRef.current?.click()}>
+              {uploadedFile ? "Change File" : "Select File"}
+            </Button>
           </CardContent>
         </Card>
 
