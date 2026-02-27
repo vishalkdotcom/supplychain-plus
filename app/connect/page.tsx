@@ -12,6 +12,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import {
   Card,
   CardContent,
   CardDescription,
@@ -27,6 +35,9 @@ export default function ConnectPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [supplierFilter, setSupplierFilter] = useState<string>("all");
   const [severityFilter, setSeverityFilter] = useState<string>("all");
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8; // Showing 8 cases per page
 
   const { viewMode, currentSupplierId } = useView();
 
@@ -54,6 +65,12 @@ export default function ConnectPage() {
       severityFilter === "all" || c.severity === severityFilter;
     return matchesSearch && matchesSupplier && matchesSeverity;
   });
+
+  const totalPages = Math.ceil(filteredCases.length / itemsPerPage);
+  const paginatedCases = filteredCases.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage,
+  );
 
   if (isLoading) {
     return (
@@ -92,11 +109,20 @@ export default function ConnectPage() {
           <Input
             placeholder="Search cases..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setCurrentPage(1);
+            }}
             className="pl-9"
           />
         </div>
-        <Select value={supplierFilter} onValueChange={setSupplierFilter}>
+        <Select
+          value={supplierFilter}
+          onValueChange={(val) => {
+            setSupplierFilter(val);
+            setCurrentPage(1);
+          }}
+        >
           <SelectTrigger className="w-[200px]">
             <SelectValue placeholder="All Suppliers" />
           </SelectTrigger>
@@ -109,7 +135,13 @@ export default function ConnectPage() {
             ))}
           </SelectContent>
         </Select>
-        <Select value={severityFilter} onValueChange={setSeverityFilter}>
+        <Select
+          value={severityFilter}
+          onValueChange={(val) => {
+            setSeverityFilter(val);
+            setCurrentPage(1);
+          }}
+        >
           <SelectTrigger className="w-[150px]">
             <SelectValue placeholder="All Severity" />
           </SelectTrigger>
@@ -134,7 +166,7 @@ export default function ConnectPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          {filteredCases.map((c) => (
+          {paginatedCases.map((c) => (
             <Link
               key={c.id}
               href={`/connect/${c.id}`}
@@ -170,6 +202,50 @@ export default function ConnectPage() {
             <p className="text-center py-8 text-muted-foreground">
               No cases match your filters.
             </p>
+          )}
+
+          {totalPages > 1 && (
+            <div className="pt-4 border-t">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      className={
+                        currentPage === 1
+                          ? "pointer-events-none opacity-50"
+                          : "cursor-pointer"
+                      }
+                    />
+                  </PaginationItem>
+
+                  {Array.from({ length: totalPages }).map((_, i) => (
+                    <PaginationItem key={i}>
+                      <PaginationLink
+                        onClick={() => setCurrentPage(i + 1)}
+                        isActive={currentPage === i + 1}
+                        className="cursor-pointer"
+                      >
+                        {i + 1}
+                      </PaginationLink>
+                    </PaginationItem>
+                  ))}
+
+                  <PaginationItem>
+                    <PaginationNext
+                      onClick={() =>
+                        setCurrentPage((p) => Math.min(totalPages, p + 1))
+                      }
+                      className={
+                        currentPage === totalPages
+                          ? "pointer-events-none opacity-50"
+                          : "cursor-pointer"
+                      }
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
           )}
         </CardContent>
       </Card>

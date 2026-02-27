@@ -19,6 +19,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   IconArrowRight,
@@ -60,6 +68,9 @@ export default function EngagePage() {
   const [generateError, setGenerateError] = useState("");
   const queryClient = useQueryClient();
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8; // Showing 8 surveys per page
+
   const { viewMode, currentSupplierId } = useView();
 
   const { data: surveysData, isLoading } = useQuery({
@@ -83,6 +94,12 @@ export default function EngagePage() {
       supplierFilter === "all" || s.supplierName === supplierFilter;
     return matchesSearch && matchesSupplier;
   });
+
+  const totalPages = Math.ceil(filteredSurveys.length / itemsPerPage);
+  const paginatedSurveys = filteredSurveys.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage,
+  );
 
   const [generatedQuestions, setGeneratedQuestions] = useState<
     GeneratedQuestion[]
@@ -304,11 +321,20 @@ export default function EngagePage() {
           <Input
             placeholder="Search surveys..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setCurrentPage(1);
+            }}
             className="pl-9"
           />
         </div>
-        <Select value={supplierFilter} onValueChange={setSupplierFilter}>
+        <Select
+          value={supplierFilter}
+          onValueChange={(val) => {
+            setSupplierFilter(val);
+            setCurrentPage(1);
+          }}
+        >
           <SelectTrigger className="w-[200px]">
             <SelectValue placeholder="All Suppliers" />
           </SelectTrigger>
@@ -336,7 +362,7 @@ export default function EngagePage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          {filteredSurveys.map((survey) => (
+          {paginatedSurveys.map((survey) => (
             <div
               key={survey.id}
               className="flex items-start justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors"
@@ -394,6 +420,50 @@ export default function EngagePage() {
               </Button>
             </div>
           ))}
+
+          {totalPages > 1 && (
+            <div className="pt-4 border-t">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      className={
+                        currentPage === 1
+                          ? "pointer-events-none opacity-50"
+                          : "cursor-pointer"
+                      }
+                    />
+                  </PaginationItem>
+
+                  {Array.from({ length: totalPages }).map((_, i) => (
+                    <PaginationItem key={i}>
+                      <PaginationLink
+                        onClick={() => setCurrentPage(i + 1)}
+                        isActive={currentPage === i + 1}
+                        className="cursor-pointer"
+                      >
+                        {i + 1}
+                      </PaginationLink>
+                    </PaginationItem>
+                  ))}
+
+                  <PaginationItem>
+                    <PaginationNext
+                      onClick={() =>
+                        setCurrentPage((p) => Math.min(totalPages, p + 1))
+                      }
+                      className={
+                        currentPage === totalPages
+                          ? "pointer-events-none opacity-50"
+                          : "cursor-pointer"
+                      }
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -19,6 +19,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import { toast } from "sonner";
 import {
   IconAlertTriangle,
@@ -60,6 +68,9 @@ export default function EducatePage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [pipelineItems, setPipelineItems] = useState<PipelineItem[]>([]);
   const [previewItem, setPreviewItem] = useState<PipelineItem | null>(null);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8; // Showing 8 courses per page
 
   const showToast = useCallback((msg: string) => {
     toast(msg);
@@ -163,6 +174,12 @@ export default function EducatePage() {
       c.relevantFor.some((tag) =>
         tag.toLowerCase().includes(searchQuery.toLowerCase()),
       ),
+  );
+
+  const totalPages = Math.ceil(filteredCourses.length / itemsPerPage);
+  const paginatedCourses = filteredCourses.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage,
   );
 
   if (isCoursesLoading || isSuppliersLoading || isRecommendationsLoading) {
@@ -419,7 +436,10 @@ export default function EducatePage() {
         <Input
           placeholder="Search courses..."
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          onChange={(e) => {
+            setSearchQuery(e.target.value);
+            setCurrentPage(1);
+          }}
           className="pl-9"
         />
       </div>
@@ -433,7 +453,7 @@ export default function EducatePage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          {filteredCourses.map((course) => (
+          {paginatedCourses.map((course) => (
             <div
               key={course.id}
               className="flex items-start justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors"
@@ -480,6 +500,50 @@ export default function EducatePage() {
               </Button>
             </div>
           ))}
+
+          {totalPages > 1 && (
+            <div className="pt-4 border-t">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      className={
+                        currentPage === 1
+                          ? "pointer-events-none opacity-50"
+                          : "cursor-pointer"
+                      }
+                    />
+                  </PaginationItem>
+
+                  {Array.from({ length: totalPages }).map((_, i) => (
+                    <PaginationItem key={i}>
+                      <PaginationLink
+                        onClick={() => setCurrentPage(i + 1)}
+                        isActive={currentPage === i + 1}
+                        className="cursor-pointer"
+                      >
+                        {i + 1}
+                      </PaginationLink>
+                    </PaginationItem>
+                  ))}
+
+                  <PaginationItem>
+                    <PaginationNext
+                      onClick={() =>
+                        setCurrentPage((p) => Math.min(totalPages, p + 1))
+                      }
+                      className={
+                        currentPage === totalPages
+                          ? "pointer-events-none opacity-50"
+                          : "cursor-pointer"
+                      }
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          )}
         </CardContent>
       </Card>
 

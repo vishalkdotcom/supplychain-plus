@@ -10,6 +10,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import { SupplierCard } from "@/components/suppliers/supplier-card";
 import { useQuery } from "@tanstack/react-query";
 import { fetchSuppliers } from "@/lib/api";
@@ -19,6 +27,9 @@ export default function SuppliersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [regionFilter, setRegionFilter] = useState<string>("all");
   const [riskFilter, setRiskFilter] = useState<string>("all");
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 12; // Showing 12 suppliers per page for grid layout
 
   const { data: suppliersData, isLoading } = useQuery({
     queryKey: ["suppliers"],
@@ -38,6 +49,12 @@ export default function SuppliersPage() {
       riskFilter === "all" || supplier.riskLevel === riskFilter;
     return matchesSearch && matchesRegion && matchesRisk;
   });
+
+  const totalPages = Math.ceil(filteredSuppliers.length / itemsPerPage);
+  const paginatedSuppliers = filteredSuppliers.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage,
+  );
 
   if (isLoading) {
     return (
@@ -65,11 +82,20 @@ export default function SuppliersPage() {
           <Input
             placeholder="Search suppliers..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setCurrentPage(1);
+            }}
             className="pl-9"
           />
         </div>
-        <Select value={regionFilter} onValueChange={setRegionFilter}>
+        <Select
+          value={regionFilter}
+          onValueChange={(val) => {
+            setRegionFilter(val);
+            setCurrentPage(1);
+          }}
+        >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="All Regions" />
           </SelectTrigger>
@@ -82,7 +108,13 @@ export default function SuppliersPage() {
             ))}
           </SelectContent>
         </Select>
-        <Select value={riskFilter} onValueChange={setRiskFilter}>
+        <Select
+          value={riskFilter}
+          onValueChange={(val) => {
+            setRiskFilter(val);
+            setCurrentPage(1);
+          }}
+        >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="All Risk Levels" />
           </SelectTrigger>
@@ -102,12 +134,56 @@ export default function SuppliersPage() {
 
       {/* Supplier Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {filteredSuppliers.map((supplier) => (
+        {paginatedSuppliers.map((supplier) => (
           <Link key={supplier.id} href={`/suppliers/${supplier.id}`}>
             <SupplierCard supplier={supplier} />
           </Link>
         ))}
       </div>
+
+      {totalPages > 1 && (
+        <div className="pt-4">
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  className={
+                    currentPage === 1
+                      ? "pointer-events-none opacity-50"
+                      : "cursor-pointer"
+                  }
+                />
+              </PaginationItem>
+
+              {Array.from({ length: totalPages }).map((_, i) => (
+                <PaginationItem key={i}>
+                  <PaginationLink
+                    onClick={() => setCurrentPage(i + 1)}
+                    isActive={currentPage === i + 1}
+                    className="cursor-pointer"
+                  >
+                    {i + 1}
+                  </PaginationLink>
+                </PaginationItem>
+              ))}
+
+              <PaginationItem>
+                <PaginationNext
+                  onClick={() =>
+                    setCurrentPage((p) => Math.min(totalPages, p + 1))
+                  }
+                  className={
+                    currentPage === totalPages
+                      ? "pointer-events-none opacity-50"
+                      : "cursor-pointer"
+                  }
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      )}
 
       {/* Empty state */}
       {filteredSuppliers.length === 0 && (
