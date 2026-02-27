@@ -141,12 +141,17 @@ export default function AIAssistantPage() {
               <div className="space-y-3">
                 {message.parts.map((part, index) => {
                   if (part.type === "text") {
+                    // Strip leaked <think>...</think> tags from NIM models
+                    const cleanText = part.text
+                      .replace(/<think>[\s\S]*?<\/think>\s*/gi, "")
+                      .trim();
+                    if (!cleanText) return null;
                     return (
                       <div
                         key={index}
                         className="prose prose-sm max-w-none text-sm whitespace-pre-wrap"
                       >
-                        {part.text}
+                        {cleanText}
                       </div>
                     );
                   }

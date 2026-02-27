@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useCallback } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import {
@@ -30,7 +30,7 @@ import {
   IconSparkles,
   IconUser,
 } from "@tabler/icons-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchCase } from "@/lib/api";
 
 interface CaseDetailPageProps {
@@ -39,6 +39,7 @@ interface CaseDetailPageProps {
 
 export default function CaseDetailPage({ params }: CaseDetailPageProps) {
   const { id } = use(params);
+  const queryClient = useQueryClient();
   const { data: caseData, isLoading } = useQuery({
     queryKey: ["cases", id],
     queryFn: () => fetchCase(id),
@@ -46,10 +47,49 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
 
   const [aiSummary, setAiSummary] = useState<string>("");
   const [isLoadingSummary, setIsLoadingSummary] = useState(false);
+  const [summaryError, setSummaryError] = useState<string>("");
   const [copied, setCopied] = useState(false);
 
   // Sync aiSummary with loaded case data
   const displaySummary = aiSummary || caseData?.aiSummary || "";
+
+  const handleGenerateSummary = useCallback(async () => {
+    if (!caseData) return;
+
+    // Guard: don't call AI with empty content
+    const content = caseData?.fullContent?.trim();
+    if (!content || content === "No content." || content.length < 10) {
+      setSummaryError(
+        "Cannot generate summary — the case has no worker message content.",
+      );
+      return;
+    }
+
+    setIsLoadingSummary(true);
+    setSummaryError("");
+    try {
+      const response = await fetch("/api/ai/summarize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ caseId: caseData.id, caseText: content }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setSummaryError(data.error || "Failed to generate summary.");
+        return;
+      }
+      if (data.summary) {
+        setAiSummary(data.summary);
+        // Invalidate the case query so the cached summary loads on next visit
+        queryClient.invalidateQueries({ queryKey: ["cases", id] });
+      }
+    } catch (error) {
+      console.error("Failed to generate summary:", error);
+      setSummaryError("Network error — could not reach the AI service.");
+    } finally {
+      setIsLoadingSummary(false);
+    }
+  }, [caseData, id, queryClient]);
 
   if (isLoading) {
     return (
@@ -84,25 +124,6 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
         return "default" as const;
       default:
         return "secondary" as const;
-    }
-  };
-
-  const handleGenerateSummary = async () => {
-    setIsLoadingSummary(true);
-    try {
-      const response = await fetch("/api/ai/summarize", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ caseText: caseData.fullContent }),
-      });
-      const data = await response.json();
-      if (data.summary) {
-        setAiSummary(data.summary);
-      }
-    } catch (error) {
-      console.error("Failed to generate summary:", error);
-    } finally {
-      setIsLoadingSummary(false);
     }
   };
 
@@ -234,6 +255,8 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
                 <div className="flex items-center justify-center py-4">
                   <div className="animate-spin h-5 w-5 border-2 border-indigo-600 border-t-transparent rounded-full"></div>
                 </div>
+              ) : summaryError ? (
+                <p className="text-sm text-red-600">{summaryError}</p>
               ) : (
                 <p className="text-sm">{displaySummary}</p>
               )}

@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { getPool } from "@/lib/db/sql-server";
 import { Case } from "@/types";
+import { db } from "@/lib/db/drizzle";
+import { caseSummaryCache } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 
 export async function GET(
   request: Request,
@@ -34,6 +37,24 @@ export async function GET(
     }
 
     const row = result.recordset[0];
+
+    // Check the AI cache for a previously generated summary & guidance
+    let cachedSummary: string | null = null;
+    let cachedGuidance = null;
+    try {
+      const cached = await db
+        .select()
+        .from(caseSummaryCache)
+        .where(eq(caseSummaryCache.caseId, String(row.Id)))
+        .limit(1);
+      if (cached.length > 0) {
+        cachedSummary = cached[0].aiSummary || null;
+        cachedGuidance = cached[0].aiGuidance || null;
+      }
+    } catch {
+      // Cache lookup failure is non-fatal — fall back to default
+    }
+
     const caseData: Case = {
       id: String(row.Id),
       supplierId: String(row.CompanyId),
@@ -42,9 +63,11 @@ export async function GET(
       severity:
         row.Priority === 1 ? "high" : row.Priority === 2 ? "medium" : "low",
       status: mapStatus(row.StatusName),
-      aiSummary: row.FirstMessage
-        ? row.FirstMessage.substring(0, 150) + "..."
-        : "No content available.",
+      aiSummary:
+        cachedSummary ||
+        (row.FirstMessage
+          ? row.FirstMessage.substring(0, 150) + "..."
+          : "No content available."),
       fullContent: row.FirstMessage || row.Title || "No content.",
       createdAt: row.Created
         ? new Date(row.Created).toISOString().split("T")[0]
@@ -52,7 +75,7 @@ export async function GET(
       updatedAt: row.Modified
         ? new Date(row.Modified).toISOString().split("T")[0]
         : "",
-      aiGuidance: {
+      aiGuidance: cachedGuidance || {
         recommendedSteps: ["Review case details", "Contact supplier"],
         estimatedResolutionDays: 7,
       },

@@ -5,14 +5,22 @@ import { CASE_SUMMARY_PROMPT } from "@/lib/ai/prompts";
 import { db } from "@/lib/db/drizzle";
 import { caseSummaryCache } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { stripThinkingTags } from "@/lib/ai/utils";
 
 export async function POST(request: Request) {
   try {
     const { caseId, caseText } = await request.json();
 
-    if (!caseText) {
+    if (
+      !caseText ||
+      typeof caseText !== "string" ||
+      caseText.trim().length < 10
+    ) {
       return NextResponse.json(
-        { error: "Case text is required" },
+        {
+          error:
+            "Case text is too short or missing. A meaningful worker message is needed to generate a summary.",
+        },
         { status: 400 },
       );
     }
@@ -31,11 +39,15 @@ export async function POST(request: Request) {
     }
 
     // Generate via AI SDK
-    const { text } = await generateText({
+    const { text: rawText } = await generateText({
       model,
       system: CASE_SUMMARY_PROMPT,
       prompt: caseText,
+      maxOutputTokens: 150,
     });
+
+    // Strip leaked reasoning tags (e.g. <think>...</think> from NIM models)
+    const text = stripThinkingTags(rawText);
 
     // Cache result
     if (caseId) {
