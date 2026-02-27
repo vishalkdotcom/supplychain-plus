@@ -18,8 +18,7 @@ export async function GET() {
         c.name as client_name,
         c.client_key,
         (SELECT COUNT(*) FROM survey_mdlsurveyquestionresponses r 
-         JOIN survey_mdlsurveyquestion q ON r.question_id = q.id
-         WHERE q.survey_id = s.id) as response_count
+         WHERE r.survey_id = s.id) as response_count
       FROM survey_mdlsurvey s
       LEFT JOIN clients_clientinfo c ON s.client_id = c.id
       ORDER BY s.created_date DESC
@@ -27,21 +26,21 @@ export async function GET() {
     `);
 
     // Fetch analysis data from Drizzle (wovo_ai)
-    const surveyIds = result.rows.map((r: { id: number }) => r.id) as number[];
+    const surveyIds = result.rows.map((r: { id: string }) => r.id);
     let analyses: (typeof surveyAnalysis.$inferSelect)[] = [];
     if (surveyIds.length > 0) {
       analyses = await db
         .select()
         .from(surveyAnalysis)
         .where(
-          sql`${surveyAnalysis.surveyId} = ANY(ARRAY[${sql.raw(surveyIds.join(","))}]::int[])`,
+          sql`${surveyAnalysis.surveyId} = ANY(ARRAY[${sql.raw(surveyIds.map((id) => `'${id}'`).join(","))}]::text[])`,
         );
     }
     const analysisMap = new Map(analyses.map((a) => [a.surveyId, a]));
 
     const surveys: Survey[] = result.rows.map(
       (row: {
-        id: number;
+        id: string;
         client_key: string;
         client_id: number;
         client_name: string;

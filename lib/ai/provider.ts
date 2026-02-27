@@ -24,12 +24,9 @@ function buildModels() {
         headers: { Authorization: `Bearer ${process.env.NIM_API_KEY}` },
       });
       return {
-        model: wrapLanguageModel({
-          model: nim.chatModel("minimaxai/minimax-m2.5"),
-          middleware: thinkingMiddleware,
-        }),
+        model: nim.chatModel("deepseek-ai/deepseek-v3.1"),
         strongModel: wrapLanguageModel({
-          model: nim.chatModel("z-ai/glm5"),
+          model: nim.chatModel("moonshotai/kimi-k2.5"),
           middleware: thinkingMiddleware,
         }),
       };

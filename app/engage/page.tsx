@@ -169,7 +169,7 @@ export default function EngagePage() {
       await fetch("/api/jobs/analyze-surveys", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ surveyId: parseInt(surveyId) }),
+        body: JSON.stringify({ surveyId }),
       });
       queryClient.invalidateQueries({ queryKey: ["surveys"] });
     } catch (error) {

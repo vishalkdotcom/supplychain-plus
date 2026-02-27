@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { generateText, Output } from "ai";
+import { generateText } from "ai";
 import { model } from "@/lib/ai/provider";
 import { db } from "@/lib/db/drizzle";
 import { surveyAnalysis } from "@/lib/db/schema";
 import { query as pgQuery } from "@/lib/db/postgres";
-import { eq } from "drizzle-orm";
+
 import { z } from "zod";
 
 const surveyAnalysisSchema = z.object({
@@ -25,18 +25,21 @@ const surveyAnalysisSchema = z.object({
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({}));
-    const targetSurveyId = body?.surveyId as number | undefined;
+    const targetSurveyId = body?.surveyId as string | undefined;
 
     // Get surveys to analyze
     let surveyQuery = `
-      SELECT s.id, s.name, q.description as question_text,
-             r.response_text
+      SELECT s.id, s.name, q.title as question_text,
+             r.text_response as response_text,
+             opt.label as option_label
       FROM survey_mdlsurvey s
-      JOIN survey_mdlsurveyquestion q ON q.survey_id = s.id
-      LEFT JOIN survey_mdlsurveyquestionresponses r ON r.question_id = q.id
+      JOIN survey_mdlsurvey_questions sq ON sq.mdlsurvey_id = s.id
+      JOIN survey_mdlsurveyquestions q ON q.id = sq.mdlsurveyquestions_id
+      LEFT JOIN survey_mdlsurveyquestionresponses r ON r.survey_question_id = q.id AND r.survey_id = s.id
+      LEFT JOIN survey_mdlsurveyquestionoptions opt ON opt.id = r.question_option_id
     `;
     if (targetSurveyId) {
-      surveyQuery += ` WHERE s.id = ${targetSurveyId}`;
+      surveyQuery += ` WHERE s.id = '${targetSurveyId}'`;
     }
     surveyQuery += ` ORDER BY s.id, q.id LIMIT 500`;
 
@@ -44,18 +47,20 @@ export async function POST(request: Request) {
 
     // Group responses by survey
     const surveyResponses = new Map<
-      number,
+      string,
       { name: string; responses: string[] }
     >();
     for (const row of result.rows) {
       if (!surveyResponses.has(row.id)) {
         surveyResponses.set(row.id, { name: row.name, responses: [] });
       }
-      if (row.response_text) {
+      // Use text_response if available, otherwise fall back to option label
+      const answerText = row.response_text?.trim() || row.option_label || null;
+      if (answerText) {
         surveyResponses
           .get(row.id)!
           .responses.push(
-            `Q: ${row.question_text || "Question"}\nA: ${row.response_text}`,
+            `Q: ${row.question_text || "Question"}\nA: ${answerText}`,
           );
       }
     }
@@ -67,16 +72,32 @@ export async function POST(request: Request) {
 
       const responseText = data.responses.slice(0, 50).join("\n---\n");
 
-      const { output } = await generateText({
+      const { text } = await generateText({
         model,
-        prompt: `Analyze these factory worker survey responses and provide a structured analysis:
+        prompt: `Analyze these factory worker survey responses and provide a structured analysis.
+Return ONLY valid JSON with exactly this shape (no markdown, no explanation):
+{
+  "sentimentPositive": <number 0-100>,
+  "sentimentNegative": <number 0-100>,
+  "sentimentNeutral": <number 0-100>,
+  "riskScore": <number 0-100>,
+  "themes": [{"name": "<string>", "sentiment": "positive"|"negative"|"neutral", "mentionCount": <number>}],
+  "insight": "<one-paragraph summary of key findings>"
+}
 
 Survey: "${data.name}"
 ${responseText}`,
-        output: Output.object({ schema: surveyAnalysisSchema }),
       });
 
-      if (output) {
+      // Parse JSON from model response (strip markdown fences if present)
+      const jsonStr = text
+        .replace(/```(?:json)?\s*/g, "")
+        .replace(/```/g, "")
+        .trim();
+      const parsed = surveyAnalysisSchema.safeParse(JSON.parse(jsonStr));
+
+      if (parsed.success) {
+        const output = parsed.data;
         await db
           .insert(surveyAnalysis)
           .values({
@@ -104,6 +125,11 @@ ${responseText}`,
           });
 
         processedCount++;
+      } else {
+        console.warn(
+          `Schema validation failed for survey ${surveyId}:`,
+          parsed.error.issues,
+        );
       }
     }
 

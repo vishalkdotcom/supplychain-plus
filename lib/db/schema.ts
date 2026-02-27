@@ -52,9 +52,7 @@ export const supplierRiskScores = pgTable(
       .defaultNow()
       .notNull(),
   },
-  (table) => [
-    uniqueIndex("idx_risk_supplier_id").on(table.supplierId),
-  ]
+  (table) => [uniqueIndex("idx_risk_supplier_id").on(table.supplierId)],
 );
 // ===============================
 // Supplier Risk History (for trends)
@@ -74,10 +72,10 @@ export const supplierRiskHistory = pgTable(
   (table) => [
     uniqueIndex("idx_history_supplier_date").on(
       table.supplierId,
-      table.snapshotDate
+      table.snapshotDate,
     ),
     index("idx_history_date").on(table.snapshotDate),
-  ]
+  ],
 );
 // ===============================
 // Alerts
@@ -101,7 +99,7 @@ export const alerts = pgTable(
   (table) => [
     index("idx_alerts_supplier").on(table.supplierId),
     index("idx_alerts_unread").on(table.isRead),
-  ]
+  ],
 );
 // ===============================
 // Survey Analysis Cache
@@ -110,7 +108,7 @@ export const surveyAnalysis = pgTable(
   "survey_analysis",
   {
     id: serial("id").primaryKey(),
-    surveyId: integer("survey_id").notNull().unique(),
+    surveyId: varchar("survey_id", { length: 50 }).notNull().unique(),
     responseCount: integer("response_count").default(0),
     sentimentPositive: real("sentiment_positive").default(0),
     sentimentNegative: real("sentiment_negative").default(0),
@@ -122,7 +120,7 @@ export const surveyAnalysis = pgTable(
       .defaultNow()
       .notNull(),
   },
-  (table) => [index("idx_survey_analysis_survey").on(table.surveyId)]
+  (table) => [index("idx_survey_analysis_survey").on(table.surveyId)],
 );
 // ===============================
 // Case Summary & Guidance Cache
@@ -138,7 +136,7 @@ export const caseSummaryCache = pgTable(
       .defaultNow()
       .notNull(),
   },
-  (table) => [uniqueIndex("idx_case_cache_id").on(table.caseId)]
+  (table) => [uniqueIndex("idx_case_cache_id").on(table.caseId)],
 );
 // ===============================
 // AI Chat History
@@ -158,5 +156,5 @@ export const aiChatHistory = pgTable(
   (table) => [
     index("idx_chat_session").on(table.sessionId),
     index("idx_chat_created").on(table.createdAt),
-  ]
+  ],
 );
