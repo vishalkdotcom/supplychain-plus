@@ -13,6 +13,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { toast } from "sonner";
+import {
   IconAlertTriangle,
   IconArrowRight,
   IconCheck,
@@ -51,12 +59,10 @@ export default function EducatePage() {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [pipelineItems, setPipelineItems] = useState<PipelineItem[]>([]);
-  const [actionMessage, setActionMessage] = useState("");
   const [previewItem, setPreviewItem] = useState<PipelineItem | null>(null);
 
   const showToast = useCallback((msg: string) => {
-    setActionMessage(msg);
-    setTimeout(() => setActionMessage(""), 3000);
+    toast(msg);
   }, []);
 
   // Simulate pipeline processing after file upload
@@ -477,61 +483,46 @@ export default function EducatePage() {
         </CardContent>
       </Card>
 
-      {/* Action toast */}
-      {actionMessage && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-lg bg-gray-900 text-white text-sm shadow-lg">
-          {actionMessage}
-        </div>
-      )}
-
       {/* Preview dialog */}
-      {previewItem && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <Card className="max-w-lg w-full">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>{previewItem.title}</CardTitle>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setPreviewItem(null)}
-                >
-                  ✕
-                </Button>
-              </div>
-              <CardDescription>
-                Generated from {previewItem.sourceFile}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <p className="text-sm text-muted-foreground">
-                This is a demo preview. In production, the full generated course
-                content (lessons, quizzes, translations) would appear here.
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => setPreviewItem(null)}
-                >
-                  Close
-                </Button>
-                <Button
-                  className="flex-1"
-                  onClick={() => {
-                    showToast(
-                      `Demo mode — "${previewItem.title}" publish coming soon.`,
-                    );
-                    setPreviewItem(null);
-                  }}
-                >
-                  Publish
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+      <Dialog
+        open={previewItem !== null}
+        onOpenChange={(isOpen) => !isOpen && setPreviewItem(null)}
+      >
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{previewItem?.title}</DialogTitle>
+            <DialogDescription>
+              Generated from {previewItem?.sourceFile}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <p className="text-sm text-muted-foreground">
+              This is a demo preview. In production, the full generated course
+              content (lessons, quizzes, translations) would appear here.
+            </p>
+          </div>
+          <div className="flex gap-2 justify-end w-full">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => setPreviewItem(null)}
+            >
+              Close
+            </Button>
+            <Button
+              className="flex-1"
+              onClick={() => {
+                showToast(
+                  `Demo mode — "${previewItem?.title}" publish coming soon.`,
+                );
+                setPreviewItem(null);
+              }}
+            >
+              Publish
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

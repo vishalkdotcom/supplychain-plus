@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 import { QueryProvider } from "@/components/providers/query-provider";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { ViewProvider } from "@/components/view-context";
 import { AppHeader } from "@/components/app-header";
@@ -23,6 +23,8 @@ export const metadata: Metadata = {
   title: "WOVO AI Control Center",
   description: "Cross-module intelligence for supply chain management",
 };
+
+import { Toaster } from "@/components/ui/sonner";
 
 export default function RootLayout({
   children,
@@ -47,6 +49,7 @@ export default function RootLayout({
             </SidebarProvider>
           </ViewProvider>
         </QueryProvider>
+        <Toaster />
       </body>
     </html>
   );

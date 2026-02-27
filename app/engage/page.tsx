@@ -30,6 +30,7 @@ import {
 } from "@tabler/icons-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchSurveys } from "@/lib/api";
+import { toast } from "sonner";
 
 interface GeneratedQuestion {
   id: number;
@@ -54,7 +55,7 @@ export default function EngagePage() {
   const [showPreview, setShowPreview] = useState(false);
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>(["en"]);
   const [isEditing, setIsEditing] = useState(false);
-  const [savedMessage, setSavedMessage] = useState("");
+  // Removed custom savedMessage toast
   const [analyzingId, setAnalyzingId] = useState<string | null>(null);
   const [generateError, setGenerateError] = useState("");
   const queryClient = useQueryClient();
@@ -138,13 +139,11 @@ export default function EngagePage() {
         languages: selectedLanguages,
       }),
     );
-    setSavedMessage("Draft saved locally ✓");
-    setTimeout(() => setSavedMessage(""), 2000);
+    toast("Draft saved locally ✓");
   };
 
   const handleDeploy = () => {
-    setSavedMessage("Demo mode — deployment coming in a future release.");
-    setTimeout(() => setSavedMessage(""), 3000);
+    toast("Demo mode — deployment coming in a future release.");
   };
 
   const handleAnalyze = async (surveyId: string) => {
@@ -287,7 +286,7 @@ export default function EngagePage() {
                   className="flex-1"
                   onClick={handleSaveDraft}
                 >
-                  {savedMessage || "Save as Draft"}
+                  Save as Draft
                 </Button>
                 <Button className="flex-1" onClick={handleDeploy}>
                   Deploy to Suppliers
