@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
-import Link from "next/link";
+import { useState, useRef, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,25 +27,14 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { fetchCourses, fetchSuppliers, fetchRecommendations } from "@/lib/api";
 
-// Mock processing pipeline states
-const MOCK_PIPELINE_ITEMS = [
-  {
-    id: "pipe-1",
-    title: "Respectful Workplace Conduct",
-    status: "generating" as const,
-    progress: 67,
-    currentStep: "Generating quiz questions...",
-    sourceFile: "workplace-conduct-policy.pdf",
-  },
-  {
-    id: "pipe-2",
-    title: "Fire Safety Procedures",
-    status: "ready" as const,
-    progress: 100,
-    currentStep: "Complete",
-    sourceFile: "fire-safety-manual.pdf",
-  },
-];
+interface PipelineItem {
+  id: string;
+  title: string;
+  status: PipelineStatus;
+  progress: number;
+  currentStep: string;
+  sourceFile: string;
+}
 
 type PipelineStatus = "uploading" | "extracting" | "generating" | "ready";
 
@@ -62,6 +50,79 @@ export default function EducatePage() {
   const [isDragging, setIsDragging] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [pipelineItems, setPipelineItems] = useState<PipelineItem[]>([]);
+  const [actionMessage, setActionMessage] = useState("");
+  const [previewItem, setPreviewItem] = useState<PipelineItem | null>(null);
+
+  const showToast = useCallback((msg: string) => {
+    setActionMessage(msg);
+    setTimeout(() => setActionMessage(""), 3000);
+  }, []);
+
+  // Simulate pipeline processing after file upload
+  const simulatePipeline = useCallback((file: File) => {
+    const id = `pipe-${Date.now()}`;
+    const title = file.name.replace(/\.pdf$/i, "").replace(/[-_]/g, " ");
+    const newItem: PipelineItem = {
+      id,
+      title,
+      status: "uploading",
+      progress: 10,
+      currentStep: "Uploading file...",
+      sourceFile: file.name,
+    };
+    setPipelineItems((prev) => [newItem, ...prev]);
+
+    // Simulate steps
+    const steps: Array<{
+      status: PipelineStatus;
+      progress: number;
+      step: string;
+      delay: number;
+    }> = [
+      {
+        status: "extracting",
+        progress: 35,
+        step: "Extracting content...",
+        delay: 1500,
+      },
+      {
+        status: "generating",
+        progress: 65,
+        step: "Generating quiz questions...",
+        delay: 3000,
+      },
+      {
+        status: "generating",
+        progress: 85,
+        step: "Creating translations...",
+        delay: 4500,
+      },
+      { status: "ready", progress: 100, step: "Complete", delay: 6000 },
+    ];
+
+    steps.forEach(({ status, progress, step, delay }) => {
+      setTimeout(() => {
+        setPipelineItems((prev) =>
+          prev.map((item) =>
+            item.id === id
+              ? { ...item, status, progress, currentStep: step }
+              : item,
+          ),
+        );
+      }, delay);
+    });
+  }, []);
+
+  const handleFileUpload = useCallback(
+    (file: File) => {
+      if (file && file.type === "application/pdf") {
+        setUploadedFile(file);
+        simulatePipeline(file);
+      }
+    },
+    [simulatePipeline],
+  );
 
   const { data: coursesData, isLoading: isCoursesLoading } = useQuery({
     queryKey: ["courses"],
@@ -150,9 +211,7 @@ export default function EducatePage() {
             e.preventDefault();
             setIsDragging(false);
             const file = e.dataTransfer.files[0];
-            if (file && file.type === "application/pdf") {
-              setUploadedFile(file);
-            }
+            if (file) handleFileUpload(file);
           }}
         >
           <CardContent className="flex flex-col items-center justify-center h-[200px] gap-4">
@@ -166,7 +225,7 @@ export default function EducatePage() {
               className="hidden"
               onChange={(e) => {
                 const file = e.target.files?.[0];
-                if (file) setUploadedFile(file);
+                if (file) handleFileUpload(file);
               }}
             />
             <div className="text-center">
@@ -197,97 +256,116 @@ export default function EducatePage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {MOCK_PIPELINE_ITEMS.map((item) => (
-              <div key={item.id} className="p-4 rounded-lg border space-y-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-2">
-                    <IconFileText className="w-4 h-4 text-muted-foreground" />
-                    <span className="font-medium text-sm">{item.title}</span>
+            {pipelineItems.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                Upload a PDF to start generating course content.
+              </p>
+            ) : (
+              pipelineItems.map((item) => (
+                <div key={item.id} className="p-4 rounded-lg border space-y-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-2">
+                      <IconFileText className="w-4 h-4 text-muted-foreground" />
+                      <span className="font-medium text-sm">{item.title}</span>
+                    </div>
+                    {item.status === "ready" ? (
+                      <Badge variant="secondary" className="gap-1">
+                        <IconCheck className="w-3 h-3" />
+                        Ready
+                      </Badge>
+                    ) : (
+                      <Badge variant="default" className="gap-1">
+                        <IconLoader className="w-3 h-3 animate-spin" />
+                        Processing
+                      </Badge>
+                    )}
                   </div>
-                  {item.status === "ready" ? (
-                    <Badge variant="secondary" className="gap-1">
-                      <IconCheck className="w-3 h-3" />
-                      Ready
-                    </Badge>
-                  ) : (
-                    <Badge variant="default" className="gap-1">
-                      <IconLoader className="w-3 h-3 animate-spin" />
-                      Processing
-                    </Badge>
-                  )}
-                </div>
 
-                {/* Pipeline Steps */}
-                <div className="flex items-center gap-1">
-                  {PIPELINE_STEPS.map((step, idx) => {
-                    const status = getStepStatus(item.status, step.key);
-                    return (
-                      <div key={step.key} className="flex items-center gap-1">
-                        <div
-                          className={`flex items-center justify-center w-6 h-6 rounded-full text-xs ${
-                            status === "done"
-                              ? "bg-green-500 text-white"
-                              : status === "current"
-                                ? "bg-indigo-500 text-white"
-                                : "bg-muted text-muted-foreground"
-                          }`}
-                        >
-                          {status === "done" ? (
-                            <IconCheck className="w-3 h-3" />
-                          ) : (
-                            idx + 1
+                  {/* Pipeline Steps */}
+                  <div className="flex items-center gap-1">
+                    {PIPELINE_STEPS.map((step, idx) => {
+                      const status = getStepStatus(item.status, step.key);
+                      return (
+                        <div key={step.key} className="flex items-center gap-1">
+                          <div
+                            className={`flex items-center justify-center w-6 h-6 rounded-full text-xs ${
+                              status === "done"
+                                ? "bg-green-500 text-white"
+                                : status === "current"
+                                  ? "bg-indigo-500 text-white"
+                                  : "bg-muted text-muted-foreground"
+                            }`}
+                          >
+                            {status === "done" ? (
+                              <IconCheck className="w-3 h-3" />
+                            ) : (
+                              idx + 1
+                            )}
+                          </div>
+                          <span
+                            className={`text-xs ${
+                              status === "current"
+                                ? "font-medium"
+                                : "text-muted-foreground"
+                            }`}
+                          >
+                            {step.label}
+                          </span>
+                          {idx < PIPELINE_STEPS.length - 1 && (
+                            <div
+                              className={`w-4 h-0.5 ${
+                                status === "done" ? "bg-green-500" : "bg-muted"
+                              }`}
+                            />
                           )}
                         </div>
-                        <span
-                          className={`text-xs ${
-                            status === "current"
-                              ? "font-medium"
-                              : "text-muted-foreground"
-                          }`}
-                        >
-                          {step.label}
-                        </span>
-                        {idx < PIPELINE_STEPS.length - 1 && (
-                          <div
-                            className={`w-4 h-0.5 ${
-                              status === "done" ? "bg-green-500" : "bg-muted"
-                            }`}
-                          />
-                        )}
+                      );
+                    })}
+                  </div>
+
+                  {item.status !== "ready" && (
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>{item.currentStep}</span>
+                        <span>{item.progress}%</span>
                       </div>
-                    );
-                  })}
-                </div>
-
-                {item.status !== "ready" && (
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>{item.currentStep}</span>
-                      <span>{item.progress}%</span>
+                      <Progress value={item.progress} className="h-1" />
                     </div>
-                    <Progress value={item.progress} className="h-1" />
-                  </div>
-                )}
+                  )}
 
-                {item.status === "ready" && (
-                  <div className="flex gap-2">
-                    <Button size="sm" variant="outline" className="flex-1">
-                      Preview
-                    </Button>
-                    <Button size="sm" className="flex-1">
-                      Publish
-                    </Button>
-                  </div>
-                )}
-              </div>
-            ))}
+                  {item.status === "ready" && (
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => setPreviewItem(item)}
+                      >
+                        Preview
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="flex-1"
+                        onClick={() =>
+                          showToast(
+                            `Demo mode — "${item.title}" publish coming soon.`,
+                          )
+                        }
+                      >
+                        Publish
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
           </CardContent>
         </Card>
       </div>
 
       {/* Recommended Training */}
       {trainingRecommendations.length > 0 && (
-        <Card className="border-orange-200 bg-gradient-to-br from-orange-50/50 to-amber-50/50">
+        <Card className="border-orange-200 bg-linear-to-br from-orange-50/50 to-amber-50/50">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <IconSparkles className="w-5 h-5 text-orange-600" />
@@ -312,7 +390,15 @@ export default function EducatePage() {
                     </p>
                   </div>
                 </div>
-                <Button size="sm" variant="outline">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() =>
+                    showToast(
+                      `Demo mode — deploying "${rec.action}" coming soon.`,
+                    )
+                  }
+                >
                   Deploy
                 </Button>
               </div>
@@ -374,7 +460,15 @@ export default function EducatePage() {
                   ))}
                 </div>
               </div>
-              <Button variant="ghost" size="sm">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() =>
+                  showToast(
+                    `Demo mode — "${course.title}" management coming soon.`,
+                  )
+                }
+              >
                 Manage
                 <IconArrowRight className="w-4 h-4 ml-1" />
               </Button>
@@ -382,6 +476,62 @@ export default function EducatePage() {
           ))}
         </CardContent>
       </Card>
+
+      {/* Action toast */}
+      {actionMessage && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-lg bg-gray-900 text-white text-sm shadow-lg">
+          {actionMessage}
+        </div>
+      )}
+
+      {/* Preview dialog */}
+      {previewItem && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <Card className="max-w-lg w-full">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>{previewItem.title}</CardTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setPreviewItem(null)}
+                >
+                  ✕
+                </Button>
+              </div>
+              <CardDescription>
+                Generated from {previewItem.sourceFile}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                This is a demo preview. In production, the full generated course
+                content (lessons, quizzes, translations) would appear here.
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setPreviewItem(null)}
+                >
+                  Close
+                </Button>
+                <Button
+                  className="flex-1"
+                  onClick={() => {
+                    showToast(
+                      `Demo mode — "${previewItem.title}" publish coming soon.`,
+                    );
+                    setPreviewItem(null);
+                  }}
+                >
+                  Publish
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState, useCallback } from "react";
+import { use, useState, useCallback, useEffect } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import {
@@ -49,9 +49,49 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
   const [isLoadingSummary, setIsLoadingSummary] = useState(false);
   const [summaryError, setSummaryError] = useState<string>("");
   const [copied, setCopied] = useState(false);
+  const [isLoadingGuidance, setIsLoadingGuidance] = useState(false);
 
   // Sync aiSummary with loaded case data
   const displaySummary = aiSummary || caseData?.aiSummary || "";
+
+  // Check if guidance is the hardcoded fallback
+  const isDefaultGuidance =
+    caseData?.aiGuidance?.recommendedSteps?.length === 2 &&
+    caseData.aiGuidance.recommendedSteps[0] === "Review case details" &&
+    caseData.aiGuidance.recommendedSteps[1] === "Contact supplier";
+
+  // Auto-generate guidance when it's the default fallback
+  useEffect(() => {
+    if (!caseData || !isDefaultGuidance || isLoadingGuidance) return;
+
+    const content = caseData.fullContent?.trim();
+    if (!content || content === "No content." || content.length < 10) return;
+
+    const generateGuidance = async () => {
+      setIsLoadingGuidance(true);
+      try {
+        const response = await fetch("/api/ai/guidance", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            caseId: caseData.id,
+            caseText: content,
+            caseType: caseData.topic,
+            severity: caseData.severity,
+          }),
+        });
+        if (response.ok) {
+          queryClient.invalidateQueries({ queryKey: ["cases", id] });
+        }
+      } catch (error) {
+        console.error("Failed to auto-generate guidance:", error);
+      } finally {
+        setIsLoadingGuidance(false);
+      }
+    };
+
+    generateGuidance();
+  }, [caseData?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleGenerateSummary = useCallback(async () => {
     if (!caseData) return;
@@ -268,14 +308,21 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
         <div className="space-y-4">
           {caseData.aiGuidance && (
             <>
-              <Card className="border-purple-200 bg-gradient-to-br from-purple-50/50 to-indigo-50/50">
+              <Card className="border-purple-200 bg-linear-to-br from-purple-50/50 to-indigo-50/50">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <IconSparkles className="h-5 w-5 text-purple-600" />
-                    AI Guidance
-                  </CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2">
+                      <IconSparkles className="h-5 w-5 text-purple-600" />
+                      AI Guidance
+                    </CardTitle>
+                    {isLoadingGuidance && (
+                      <div className="animate-spin h-4 w-4 border-2 border-purple-600 border-t-transparent rounded-full" />
+                    )}
+                  </div>
                   <CardDescription>
-                    Recommended steps for this case
+                    {isLoadingGuidance
+                      ? "Generating AI guidance..."
+                      : "Recommended steps for this case"}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">

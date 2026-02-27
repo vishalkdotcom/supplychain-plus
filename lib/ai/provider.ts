@@ -1,6 +1,14 @@
 import { openai } from "@ai-sdk/openai";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { createPerplexity } from "@ai-sdk/perplexity";
+import { wrapLanguageModel, extractReasoningMiddleware } from "ai";
+
+// Middleware to extract <think>...</think> reasoning from NIM models
+// into a separate `reasoning` field, keeping `text` clean.
+const thinkingMiddleware = extractReasoningMiddleware({
+  tagName: "think",
+  startWithReasoning: true,
+});
 
 // ─── Switch providers by changing AI_PROVIDER in .env.local ───
 // Valid values: "openai" | "nim" | "perplexity" | "lmstudio"
@@ -16,8 +24,14 @@ function buildModels() {
         headers: { Authorization: `Bearer ${process.env.NIM_API_KEY}` },
       });
       return {
-        model: nim.chatModel("minimaxai/minimax-m2.5"),
-        strongModel: nim.chatModel("z-ai/glm5"),
+        model: wrapLanguageModel({
+          model: nim.chatModel("minimaxai/minimax-m2.5"),
+          middleware: thinkingMiddleware,
+        }),
+        strongModel: wrapLanguageModel({
+          model: nim.chatModel("z-ai/glm5"),
+          middleware: thinkingMiddleware,
+        }),
       };
     }
 

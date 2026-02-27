@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, isToolUIPart, getToolName } from "ai";
@@ -27,11 +27,46 @@ const SUGGESTED_QUERIES = [
 export default function AIAssistantPage() {
   const [input, setInput] = useState("");
 
-  const { messages, sendMessage, status, error } = useChat({
+  // Persist sessionId across page refreshes within the same tab
+  const [sessionId] = useState(() => {
+    if (typeof window === "undefined") return "";
+    let id = sessionStorage.getItem("chat_session_id");
+    if (!id) {
+      id = `session-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      sessionStorage.setItem("chat_session_id", id);
+    }
+    return id;
+  });
+
+  const { messages, setMessages, sendMessage, status, error } = useChat({
     transport: new DefaultChatTransport({
       api: "/api/ai/chat",
+      body: { sessionId },
     }),
   });
+
+  // Restore chat history on mount
+  useEffect(() => {
+    if (!sessionId) return;
+    fetch(`/api/ai/chat/history?sessionId=${encodeURIComponent(sessionId)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.messages && data.messages.length > 0) {
+          const restored = data.messages.map(
+            (
+              m: { id: number; role: string; content: string },
+              idx: number,
+            ) => ({
+              id: `restored-${idx}`,
+              role: m.role as "user" | "assistant",
+              parts: [{ type: "text" as const, text: m.content }],
+            }),
+          );
+          setMessages(restored);
+        }
+      })
+      .catch(() => {}); // silent fail
+  }, [sessionId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const isLoading = status === "streaming" || status === "submitted";
 
@@ -141,17 +176,12 @@ export default function AIAssistantPage() {
               <div className="space-y-3">
                 {message.parts.map((part, index) => {
                   if (part.type === "text") {
-                    // Strip leaked <think>...</think> tags from NIM models
-                    const cleanText = part.text
-                      .replace(/<think>[\s\S]*?<\/think>\s*/gi, "")
-                      .trim();
-                    if (!cleanText) return null;
                     return (
                       <div
                         key={index}
                         className="prose prose-sm max-w-none text-sm whitespace-pre-wrap"
                       >
-                        {cleanText}
+                        {part.text}
                       </div>
                     );
                   }

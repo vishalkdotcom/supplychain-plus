@@ -28,38 +28,15 @@ import {
   IconSparkles,
   IconWand,
 } from "@tabler/icons-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchSurveys } from "@/lib/api";
 
-// Mock generated survey questions
-const MOCK_GENERATED_QUESTIONS = [
-  {
-    id: 1,
-    text: "Do you know where the nearest fire exit is located from your work station?",
-    type: "yes_no",
-  },
-  {
-    id: 2,
-    text: "Have you participated in a fire drill in the past 6 months?",
-    type: "yes_no",
-  },
-  {
-    id: 3,
-    text: "Rate your confidence in knowing what to do during a fire emergency:",
-    type: "likert",
-    options: ["Not confident", "Somewhat confident", "Very confident"],
-  },
-  {
-    id: 4,
-    text: "Are fire safety signs clearly visible in your work area?",
-    type: "yes_no",
-  },
-  {
-    id: 5,
-    text: "What would help you feel safer regarding fire emergencies?",
-    type: "open_text",
-  },
-];
+interface GeneratedQuestion {
+  id: number;
+  text: string;
+  type: string;
+  options?: string[];
+}
 
 const AVAILABLE_LANGUAGES = [
   { code: "en", name: "English" },
@@ -79,6 +56,8 @@ export default function EngagePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [savedMessage, setSavedMessage] = useState("");
   const [analyzingId, setAnalyzingId] = useState<string | null>(null);
+  const [generateError, setGenerateError] = useState("");
+  const queryClient = useQueryClient();
 
   const { viewMode, currentSupplierId } = useView();
 
@@ -104,9 +83,10 @@ export default function EngagePage() {
     return matchesSearch && matchesSupplier;
   });
 
-  const [generatedQuestions, setGeneratedQuestions] = useState(
-    MOCK_GENERATED_QUESTIONS,
-  );
+  const [generatedQuestions, setGeneratedQuestions] = useState<
+    GeneratedQuestion[]
+  >([]);
+  const [surveyTitle, setSurveyTitle] = useState("");
 
   if (isLoading) {
     return (
@@ -119,6 +99,7 @@ export default function EngagePage() {
   const handleGenerate = async () => {
     if (!designerPrompt.trim()) return;
     setIsGenerating(true);
+    setGenerateError("");
     try {
       const response = await fetch("/api/ai/survey", {
         method: "POST",
@@ -126,12 +107,18 @@ export default function EngagePage() {
         body: JSON.stringify({ prompt: designerPrompt }),
       });
       const data = await response.json();
+      if (!response.ok) {
+        setGenerateError(data.error || "Failed to generate survey.");
+        return;
+      }
       if (data.questions && Array.isArray(data.questions)) {
         setGeneratedQuestions(data.questions);
+        setSurveyTitle(designerPrompt);
         setShowPreview(true);
       }
     } catch (error) {
       console.error("Failed to generate survey:", error);
+      setGenerateError("Network error — could not reach the AI service.");
     } finally {
       setIsGenerating(false);
     }
@@ -151,13 +138,12 @@ export default function EngagePage() {
         languages: selectedLanguages,
       }),
     );
-    setSavedMessage("Draft saved!");
+    setSavedMessage("Draft saved locally ✓");
     setTimeout(() => setSavedMessage(""), 2000);
   };
 
   const handleDeploy = () => {
-    if (!confirm("Deploy this survey to selected suppliers?")) return;
-    setSavedMessage("Survey deployed successfully!");
+    setSavedMessage("Demo mode — deployment coming in a future release.");
     setTimeout(() => setSavedMessage(""), 3000);
   };
 
@@ -169,10 +155,10 @@ export default function EngagePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ surveyId: parseInt(surveyId) }),
       });
-      // Trigger refetch
-      window.location.reload();
+      queryClient.invalidateQueries({ queryKey: ["surveys"] });
     } catch (error) {
       console.error("Analysis failed:", error);
+    } finally {
       setAnalyzingId(null);
     }
   };
@@ -187,7 +173,7 @@ export default function EngagePage() {
       </div>
 
       {/* AI Designer Card */}
-      <Card className="border-indigo-200 bg-gradient-to-br from-indigo-50/50 to-purple-50/50">
+      <Card className="border-indigo-200 bg-linear-to-br from-indigo-50/50 to-purple-50/50">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <IconSparkles className="w-5 h-5 text-indigo-500" />
@@ -220,6 +206,9 @@ export default function EngagePage() {
               )}
             </Button>
           </div>
+          {generateError && (
+            <p className="text-sm text-red-600">{generateError}</p>
+          )}
 
           {/* Preview Panel */}
           {showPreview && (
@@ -227,7 +216,7 @@ export default function EngagePage() {
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="font-semibold">
-                    Generated: &quot;Fire Safety Awareness Survey&quot;
+                    Generated: &quot;{surveyTitle}&quot;
                   </h3>
                   <p className="text-sm text-muted-foreground">
                     {generatedQuestions.length} questions • Ready for review
