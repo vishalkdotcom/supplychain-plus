@@ -42,6 +42,7 @@ import {
 } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchCourses, fetchSuppliers, fetchRecommendations } from "@/lib/api";
+import { useQueryStates, parseAsInteger, parseAsString } from "nuqs";
 
 interface PipelineItem {
   id: string;
@@ -62,15 +63,18 @@ const PIPELINE_STEPS: { key: PipelineStatus; label: string }[] = [
 ];
 
 export default function EducatePage() {
-  const [searchQuery, setSearchQuery] = useState("");
+  const [params, setParams] = useQueryStates({
+    page: parseAsInteger.withDefault(1),
+    search: parseAsString.withDefault(""),
+  });
+
+  const perPage = 8;
+
   const [isDragging, setIsDragging] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [pipelineItems, setPipelineItems] = useState<PipelineItem[]>([]);
   const [previewItem, setPreviewItem] = useState<PipelineItem | null>(null);
-
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 8; // Showing 8 courses per page
 
   const showToast = useCallback((msg: string) => {
     toast(msg);
@@ -90,7 +94,6 @@ export default function EducatePage() {
     };
     setPipelineItems((prev) => [newItem, ...prev]);
 
-    // Simulate steps
     const steps: Array<{
       status: PipelineStatus;
       progress: number;
@@ -141,14 +144,19 @@ export default function EducatePage() {
     [simulatePipeline],
   );
 
-  const { data: coursesData, isLoading: isCoursesLoading } = useQuery({
-    queryKey: ["courses"],
-    queryFn: fetchCourses,
+  const { data: coursesResponse, isLoading: isCoursesLoading } = useQuery({
+    queryKey: ["courses", params.page, params.search],
+    queryFn: () =>
+      fetchCourses({
+        page: params.page,
+        perPage,
+        search: params.search,
+      }),
   });
 
-  const { data: suppliersData, isLoading: isSuppliersLoading } = useQuery({
+  const { data: suppliersResponse, isLoading: isSuppliersLoading } = useQuery({
     queryKey: ["suppliers"],
-    queryFn: fetchSuppliers,
+    queryFn: () => fetchSuppliers(),
   });
 
   const { data: recommendationsData, isLoading: isRecommendationsLoading } =
@@ -157,8 +165,10 @@ export default function EducatePage() {
       queryFn: fetchRecommendations,
     });
 
-  const courses = coursesData || [];
-  const suppliers = suppliersData || [];
+  const courses = coursesResponse?.data || [];
+  const totalPages = coursesResponse?.totalPages || 0;
+  const total = coursesResponse?.total || 0;
+  const suppliers = suppliersResponse?.data || [];
 
   // Training recommendations based on AI analysis
   const trainingRecommendations = (recommendationsData || [])
@@ -167,20 +177,6 @@ export default function EducatePage() {
       const supplier = suppliers.find((s) => s.id === rec.supplierId);
       return { ...rec, supplierName: supplier?.name || "Unknown" };
     });
-
-  const filteredCourses = courses.filter(
-    (c) =>
-      c.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.relevantFor.some((tag) =>
-        tag.toLowerCase().includes(searchQuery.toLowerCase()),
-      ),
-  );
-
-  const totalPages = Math.ceil(filteredCourses.length / itemsPerPage);
-  const paginatedCourses = filteredCourses.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage,
-  );
 
   if (isCoursesLoading || isSuppliersLoading || isRecommendationsLoading) {
     return (
@@ -206,6 +202,14 @@ export default function EducatePage() {
     if (stepIdx < currentIdx) return "done";
     if (stepIdx === currentIdx) return "current";
     return "pending";
+  };
+
+  const getPageNumbers = () => {
+    const pages: number[] = [];
+    const start = Math.max(1, params.page - 2);
+    const end = Math.min(totalPages, start + 4);
+    for (let i = start; i <= end; i++) pages.push(i);
+    return pages;
   };
 
   return (
@@ -435,11 +439,8 @@ export default function EducatePage() {
         <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="Search courses..."
-          value={searchQuery}
-          onChange={(e) => {
-            setSearchQuery(e.target.value);
-            setCurrentPage(1);
-          }}
+          value={params.search}
+          onChange={(e) => setParams({ search: e.target.value, page: 1 })}
           className="pl-9"
         />
       </div>
@@ -453,7 +454,12 @@ export default function EducatePage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          {paginatedCourses.map((course) => (
+          <p className="text-sm text-muted-foreground">
+            Showing {courses.length} of {total} courses
+            {totalPages > 1 && ` • Page ${params.page} of ${totalPages}`}
+          </p>
+
+          {courses.map((course) => (
             <div
               key={course.id}
               className="flex items-start justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors"
@@ -507,23 +513,25 @@ export default function EducatePage() {
                 <PaginationContent>
                   <PaginationItem>
                     <PaginationPrevious
-                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      onClick={() =>
+                        setParams({ page: Math.max(1, params.page - 1) })
+                      }
                       className={
-                        currentPage === 1
+                        params.page === 1
                           ? "pointer-events-none opacity-50"
                           : "cursor-pointer"
                       }
                     />
                   </PaginationItem>
 
-                  {Array.from({ length: totalPages }).map((_, i) => (
-                    <PaginationItem key={i}>
+                  {getPageNumbers().map((p) => (
+                    <PaginationItem key={p}>
                       <PaginationLink
-                        onClick={() => setCurrentPage(i + 1)}
-                        isActive={currentPage === i + 1}
+                        onClick={() => setParams({ page: p })}
+                        isActive={params.page === p}
                         className="cursor-pointer"
                       >
-                        {i + 1}
+                        {p}
                       </PaginationLink>
                     </PaginationItem>
                   ))}
@@ -531,10 +539,12 @@ export default function EducatePage() {
                   <PaginationItem>
                     <PaginationNext
                       onClick={() =>
-                        setCurrentPage((p) => Math.min(totalPages, p + 1))
+                        setParams({
+                          page: Math.min(totalPages, params.page + 1),
+                        })
                       }
                       className={
-                        currentPage === totalPages
+                        params.page === totalPages
                           ? "pointer-events-none opacity-50"
                           : "cursor-pointer"
                       }

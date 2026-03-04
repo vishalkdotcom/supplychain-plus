@@ -20,7 +20,6 @@ import {
   IconSparkles,
   IconTrendingDown,
   IconTrendingUp,
-  IconUsers,
 } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -29,6 +28,7 @@ import {
   fetchSuppliers,
   fetchRecommendations,
 } from "@/lib/api";
+import { Supplier } from "@/types";
 
 export function DashboardView() {
   const { data: metrics, isLoading: isMetricsLoading } = useQuery({
@@ -41,10 +41,12 @@ export function DashboardView() {
     queryFn: fetchActivities,
   });
 
-  const { data: suppliers, isLoading: isSuppliersLoading } = useQuery({
+  const { data: suppliersRes, isLoading: isSuppliersLoading } = useQuery({
     queryKey: ["suppliers"],
-    queryFn: fetchSuppliers,
+    queryFn: () => fetchSuppliers(),
   });
+
+  const suppliers = suppliersRes?.data;
 
   const { data: recommendations, isLoading: isRecommendationsLoading } =
     useQuery({
@@ -54,8 +56,8 @@ export function DashboardView() {
 
   const highRiskSuppliers =
     suppliers
-      ?.filter((s) => s.riskLevel === "high")
-      .sort((a, b) => b.riskScore - a.riskScore) || [];
+      ?.filter((s: Supplier) => s.riskLevel === "high")
+      .sort((a: Supplier, b: Supplier) => b.riskScore - a.riskScore) || [];
   const topRecommendations = (recommendations || [])
     .filter((r) => r.urgency === "immediate")
     .slice(0, 3);
@@ -229,7 +231,7 @@ export function DashboardView() {
               <CardContent className="space-y-3">
                 {topRecommendations.map((rec) => {
                   const supplier = suppliers?.find(
-                    (s) => s.id === rec.supplierId,
+                    (s: Supplier) => s.id === rec.supplierId,
                   );
                   return (
                     <div

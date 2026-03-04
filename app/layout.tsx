@@ -25,6 +25,7 @@ export const metadata: Metadata = {
 };
 
 import { Toaster } from "@/components/ui/sonner";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 
 export default function RootLayout({
   children,
@@ -36,19 +37,21 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <QueryProvider>
-          <ViewProvider>
-            <SidebarProvider>
-              <AppSidebar />
-              <div className="flex flex-1 flex-col overflow-hidden">
-                <AppHeader />
-                <main className="flex-1 overflow-y-auto p-6 md:p-8">
-                  {children}
-                </main>
-              </div>
-            </SidebarProvider>
-          </ViewProvider>
-        </QueryProvider>
+        <NuqsAdapter>
+          <QueryProvider>
+            <ViewProvider>
+              <SidebarProvider>
+                <AppSidebar />
+                <div className="flex flex-1 flex-col overflow-hidden">
+                  <AppHeader />
+                  <main className="flex-1 overflow-y-auto p-6 md:p-8">
+                    {children}
+                  </main>
+                </div>
+              </SidebarProvider>
+            </ViewProvider>
+          </QueryProvider>
+        </NuqsAdapter>
         <Toaster />
       </body>
     </html>

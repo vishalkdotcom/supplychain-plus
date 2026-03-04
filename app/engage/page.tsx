@@ -13,13 +13,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Pagination,
   PaginationContent,
   PaginationItem,
@@ -39,6 +32,7 @@ import {
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchSurveys } from "@/lib/api";
 import { toast } from "sonner";
+import { useQueryStates, parseAsInteger, parseAsString } from "nuqs";
 
 interface GeneratedQuestion {
   id: number;
@@ -56,50 +50,46 @@ const AVAILABLE_LANGUAGES = [
 ];
 
 export default function EngagePage() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [supplierFilter, setSupplierFilter] = useState<string>("all");
+  const [params, setParams] = useQueryStates({
+    page: parseAsInteger.withDefault(1),
+    search: parseAsString.withDefault(""),
+  });
+
+  const perPage = 8;
+
   const [designerPrompt, setDesignerPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>(["en"]);
   const [isEditing, setIsEditing] = useState(false);
-  // Removed custom savedMessage toast
   const [analyzingId, setAnalyzingId] = useState<string | null>(null);
   const [generateError, setGenerateError] = useState("");
   const queryClient = useQueryClient();
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 8; // Showing 8 surveys per page
-
   const { viewMode, currentSupplierId } = useView();
 
-  const { data: surveysData, isLoading } = useQuery({
-    queryKey: ["surveys", viewMode === "supplier" ? currentSupplierId : "all"],
+  const { data: response, isLoading } = useQuery({
+    queryKey: [
+      "surveys",
+      params.page,
+      params.search,
+      viewMode === "supplier" ? currentSupplierId : "all",
+    ],
     queryFn: () =>
-      fetchSurveys(
-        viewMode === "supplier" && currentSupplierId
-          ? currentSupplierId
-          : undefined,
-      ),
+      fetchSurveys({
+        page: params.page,
+        perPage,
+        search: params.search,
+        supplier:
+          viewMode === "supplier" && currentSupplierId
+            ? currentSupplierId
+            : undefined,
+      }),
   });
 
-  const surveys = surveysData || [];
-  const suppliers: string[] = [...new Set(surveys.map((s) => s.supplierName))];
-
-  const filteredSurveys = surveys.filter((s) => {
-    const matchesSearch =
-      s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.aiInsight.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesSupplier =
-      supplierFilter === "all" || s.supplierName === supplierFilter;
-    return matchesSearch && matchesSupplier;
-  });
-
-  const totalPages = Math.ceil(filteredSurveys.length / itemsPerPage);
-  const paginatedSurveys = filteredSurveys.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage,
-  );
+  const surveys = response?.data || [];
+  const totalPages = response?.totalPages || 0;
+  const total = response?.total || 0;
 
   const [generatedQuestions, setGeneratedQuestions] = useState<
     GeneratedQuestion[]
@@ -177,6 +167,14 @@ export default function EngagePage() {
     } finally {
       setAnalyzingId(null);
     }
+  };
+
+  const getPageNumbers = () => {
+    const pages: number[] = [];
+    const start = Math.max(1, params.page - 2);
+    const end = Math.min(totalPages, start + 4);
+    for (let i = start; i <= end; i++) pages.push(i);
+    return pages;
   };
 
   return (
@@ -320,37 +318,16 @@ export default function EngagePage() {
           <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search surveys..."
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setCurrentPage(1);
-            }}
+            value={params.search}
+            onChange={(e) => setParams({ search: e.target.value, page: 1 })}
             className="pl-9"
           />
         </div>
-        <Select
-          value={supplierFilter}
-          onValueChange={(val) => {
-            setSupplierFilter(val);
-            setCurrentPage(1);
-          }}
-        >
-          <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="All Suppliers" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Suppliers</SelectItem>
-            {suppliers.map((supplier) => (
-              <SelectItem key={supplier} value={supplier}>
-                {supplier}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
       </div>
 
       <p className="text-sm text-muted-foreground">
-        Showing {filteredSurveys.length} of {surveys.length} surveys
+        Showing {surveys.length} of {total} surveys
+        {totalPages > 1 && ` • Page ${params.page} of ${totalPages}`}
       </p>
 
       {/* Survey List */}
@@ -362,7 +339,7 @@ export default function EngagePage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          {paginatedSurveys.map((survey) => (
+          {surveys.map((survey) => (
             <div
               key={survey.id}
               className="flex items-start justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors"
@@ -427,23 +404,25 @@ export default function EngagePage() {
                 <PaginationContent>
                   <PaginationItem>
                     <PaginationPrevious
-                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      onClick={() =>
+                        setParams({ page: Math.max(1, params.page - 1) })
+                      }
                       className={
-                        currentPage === 1
+                        params.page === 1
                           ? "pointer-events-none opacity-50"
                           : "cursor-pointer"
                       }
                     />
                   </PaginationItem>
 
-                  {Array.from({ length: totalPages }).map((_, i) => (
-                    <PaginationItem key={i}>
+                  {getPageNumbers().map((p) => (
+                    <PaginationItem key={p}>
                       <PaginationLink
-                        onClick={() => setCurrentPage(i + 1)}
-                        isActive={currentPage === i + 1}
+                        onClick={() => setParams({ page: p })}
+                        isActive={params.page === p}
                         className="cursor-pointer"
                       >
-                        {i + 1}
+                        {p}
                       </PaginationLink>
                     </PaginationItem>
                   ))}
@@ -451,10 +430,12 @@ export default function EngagePage() {
                   <PaginationItem>
                     <PaginationNext
                       onClick={() =>
-                        setCurrentPage((p) => Math.min(totalPages, p + 1))
+                        setParams({
+                          page: Math.min(totalPages, params.page + 1),
+                        })
                       }
                       className={
-                        currentPage === totalPages
+                        params.page === totalPages
                           ? "pointer-events-none opacity-50"
                           : "cursor-pointer"
                       }

@@ -1,14 +1,54 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db/postgres";
 import { db } from "@/lib/db/drizzle";
 import { surveyAnalysis } from "@/lib/db/schema";
 import { sql } from "drizzle-orm";
-import { Survey } from "@/types";
+import { Survey, PaginatedResponse } from "@/types";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const result = await query(`
-      SELECT 
+    const searchParams = request.nextUrl.searchParams;
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
+    const perPage = Math.min(
+      50,
+      Math.max(1, parseInt(searchParams.get("perPage") || "8")),
+    );
+    const search = searchParams.get("search") || "";
+    const supplier = searchParams.get("supplier") || "all";
+    const offset = (page - 1) * perPage;
+
+    // Build dynamic WHERE clauses
+    const conditions: string[] = [];
+    const params: any[] = [];
+    let paramIndex = 1;
+
+    if (search) {
+      conditions.push(`s.name ILIKE $${paramIndex}`);
+      params.push(`%${search}%`);
+      paramIndex++;
+    }
+    if (supplier !== "all") {
+      conditions.push(`c.name = $${paramIndex}`);
+      params.push(supplier);
+      paramIndex++;
+    }
+
+    const whereClause =
+      conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+
+    // Count total
+    const countResult = await query(
+      `SELECT COUNT(*) as total
+       FROM survey_mdlsurvey s
+       LEFT JOIN clients_clientinfo c ON s.client_id = c.id
+       ${whereClause}`,
+      params,
+    );
+    const total = parseInt(countResult.rows[0].total);
+
+    // Fetch paginated data
+    const result = await query(
+      `SELECT 
         s.id, 
         s.name, 
         s.status, 
@@ -21,9 +61,11 @@ export async function GET() {
          WHERE r.survey_id = s.id) as response_count
       FROM survey_mdlsurvey s
       LEFT JOIN clients_clientinfo c ON s.client_id = c.id
+      ${whereClause}
       ORDER BY s.created_date DESC
-      LIMIT 50
-    `);
+      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
+      [...params, perPage, offset],
+    );
 
     // Fetch analysis data from Drizzle (wovo_ai)
     const surveyIds = result.rows.map((r: { id: string }) => r.id);
@@ -82,7 +124,17 @@ export async function GET() {
       },
     );
 
-    return NextResponse.json(surveys);
+    const totalPages = Math.ceil(total / perPage);
+
+    const response: PaginatedResponse<Survey> = {
+      data: surveys,
+      total,
+      page,
+      perPage,
+      totalPages,
+    };
+
+    return NextResponse.json(response);
   } catch (error) {
     console.error("Error fetching surveys:", error);
     return NextResponse.json(

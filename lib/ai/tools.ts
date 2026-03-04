@@ -166,7 +166,7 @@ export const querySurveys = tool({
         client_name: string;
         status: number;
       }) => {
-        const analysis = analysisMap.get(row.id);
+        const analysis = analysisMap.get(String(row.id));
         return {
           id: row.id,
           title: row.name,

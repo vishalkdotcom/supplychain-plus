@@ -186,3 +186,15 @@ export interface DashboardMetrics {
 // ===============================
 
 export type ViewPerspective = "brand" | "supplier";
+
+// ===============================
+// Pagination
+// ===============================
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  perPage: number;
+  totalPages: number;
+}

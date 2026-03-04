@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -30,47 +29,42 @@ import { IconArrowRight, IconRobot, IconSearch } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchCases } from "@/lib/api";
 import { useView } from "@/components/view-context";
+import { useQueryStates, parseAsInteger, parseAsString } from "nuqs";
 
 export default function ConnectPage() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [supplierFilter, setSupplierFilter] = useState<string>("all");
-  const [severityFilter, setSeverityFilter] = useState<string>("all");
+  const [params, setParams] = useQueryStates({
+    page: parseAsInteger.withDefault(1),
+    search: parseAsString.withDefault(""),
+    supplier: parseAsString.withDefault("all"),
+    severity: parseAsString.withDefault("all"),
+  });
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 8; // Showing 8 cases per page
+  const perPage = 8;
 
   const { viewMode, currentSupplierId } = useView();
 
-  const { data: casesData, isLoading } = useQuery({
-    queryKey: ["cases", viewMode === "supplier" ? currentSupplierId : "all"],
+  const { data: response, isLoading } = useQuery({
+    queryKey: [
+      "cases",
+      params.page,
+      params.search,
+      params.supplier,
+      params.severity,
+      viewMode === "supplier" ? currentSupplierId : "all",
+    ],
     queryFn: () =>
-      fetchCases(
-        viewMode === "supplier" && currentSupplierId
-          ? currentSupplierId
-          : undefined,
-      ),
+      fetchCases({
+        page: params.page,
+        perPage,
+        search: params.search,
+        supplier: params.supplier,
+        severity: params.severity,
+      }),
   });
 
-  const cases = casesData || [];
-  const suppliers = [...new Set(cases.map((c) => c.supplierName))];
-
-  const filteredCases = cases.filter((c) => {
-    const matchesSearch =
-      c.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.topic.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.aiSummary.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesSupplier =
-      supplierFilter === "all" || c.supplierName === supplierFilter;
-    const matchesSeverity =
-      severityFilter === "all" || c.severity === severityFilter;
-    return matchesSearch && matchesSupplier && matchesSeverity;
-  });
-
-  const totalPages = Math.ceil(filteredCases.length / itemsPerPage);
-  const paginatedCases = filteredCases.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage,
-  );
+  const cases = response?.data || [];
+  const totalPages = response?.totalPages || 0;
+  const total = response?.total || 0;
 
   if (isLoading) {
     return (
@@ -91,6 +85,14 @@ export default function ConnectPage() {
     }
   };
 
+  const getPageNumbers = () => {
+    const pages: number[] = [];
+    const start = Math.max(1, params.page - 2);
+    const end = Math.min(totalPages, start + 4);
+    for (let i = start; i <= end; i++) pages.push(i);
+    return pages;
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-2">
@@ -108,39 +110,14 @@ export default function ConnectPage() {
           <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search cases..."
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setCurrentPage(1);
-            }}
+            value={params.search}
+            onChange={(e) => setParams({ search: e.target.value, page: 1 })}
             className="pl-9"
           />
         </div>
         <Select
-          value={supplierFilter}
-          onValueChange={(val) => {
-            setSupplierFilter(val);
-            setCurrentPage(1);
-          }}
-        >
-          <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="All Suppliers" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Suppliers</SelectItem>
-            {suppliers.map((supplier) => (
-              <SelectItem key={supplier} value={supplier}>
-                {supplier}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select
-          value={severityFilter}
-          onValueChange={(val) => {
-            setSeverityFilter(val);
-            setCurrentPage(1);
-          }}
+          value={params.severity}
+          onValueChange={(val) => setParams({ severity: val, page: 1 })}
         >
           <SelectTrigger className="w-[150px]">
             <SelectValue placeholder="All Severity" />
@@ -155,7 +132,8 @@ export default function ConnectPage() {
       </div>
 
       <p className="text-sm text-muted-foreground">
-        Showing {filteredCases.length} of {cases.length} cases
+        Showing {cases.length} of {total} cases
+        {totalPages > 1 && ` • Page ${params.page} of ${totalPages}`}
       </p>
 
       <Card>
@@ -166,7 +144,7 @@ export default function ConnectPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          {paginatedCases.map((c) => (
+          {cases.map((c) => (
             <Link
               key={c.id}
               href={`/connect/${c.id}`}
@@ -198,7 +176,7 @@ export default function ConnectPage() {
               <IconArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors shrink-0 ml-4 mt-1" />
             </Link>
           ))}
-          {filteredCases.length === 0 && (
+          {cases.length === 0 && (
             <p className="text-center py-8 text-muted-foreground">
               No cases match your filters.
             </p>
@@ -210,23 +188,25 @@ export default function ConnectPage() {
                 <PaginationContent>
                   <PaginationItem>
                     <PaginationPrevious
-                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      onClick={() =>
+                        setParams({ page: Math.max(1, params.page - 1) })
+                      }
                       className={
-                        currentPage === 1
+                        params.page === 1
                           ? "pointer-events-none opacity-50"
                           : "cursor-pointer"
                       }
                     />
                   </PaginationItem>
 
-                  {Array.from({ length: totalPages }).map((_, i) => (
-                    <PaginationItem key={i}>
+                  {getPageNumbers().map((p) => (
+                    <PaginationItem key={p}>
                       <PaginationLink
-                        onClick={() => setCurrentPage(i + 1)}
-                        isActive={currentPage === i + 1}
+                        onClick={() => setParams({ page: p })}
+                        isActive={params.page === p}
                         className="cursor-pointer"
                       >
-                        {i + 1}
+                        {p}
                       </PaginationLink>
                     </PaginationItem>
                   ))}
@@ -234,10 +214,12 @@ export default function ConnectPage() {
                   <PaginationItem>
                     <PaginationNext
                       onClick={() =>
-                        setCurrentPage((p) => Math.min(totalPages, p + 1))
+                        setParams({
+                          page: Math.min(totalPages, params.page + 1),
+                        })
                       }
                       className={
-                        currentPage === totalPages
+                        params.page === totalPages
                           ? "pointer-events-none opacity-50"
                           : "cursor-pointer"
                       }

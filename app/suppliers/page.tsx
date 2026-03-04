@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import {
@@ -22,39 +21,39 @@ import { SupplierCard } from "@/components/suppliers/supplier-card";
 import { useQuery } from "@tanstack/react-query";
 import { fetchSuppliers } from "@/lib/api";
 import { IconSearch } from "@tabler/icons-react";
+import { useQueryStates, parseAsInteger, parseAsString } from "nuqs";
 
 export default function SuppliersPage() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [regionFilter, setRegionFilter] = useState<string>("all");
-  const [riskFilter, setRiskFilter] = useState<string>("all");
-
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 12; // Showing 12 suppliers per page for grid layout
-
-  const { data: suppliersData, isLoading } = useQuery({
-    queryKey: ["suppliers"],
-    queryFn: fetchSuppliers,
+  const [params, setParams] = useQueryStates({
+    page: parseAsInteger.withDefault(1),
+    search: parseAsString.withDefault(""),
+    region: parseAsString.withDefault("all"),
+    riskLevel: parseAsString.withDefault("all"),
   });
 
-  const suppliers = suppliersData || [];
-  const regions: string[] = [...new Set(suppliers.map((s) => s.region))];
+  const perPage = 12;
 
-  const filteredSuppliers = suppliers.filter((supplier) => {
-    const matchesSearch =
-      supplier.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      supplier.country.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesRegion =
-      regionFilter === "all" || supplier.region === regionFilter;
-    const matchesRisk =
-      riskFilter === "all" || supplier.riskLevel === riskFilter;
-    return matchesSearch && matchesRegion && matchesRisk;
+  const { data: response, isLoading } = useQuery({
+    queryKey: [
+      "suppliers",
+      params.page,
+      params.search,
+      params.region,
+      params.riskLevel,
+    ],
+    queryFn: () =>
+      fetchSuppliers({
+        page: params.page,
+        perPage,
+        search: params.search,
+        region: params.region,
+        riskLevel: params.riskLevel,
+      }),
   });
 
-  const totalPages = Math.ceil(filteredSuppliers.length / itemsPerPage);
-  const paginatedSuppliers = filteredSuppliers.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage,
-  );
+  const suppliers = response?.data || [];
+  const totalPages = response?.totalPages || 0;
+  const total = response?.total || 0;
 
   if (isLoading) {
     return (
@@ -63,6 +62,15 @@ export default function SuppliersPage() {
       </div>
     );
   }
+
+  // Build visible page numbers (show max 5 around current)
+  const getPageNumbers = () => {
+    const pages: number[] = [];
+    const start = Math.max(1, params.page - 2);
+    const end = Math.min(totalPages, start + 4);
+    for (let i = start; i <= end; i++) pages.push(i);
+    return pages;
+  };
 
   return (
     <div className="space-y-6">
@@ -81,39 +89,14 @@ export default function SuppliersPage() {
           <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search suppliers..."
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setCurrentPage(1);
-            }}
+            value={params.search}
+            onChange={(e) => setParams({ search: e.target.value, page: 1 })}
             className="pl-9"
           />
         </div>
         <Select
-          value={regionFilter}
-          onValueChange={(val) => {
-            setRegionFilter(val);
-            setCurrentPage(1);
-          }}
-        >
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="All Regions" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Regions</SelectItem>
-            {regions.map((region) => (
-              <SelectItem key={region} value={region}>
-                {region}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select
-          value={riskFilter}
-          onValueChange={(val) => {
-            setRiskFilter(val);
-            setCurrentPage(1);
-          }}
+          value={params.riskLevel}
+          onValueChange={(val) => setParams({ riskLevel: val, page: 1 })}
         >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="All Risk Levels" />
@@ -129,12 +112,13 @@ export default function SuppliersPage() {
 
       {/* Results count */}
       <p className="text-sm text-muted-foreground">
-        Showing {filteredSuppliers.length} of {suppliers.length} suppliers
+        Showing {suppliers.length} of {total} suppliers
+        {totalPages > 1 && ` • Page ${params.page} of ${totalPages}`}
       </p>
 
       {/* Supplier Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {paginatedSuppliers.map((supplier) => (
+        {suppliers.map((supplier) => (
           <Link key={supplier.id} href={`/suppliers/${supplier.id}`}>
             <SupplierCard supplier={supplier} />
           </Link>
@@ -147,23 +131,25 @@ export default function SuppliersPage() {
             <PaginationContent>
               <PaginationItem>
                 <PaginationPrevious
-                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  onClick={() =>
+                    setParams({ page: Math.max(1, params.page - 1) })
+                  }
                   className={
-                    currentPage === 1
+                    params.page === 1
                       ? "pointer-events-none opacity-50"
                       : "cursor-pointer"
                   }
                 />
               </PaginationItem>
 
-              {Array.from({ length: totalPages }).map((_, i) => (
-                <PaginationItem key={i}>
+              {getPageNumbers().map((p) => (
+                <PaginationItem key={p}>
                   <PaginationLink
-                    onClick={() => setCurrentPage(i + 1)}
-                    isActive={currentPage === i + 1}
+                    onClick={() => setParams({ page: p })}
+                    isActive={params.page === p}
                     className="cursor-pointer"
                   >
-                    {i + 1}
+                    {p}
                   </PaginationLink>
                 </PaginationItem>
               ))}
@@ -171,10 +157,10 @@ export default function SuppliersPage() {
               <PaginationItem>
                 <PaginationNext
                   onClick={() =>
-                    setCurrentPage((p) => Math.min(totalPages, p + 1))
+                    setParams({ page: Math.min(totalPages, params.page + 1) })
                   }
                   className={
-                    currentPage === totalPages
+                    params.page === totalPages
                       ? "pointer-events-none opacity-50"
                       : "cursor-pointer"
                   }
@@ -186,7 +172,7 @@ export default function SuppliersPage() {
       )}
 
       {/* Empty state */}
-      {filteredSuppliers.length === 0 && (
+      {suppliers.length === 0 && (
         <div className="text-center py-12">
           <p className="text-muted-foreground">
             No suppliers match your filters.

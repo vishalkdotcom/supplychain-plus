@@ -11,15 +11,18 @@ import {
 import { IconBuilding, IconBuildingSkyscraper } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchSuppliers } from "@/lib/api";
+import { Supplier } from "@/types";
 
 export function ViewToggle() {
   const { viewMode, setViewMode, currentSupplierId, setCurrentSupplierId } =
     useView();
 
-  const { data: suppliers } = useQuery({
+  const { data: suppliersRes } = useQuery({
     queryKey: ["suppliers"],
-    queryFn: fetchSuppliers,
+    queryFn: () => fetchSuppliers(),
   });
+
+  const suppliers = suppliersRes?.data;
 
   const handleViewChange = (value: string) => {
     if (value === "brand") {
@@ -69,7 +72,7 @@ export function ViewToggle() {
             <SelectValue placeholder="Select supplier" />
           </SelectTrigger>
           <SelectContent>
-            {suppliers?.map((supplier) => (
+            {suppliers?.map((supplier: Supplier) => (
               <SelectItem key={supplier.id} value={supplier.id}>
                 {supplier.name}
               </SelectItem>

@@ -25,6 +25,7 @@ import {
   fetchTimeline,
   fetchTraining,
 } from "@/lib/api";
+import { Case, Survey } from "@/types";
 import { SupplierHero } from "@/components/suppliers/supplier-hero";
 
 interface SupplierDetailPageProps {
@@ -41,12 +42,12 @@ export default function SupplierDetailPage({
     queryFn: () => fetchSupplier(id),
   });
 
-  const { data: allCases } = useQuery({
+  const { data: allCasesRes } = useQuery({
     queryKey: ["cases"],
     queryFn: () => fetchCases(),
   });
 
-  const { data: allSurveys } = useQuery({
+  const { data: allSurveysRes } = useQuery({
     queryKey: ["surveys"],
     queryFn: () => fetchSurveys(),
   });
@@ -79,8 +80,10 @@ export default function SupplierDetailPage({
   }
 
   // Filter cases and surveys for this supplier
-  const cases = allCases?.filter((c) => c.supplierId === id) || [];
-  const surveys = allSurveys?.filter((s) => s.supplierId === id) || [];
+  const cases =
+    allCasesRes?.data?.filter((c: Case) => c.supplierId === id) || [];
+  const surveys =
+    allSurveysRes?.data?.filter((s: Survey) => s.supplierId === id) || [];
   const supplierRecommendations =
     recommendations?.filter((r) => r.supplierId === id) || [];
   const timelineEvents = timeline || [];

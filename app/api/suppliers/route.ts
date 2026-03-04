@@ -1,12 +1,48 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db/postgres";
 import { wcGlobalQuery } from "@/lib/db/postgres-wc-global";
-import { Supplier } from "@/types";
+import { Supplier, PaginatedResponse } from "@/types";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const result = await query(`
-      SELECT 
+    const searchParams = request.nextUrl.searchParams;
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
+    const perPage = Math.min(
+      50,
+      Math.max(1, parseInt(searchParams.get("perPage") || "12")),
+    );
+    const search = searchParams.get("search") || "";
+    const riskLevel = searchParams.get("riskLevel") || "all";
+    const offset = (page - 1) * perPage;
+
+    // Build dynamic WHERE clauses
+    const conditions: string[] = [
+      "c.is_deleted = false",
+      "c.client_key IS NOT NULL",
+    ];
+    const params: any[] = [];
+    let paramIndex = 1;
+
+    if (search) {
+      conditions.push(`c.name ILIKE $${paramIndex}`);
+      params.push(`%${search}%`);
+      paramIndex++;
+    }
+
+    const whereClause = conditions.join(" AND ");
+
+    // Count total
+    const countResult = await query(
+      `SELECT COUNT(*) as total FROM clients_clientinfo c
+       LEFT JOIN supplier_risk_scores r ON CAST(c.client_key AS VARCHAR) = r.supplier_id
+       WHERE ${whereClause}`,
+      params,
+    );
+    let total = parseInt(countResult.rows[0].total);
+
+    // Fetch paginated data
+    const result = await query(
+      `SELECT 
         c.id, 
         c.client_key,
         c.name, 
@@ -19,13 +55,37 @@ export async function GET() {
         r.engagement_score
       FROM clients_clientinfo c
       LEFT JOIN supplier_risk_scores r ON CAST(c.client_key AS VARCHAR) = r.supplier_id
-      WHERE c.is_deleted = false AND c.client_key IS NOT NULL
+      WHERE ${whereClause}
       ORDER BY r.risk_score DESC NULLS LAST, c.name ASC
-      LIMIT 100
-    `);
+      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
+      [...params, perPage, offset],
+    );
 
-    // Fetch worker counts from wc_global.mdl_participant grouped by client_id
-    const clientKeys = result.rows
+    // Apply risk level filter in-memory (since it's derived from risk_score)
+    let rows = result.rows;
+    if (riskLevel !== "all") {
+      // Re-count with risk filter applied
+      const allRows = await query(
+        `SELECT c.client_key, r.risk_score
+         FROM clients_clientinfo c
+         LEFT JOIN supplier_risk_scores r ON CAST(c.client_key AS VARCHAR) = r.supplier_id
+         WHERE ${whereClause}`,
+        params,
+      );
+      const filteredKeys = allRows.rows.filter((row: any) => {
+        const score = row.risk_score || 50;
+        if (riskLevel === "high") return score > 70;
+        if (riskLevel === "medium") return score > 30 && score <= 70;
+        if (riskLevel === "low") return score <= 30;
+        return true;
+      });
+      total = filteredKeys.length;
+      const keySet = new Set(filteredKeys.map((r: any) => r.client_key));
+      rows = rows.filter((r: any) => keySet.has(r.client_key));
+    }
+
+    // Fetch worker counts from wc_global
+    const clientKeys = rows
       .map((r: any) => parseInt(r.client_key))
       .filter(Boolean);
     const workerCountMap: Record<number, number> = {};
@@ -46,7 +106,7 @@ export async function GET() {
       }
     }
 
-    const suppliers: Supplier[] = result.rows.map((row: any) => ({
+    const suppliers: Supplier[] = rows.map((row: any) => ({
       id: String(row.client_key),
       name: row.name,
       region: "Global",
@@ -73,7 +133,17 @@ export async function GET() {
       },
     }));
 
-    return NextResponse.json(suppliers);
+    const totalPages = Math.ceil(total / perPage);
+
+    const response: PaginatedResponse<Supplier> = {
+      data: suppliers,
+      total,
+      page,
+      perPage,
+      totalPages,
+    };
+
+    return NextResponse.json(response);
   } catch (error) {
     console.error("Error fetching suppliers:", error);
     return NextResponse.json(
