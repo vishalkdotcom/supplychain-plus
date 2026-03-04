@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { generateText } from "ai";
-import { model } from "@/lib/ai/provider";
+import { getModelFromRequest } from "@/lib/ai/provider";
 import { caseGuidanceSchema, type CaseGuidance } from "@/lib/ai/schemas";
 import { CASE_GUIDANCE_PROMPT } from "@/lib/ai/prompts";
 import { db } from "@/lib/db/drizzle";
@@ -77,7 +77,8 @@ export async function POST(request: Request) {
 
     let guidance: CaseGuidance | null = null;
 
-    const { text } = await generateText({ model, prompt });
+    const activeModel = getModelFromRequest(request);
+    const { text } = await generateText({ model: activeModel, prompt });
 
     // Parse + validate against zod schema
     const raw = extractJson(text);

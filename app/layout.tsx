@@ -6,6 +6,8 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { ViewProvider } from "@/components/view-context";
 import { AppHeader } from "@/components/app-header";
+import { Toaster } from "@/components/ui/sonner";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -23,9 +25,6 @@ export const metadata: Metadata = {
   title: "WOVO AI Control Center",
   description: "Cross-module intelligence for supply chain management",
 };
-
-import { Toaster } from "@/components/ui/sonner";
-import { NuqsAdapter } from "nuqs/adapters/next/app";
 
 export default function RootLayout({
   children,

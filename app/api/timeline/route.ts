@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { query as sqlQuery } from "@/lib/db/sql-server";
+import { paramQuery as sqlParamQuery } from "@/lib/db/sql-server";
 import { query as pgQuery } from "@/lib/db/postgres";
 import { query as mysqlQuery } from "@/lib/db/mysql";
 import { TimelineEvent } from "@/types";
+import mssql from "mssql";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -14,11 +15,22 @@ export async function GET(request: Request) {
   try {
     // 1. Case events from SQL Server
     try {
-      let caseWhere = "WHERE c.Deleted = 0";
-      if (supplierId) caseWhere += ` AND co.Id = ${parseInt(supplierId)}`;
+      const caseWhere = supplierId
+        ? "WHERE c.Deleted = 0 AND co.Id = @supplierId"
+        : "WHERE c.Deleted = 0";
+      const caseParams: Record<
+        string,
+        { type: (() => mssql.ISqlType) | mssql.ISqlType; value: unknown }
+      > = {};
+      if (supplierId) {
+        caseParams.supplierId = {
+          type: mssql.Int,
+          value: parseInt(supplierId),
+        };
+      }
 
-      const caseResult = await sqlQuery(`
-        SELECT TOP 20
+      const caseResult = await sqlParamQuery(
+        `SELECT TOP 20
           c.Id, c.Name as Title, c.Created, c.Priority,
           co.Id as CompanyId, co.Name as CompanyName,
           csct.Name as StatusName, ctct.Name as TypeName
@@ -27,8 +39,9 @@ export async function GET(request: Request) {
         LEFT JOIN CaseStatusCultureText csct ON c.CaseStatusId = csct.CaseStatusId AND csct.CultureCodeId = 1
         LEFT JOIN CaseTypeCultureText ctct ON c.CaseTypeId = ctct.CaseTypeId AND ctct.CultureCodeId = 1
         ${caseWhere}
-        ORDER BY c.Created DESC
-      `);
+        ORDER BY c.Created DESC`,
+        caseParams,
+      );
 
       for (const row of caseResult.recordset) {
         events.push({
@@ -47,19 +60,23 @@ export async function GET(request: Request) {
 
     // 2. Survey events from PostgreSQL
     try {
+      const surveyParams: unknown[] = [];
       let surveyWhere = "";
-      if (supplierId)
-        surveyWhere = `WHERE c.client_key = '${parseInt(supplierId)}'`;
+      if (supplierId) {
+        surveyWhere = "WHERE c.client_key = $1";
+        surveyParams.push(String(parseInt(supplierId)));
+      }
 
-      const surveyResult = await pgQuery(`
-        SELECT s.id, s.name, s.status, s.from_date, s.to_date,
+      const surveyResult = await pgQuery(
+        `SELECT s.id, s.name, s.status, s.from_date, s.to_date,
                c.client_key, c.name as client_name
         FROM survey_mdlsurvey s
         LEFT JOIN clients_clientinfo c ON s.client_id = c.id
         ${surveyWhere}
         ORDER BY s.created_date DESC
-        LIMIT 10
-      `);
+        LIMIT 10`,
+        surveyParams,
+      );
 
       for (const row of surveyResult.rows) {
         const statusLabel =

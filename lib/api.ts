@@ -26,6 +26,7 @@ interface SupplierParams extends PaginationParams {
 
 interface CaseParams extends PaginationParams {
   supplier?: string;
+  supplierId?: string;
   severity?: string;
 }
 
@@ -75,6 +76,7 @@ export async function fetchCases(
     perPage: params.perPage,
     search: params.search,
     supplier: params.supplier,
+    supplierId: params.supplierId,
     severity: params.severity,
   });
   const res = await fetch(`${API_BASE}/cases${qs}`);

@@ -74,9 +74,7 @@ export async function GET(request: NextRequest) {
       analyses = await db
         .select()
         .from(surveyAnalysis)
-        .where(
-          sql`${surveyAnalysis.surveyId} = ANY(ARRAY[${sql.raw(surveyIds.map((id) => `'${id}'`).join(","))}]::text[])`,
-        );
+        .where(sql`${surveyAnalysis.surveyId} = ANY(${surveyIds}::text[])`);
     }
     const analysisMap = new Map(analyses.map((a) => [a.surveyId, a]));
 

@@ -32,6 +32,7 @@ export async function GET() {
         recommendations.push({
           id: String(recId++),
           supplierId: supplier.supplierId,
+          supplierName: supplier.supplierName || "Unknown",
           action: "Initiate investigation into worker grievances",
           reason:
             caseFactor?.description ||
@@ -48,6 +49,7 @@ export async function GET() {
         recommendations.push({
           id: String(recId++),
           supplierId: supplier.supplierId,
+          supplierName: supplier.supplierName || "Unknown",
           action: "Deploy mandatory compliance training",
           reason:
             trainingFactor?.description ||
@@ -64,6 +66,7 @@ export async function GET() {
         recommendations.push({
           id: String(recId++),
           supplierId: supplier.supplierId,
+          supplierName: supplier.supplierName || "Unknown",
           action: "Conduct worker sentiment survey",
           reason:
             surveyFactor?.description ||
@@ -79,6 +82,7 @@ export async function GET() {
         recommendations.push({
           id: String(recId++),
           supplierId: supplier.supplierId,
+          supplierName: supplier.supplierName || "Unknown",
           action: "Escalate to brand compliance team",
           reason: `Critical risk score (${supplier.riskScore}/100) requires immediate brand-level intervention per HRDD requirements`,
           urgency: "immediate",

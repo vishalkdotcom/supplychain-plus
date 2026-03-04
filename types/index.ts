@@ -58,6 +58,7 @@ export interface TimelineEvent {
 export interface AIRecommendation {
   id: string;
   supplierId: string;
+  supplierName?: string;
   action: string;
   reason: string;
   urgency: "immediate" | "this_week" | "this_month";

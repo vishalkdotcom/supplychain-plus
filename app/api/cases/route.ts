@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { query } from "@/lib/db/sql-server";
-import { Case, PaginatedResponse } from "@/types";
+import { paramQuery } from "@/lib/db/sql-server";
+import { db } from "@/lib/db/drizzle";
+import { caseSummaryCache } from "@/lib/db/schema";
+import { sql } from "drizzle-orm";
+import { Case, AIGuidance, PaginatedResponse } from "@/types";
+import mssql from "mssql";
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,43 +16,60 @@ export async function GET(request: NextRequest) {
     );
     const search = searchParams.get("search") || "";
     const supplier = searchParams.get("supplier") || "all";
+    const supplierId = searchParams.get("supplierId") || "";
     const severity = searchParams.get("severity") || "all";
     const offset = (page - 1) * perPage;
 
-    // Build dynamic WHERE clauses
+    // Build dynamic WHERE clauses with parameterized queries
     const conditions: string[] = ["c.Deleted = 0"];
+    const params: Record<
+      string,
+      { type: (() => mssql.ISqlType) | mssql.ISqlType; value: unknown }
+    > = {
+      offset: { type: mssql.Int, value: offset },
+      perPage: { type: mssql.Int, value: perPage },
+    };
 
     if (search) {
-      const escapedSearch = search.replace(/'/g, "''");
-      conditions.push(
-        `(c.Name LIKE '%${escapedSearch}%' OR ctct.Name LIKE '%${escapedSearch}%')`,
-      );
+      conditions.push("(c.Name LIKE @search OR ctct.Name LIKE @search)");
+      params.search = { type: mssql.NVarChar, value: `%${search}%` };
     }
     if (supplier !== "all") {
-      const escapedSupplier = supplier.replace(/'/g, "''");
-      conditions.push(`co.Name = '${escapedSupplier}'`);
+      conditions.push("co.Name = @supplier");
+      params.supplier = { type: mssql.NVarChar, value: supplier };
+    }
+    if (supplierId) {
+      conditions.push("co.Id = @supplierId");
+      params.supplierId = { type: mssql.Int, value: parseInt(supplierId) };
     }
     if (severity !== "all") {
-      if (severity === "high") conditions.push("c.Priority = 1");
-      else if (severity === "medium") conditions.push("c.Priority = 2");
-      else if (severity === "low") conditions.push("c.Priority = 3");
+      const priorityMap: Record<string, number> = {
+        high: 1,
+        medium: 2,
+        low: 3,
+      };
+      if (priorityMap[severity]) {
+        conditions.push("c.Priority = @priority");
+        params.priority = { type: mssql.Int, value: priorityMap[severity] };
+      }
     }
 
     const whereClause = conditions.join(" AND ");
 
     // Count total
-    const countResult = await query(`
-      SELECT COUNT(*) as total
+    const countResult = await paramQuery(
+      `SELECT COUNT(*) as total
       FROM [Case] c
       LEFT JOIN Company co ON c.CompanyId = co.Id
       LEFT JOIN CaseTypeCultureText ctct ON c.CaseTypeId = ctct.CaseTypeId AND ctct.CultureCodeId = 1
-      WHERE ${whereClause}
-    `);
+      WHERE ${whereClause}`,
+      params,
+    );
     const total = countResult.recordset[0].total;
 
     // Fetch paginated data using OFFSET/FETCH (SQL Server syntax)
-    const result = await query(`
-      SELECT 
+    const result = await paramQuery(
+      `SELECT 
         c.Id,
         c.Name as Title,
         c.Created,
@@ -65,32 +86,61 @@ export async function GET(request: NextRequest) {
       LEFT JOIN CaseTypeCultureText ctct ON c.CaseTypeId = ctct.CaseTypeId AND ctct.CultureCodeId = 1
       WHERE ${whereClause}
       ORDER BY c.Created DESC
-      OFFSET ${offset} ROWS FETCH NEXT ${perPage} ROWS ONLY
-    `);
+      OFFSET @offset ROWS FETCH NEXT @perPage ROWS ONLY`,
+      params,
+    );
 
-    const cases: Case[] = result.recordset.map((row: any) => ({
-      id: String(row.Id),
-      supplierId: String(row.CompanyId),
-      supplierName: row.CompanyName || "Unknown",
-      topic: row.TypeName || "General",
-      severity:
-        row.Priority === 1 ? "high" : row.Priority === 2 ? "medium" : "low",
-      status: mapStatus(row.StatusName),
-      aiSummary: row.FirstMessage
+    // Batch-fetch cached AI summaries & guidance from Drizzle
+    const caseIds = result.recordset.map((row: any) => String(row.Id));
+    const cacheMap = new Map<
+      string,
+      { aiSummary: string | null; aiGuidance: unknown }
+    >();
+    if (caseIds.length > 0) {
+      try {
+        const cached = await db
+          .select()
+          .from(caseSummaryCache)
+          .where(sql`${caseSummaryCache.caseId} = ANY(${caseIds}::text[])`);
+        for (const c of cached) {
+          cacheMap.set(c.caseId, {
+            aiSummary: c.aiSummary,
+            aiGuidance: c.aiGuidance,
+          });
+        }
+      } catch {
+        // Cache DB may be unavailable — fall back to defaults
+      }
+    }
+
+    const cases: Case[] = result.recordset.map((row: any) => {
+      const cached = cacheMap.get(String(row.Id));
+      const fallbackSummary = row.FirstMessage
         ? row.FirstMessage.substring(0, 150) + "..."
-        : "No content available.",
-      fullContent: row.FirstMessage || row.Title || "No content.",
-      createdAt: row.Created
-        ? new Date(row.Created).toISOString().split("T")[0]
-        : "",
-      updatedAt: row.Modified
-        ? new Date(row.Modified).toISOString().split("T")[0]
-        : "",
-      aiGuidance: {
-        recommendedSteps: ["Review case details", "Contact supplier"],
-        estimatedResolutionDays: 7,
-      },
-    }));
+        : "No content available.";
+
+      return {
+        id: String(row.Id),
+        supplierId: String(row.CompanyId),
+        supplierName: row.CompanyName || "Unknown",
+        topic: row.TypeName || "General",
+        severity:
+          row.Priority === 1 ? "high" : row.Priority === 2 ? "medium" : "low",
+        status: mapStatus(row.StatusName),
+        aiSummary: cached?.aiSummary || fallbackSummary,
+        fullContent: row.FirstMessage || row.Title || "No content.",
+        createdAt: row.Created
+          ? new Date(row.Created).toISOString().split("T")[0]
+          : "",
+        updatedAt: row.Modified
+          ? new Date(row.Modified).toISOString().split("T")[0]
+          : "",
+        aiGuidance: (cached?.aiGuidance as AIGuidance) || {
+          recommendedSteps: ["Review case details", "Contact supplier"],
+          estimatedResolutionDays: 7,
+        },
+      };
+    });
 
     const totalPages = Math.ceil(total / perPage);
 

@@ -3,9 +3,10 @@ import { z } from "zod";
 import { db } from "@/lib/db/drizzle";
 import { supplierRiskScores, alerts, surveyAnalysis } from "@/lib/db/schema";
 import { query as pgQuery } from "@/lib/db/postgres";
-import { query as mssqlQuery } from "@/lib/db/sql-server";
+import { paramQuery as mssqlParamQuery } from "@/lib/db/sql-server";
 import { query as mysqlQuery } from "@/lib/db/mysql";
 import { desc, eq, gte, and, sql } from "drizzle-orm";
+import mssql from "mssql";
 
 // ===============================
 // Read Tools
@@ -62,19 +63,32 @@ export const queryCases = tool({
     limit: z.number().default(10).describe("Number of cases to return"),
   }),
   execute: async ({ supplierId, severity, limit }) => {
-    let whereClause = "WHERE c.Deleted = 0";
-    if (supplierId) whereClause += ` AND co.Id = ${parseInt(supplierId)}`;
+    const conditions: string[] = ["c.Deleted = 0"];
+    const params: Record<
+      string,
+      { type: (() => mssql.ISqlType) | mssql.ISqlType; value: unknown }
+    > = {
+      limit: { type: mssql.Int, value: limit },
+    };
+
+    if (supplierId) {
+      conditions.push("co.Id = @supplierId");
+      params.supplierId = { type: mssql.Int, value: parseInt(supplierId) };
+    }
     if (severity) {
       const priorityMap: Record<string, number> = {
         high: 1,
         medium: 2,
         low: 3,
       };
-      whereClause += ` AND c.Priority = ${priorityMap[severity]}`;
+      conditions.push("c.Priority = @priority");
+      params.priority = { type: mssql.Int, value: priorityMap[severity] };
     }
 
-    const result = await mssqlQuery(`
-      SELECT TOP ${limit}
+    const whereClause = "WHERE " + conditions.join(" AND ");
+
+    const result = await mssqlParamQuery(
+      `SELECT TOP (@limit)
         c.Id, c.Name as Title, c.Created, c.Priority,
         co.Name as CompanyName,
         csct.Name as StatusName,
@@ -85,8 +99,9 @@ export const queryCases = tool({
       LEFT JOIN CaseStatusCultureText csct ON c.CaseStatusId = csct.CaseStatusId AND csct.CultureCodeId = 1
       LEFT JOIN CaseTypeCultureText ctct ON c.CaseTypeId = ctct.CaseTypeId AND ctct.CultureCodeId = 1
       ${whereClause}
-      ORDER BY c.Created DESC
-    `);
+      ORDER BY c.Created DESC`,
+      params,
+    );
 
     return result.recordset.map(
       (row: {
@@ -123,17 +138,28 @@ export const querySurveys = tool({
   }),
   execute: async ({ supplierId, status, limit }) => {
     const conditions: string[] = [];
-    if (supplierId) conditions.push(`c.client_key = '${parseInt(supplierId)}'`);
+    const params: unknown[] = [];
+    let paramIndex = 1;
+
+    if (supplierId) {
+      conditions.push(`c.client_key = $${paramIndex++}`);
+      params.push(String(parseInt(supplierId)));
+    }
     if (status) {
       const statusMap: Record<string, number> = {
         active: 1,
         closed: 2,
         draft: 0,
       };
-      conditions.push(`s.status = ${statusMap[status]}`);
+      conditions.push(`s.status = $${paramIndex++}`);
+      params.push(statusMap[status]);
     }
+
     const whereClause =
       conditions.length > 0 ? "WHERE " + conditions.join(" AND ") : "";
+
+    params.push(limit); // always the last param
+    const limitParam = `$${paramIndex}`;
 
     const result = await pgQuery(
       `SELECT s.id, s.name, s.status, s.from_date, s.to_date,
@@ -142,19 +168,18 @@ export const querySurveys = tool({
        LEFT JOIN clients_clientinfo c ON s.client_id = c.id
        ${whereClause}
        ORDER BY s.created_date DESC
-       LIMIT ${limit}`,
+       LIMIT ${limitParam}`,
+      params,
     );
 
     // Enrich with analysis data from Drizzle
-    const surveyIds = result.rows.map((r: { id: number }) => r.id) as number[];
+    const surveyIds = result.rows.map((r: { id: number }) => String(r.id));
     const analyses =
       surveyIds.length > 0
         ? await db
             .select()
             .from(surveyAnalysis)
-            .where(
-              sql`${surveyAnalysis.surveyId} = ANY(ARRAY[${sql.raw(surveyIds.join(","))}]::int[])`,
-            )
+            .where(sql`${surveyAnalysis.surveyId} = ANY(${surveyIds}::text[])`)
         : [];
 
     const analysisMap = new Map(analyses.map((a) => [a.surveyId, a]));
@@ -190,8 +215,8 @@ export const queryTrainingCompletion = tool({
     limit: z.number().default(10),
   }),
   execute: async ({ limit }) => {
-    const result = (await mysqlQuery(`
-      SELECT 
+    const result = (await mysqlQuery(
+      `SELECT 
         c.id, c.fullname,
         (SELECT COUNT(*) FROM mdl_user_enrolments ue 
          JOIN mdl_enrol e ON ue.enrolid = e.id 
@@ -201,8 +226,9 @@ export const queryTrainingCompletion = tool({
       FROM mdl_course c
       WHERE c.id > 1
       ORDER BY c.timecreated DESC
-      LIMIT ${limit}
-    `)) as Array<{
+      LIMIT ?`,
+      [limit],
+    )) as Array<{
       id: number;
       fullname: string;
       enrolled: number;

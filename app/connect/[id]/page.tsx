@@ -32,6 +32,7 @@ import {
 } from "@tabler/icons-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchCase } from "@/lib/api";
+import { useAISettings } from "@/hooks/use-ai-settings";
 
 interface CaseDetailPageProps {
   params: Promise<{ id: string }>;
@@ -44,6 +45,8 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
     queryKey: ["cases", id],
     queryFn: () => fetchCase(id),
   });
+
+  const { activeConfig } = useAISettings();
 
   const [aiSummary, setAiSummary] = useState<string>("");
   const [isLoadingSummary, setIsLoadingSummary] = useState(false);
@@ -70,9 +73,18 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
     const generateGuidance = async () => {
       setIsLoadingGuidance(true);
       try {
+        const headers: Record<string, string> = {
+          "Content-Type": "application/json",
+        };
+        if (activeConfig) {
+          headers["x-ai-provider"] = activeConfig.provider;
+          headers["x-ai-api-key"] = activeConfig.apiKey;
+          headers["x-ai-model"] = activeConfig.model;
+        }
+
         const response = await fetch("/api/ai/guidance", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers,
           body: JSON.stringify({
             caseId: caseData.id,
             caseText: content,
@@ -108,9 +120,18 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
     setIsLoadingSummary(true);
     setSummaryError("");
     try {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (activeConfig) {
+        headers["x-ai-provider"] = activeConfig.provider;
+        headers["x-ai-api-key"] = activeConfig.apiKey;
+        headers["x-ai-model"] = activeConfig.model;
+      }
+
       const response = await fetch("/api/ai/summarize", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ caseId: caseData.id, caseText: content }),
       });
       const data = await response.json();
@@ -129,7 +150,7 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
     } finally {
       setIsLoadingSummary(false);
     }
-  }, [caseData, id, queryClient]);
+  }, [activeConfig, caseData, id, queryClient]);
 
   if (isLoading) {
     return (

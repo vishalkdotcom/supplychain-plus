@@ -39,12 +39,14 @@ export async function GET(request: NextRequest) {
         c.shortname, 
         c.summary, 
         c.timecreated,
+        cc.name as category_name,
         (SELECT COUNT(*) FROM mdl_user_enrolments ue
          JOIN mdl_enrol e ON ue.enrolid = e.id
          WHERE e.courseid = c.id) as enrolled,
-        (SELECT COUNT(*) FROM mdl_course_completions cc
-         WHERE cc.course = c.id AND cc.timecompleted IS NOT NULL) as completed
+        (SELECT COUNT(*) FROM mdl_course_completions ccomp
+         WHERE ccomp.course = c.id AND ccomp.timecompleted IS NOT NULL) as completed
       FROM mdl_course c
+      LEFT JOIN mdl_course_categories cc ON c.category = cc.id
       WHERE ${whereClause}
       ORDER BY c.timecreated DESC 
       LIMIT ? OFFSET ?`,
@@ -55,6 +57,7 @@ export async function GET(request: NextRequest) {
       shortname: string;
       summary: string;
       timecreated: number;
+      category_name: string | null;
       enrolled: number;
       completed: number;
     }>;
@@ -67,10 +70,12 @@ export async function GET(request: NextRequest) {
       enrollments: row.enrolled || 0,
       completionRate:
         row.enrolled > 0 ? Math.round((row.completed / row.enrolled) * 100) : 0,
-      aiStatus: "manual",
+      aiStatus: "manual" as const, // TODO: detect if AI-generated from course metadata
       aiGenerated: false,
-      relevantFor: ["General Compliance"],
-      languages: ["English", "Local"],
+      relevantFor: row.category_name
+        ? [row.category_name]
+        : ["General Compliance"],
+      languages: ["English", "Local"], // TODO: derive from Moodle lang config
       createdAt: new Date(row.timecreated * 1000).toISOString().split("T")[0],
     }));
 

@@ -40,3 +40,23 @@ export const query = async (sql: string) => {
   const pool = await getPool();
   return pool.request().query(sql);
 };
+
+/**
+ * Execute a parameterized SQL Server query.
+ * params is a record of { name: { type, value } } passed to request.input().
+ * Use @name placeholders in the SQL string.
+ */
+export const paramQuery = async (
+  sql: string,
+  params: Record<
+    string,
+    { type: (() => mssql.ISqlType) | mssql.ISqlType; value: unknown }
+  >,
+) => {
+  const pool = await getPool();
+  const request = pool.request();
+  for (const [name, { type, value }] of Object.entries(params)) {
+    request.input(name, type, value);
+  }
+  return request.query(sql);
+};

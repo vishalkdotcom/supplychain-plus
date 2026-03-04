@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { generateText } from "ai";
-import { model } from "@/lib/ai/provider";
+import { getModelFromRequest } from "@/lib/ai/provider";
 import { db } from "@/lib/db/drizzle";
 import { surveyAnalysis } from "@/lib/db/schema";
 import { query as pgQuery } from "@/lib/db/postgres";
@@ -72,8 +72,10 @@ export async function POST(request: Request) {
 
       const responseText = data.responses.slice(0, 50).join("\n---\n");
 
+      const activeModel = getModelFromRequest(request);
+
       const { text } = await generateText({
-        model,
+        model: activeModel,
         prompt: `Analyze these factory worker survey responses and provide a structured analysis.
 Return ONLY valid JSON with exactly this shape (no markdown, no explanation):
 {

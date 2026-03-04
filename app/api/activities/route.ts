@@ -3,9 +3,13 @@ import { query as pgQuery } from "@/lib/db/postgres";
 import { query as sqlQuery } from "@/lib/db/sql-server";
 import { ActivityItem } from "@/types";
 
+interface InternalActivity extends ActivityItem {
+  _rawDate: Date;
+}
+
 export async function GET() {
   try {
-    const activities: ActivityItem[] = [];
+    const activities: InternalActivity[] = [];
 
     // 1. Get recent cases from SQL Server as activities
     const sqlRes = await sqlQuery(`
@@ -21,17 +25,18 @@ export async function GET() {
       ORDER BY c.Created DESC
     `);
 
-    sqlRes.recordset.forEach((row: any) => {
+    sqlRes.recordset.forEach((row: Record<string, unknown>) => {
       activities.push({
         id: `case-${row.Id}`,
         action: "Case Created",
-        details: `New case: ${row.Name}`,
-        time: getTimeAgo(row.Created),
+        details: `New case: ${row.Name as string}`,
+        time: getTimeAgo(row.Created as string),
         module: "connect",
         supplierId: String(row.CompanyId),
-        supplierName: row.CompanyName || "Unknown",
+        supplierName: (row.CompanyName as string) || "Unknown",
         linkedId: String(row.Id),
         linkedType: "case",
+        _rawDate: row.Created ? new Date(row.Created as string) : new Date(0),
       });
     });
 
@@ -50,25 +55,33 @@ export async function GET() {
       LIMIT 3
     `);
 
-    pgRes.rows.forEach((row: any) => {
+    pgRes.rows.forEach((row: Record<string, unknown>) => {
       activities.push({
         id: `survey-${row.id}`,
         action: "Survey Started",
-        details: `Survey launched: ${row.name}`,
-        time: getTimeAgo(row.from_date),
+        details: `Survey launched: ${row.name as string}`,
+        time: getTimeAgo(row.from_date as string),
         module: "engage",
         supplierId: row.client_key
           ? String(row.client_key)
           : String(row.client_id),
-        supplierName: row.client_name || "Unknown",
-        linkedId: row.id.toString(),
+        supplierName: (row.client_name as string) || "Unknown",
+        linkedId: String(row.id),
         linkedType: "survey",
+        _rawDate: row.from_date
+          ? new Date(row.from_date as string)
+          : new Date(0),
       });
     });
 
-    // Sort by "time" (heuristically since we don't have absolute timestamps in the array)
-    // For now we'll just return them interleaved
-    return NextResponse.json(activities.slice(0, 10));
+    // Sort by actual timestamp descending
+    activities.sort((a, b) => b._rawDate.getTime() - a._rawDate.getTime());
+
+    // Strip internal _rawDate before returning
+    const cleaned: ActivityItem[] = activities
+      .slice(0, 10)
+      .map(({ _rawDate: _, ...rest }) => rest);
+    return NextResponse.json(cleaned);
   } catch (error) {
     console.error("Error fetching activities:", error);
     return NextResponse.json(

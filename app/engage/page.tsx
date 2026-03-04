@@ -33,6 +33,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchSurveys } from "@/lib/api";
 import { toast } from "sonner";
 import { useQueryStates, parseAsInteger, parseAsString } from "nuqs";
+import { useAISettings } from "@/hooks/use-ai-settings";
 
 interface GeneratedQuestion {
   id: number;
@@ -65,6 +66,8 @@ export default function EngagePage() {
   const [analyzingId, setAnalyzingId] = useState<string | null>(null);
   const [generateError, setGenerateError] = useState("");
   const queryClient = useQueryClient();
+
+  const { activeConfig } = useAISettings();
 
   const { viewMode, currentSupplierId } = useView();
 
@@ -109,9 +112,18 @@ export default function EngagePage() {
     setIsGenerating(true);
     setGenerateError("");
     try {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (activeConfig) {
+        headers["x-ai-provider"] = activeConfig.provider;
+        headers["x-ai-api-key"] = activeConfig.apiKey;
+        headers["x-ai-model"] = activeConfig.model;
+      }
+
       const response = await fetch("/api/ai/survey", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ prompt: designerPrompt }),
       });
       const data = await response.json();
@@ -156,9 +168,18 @@ export default function EngagePage() {
   const handleAnalyze = async (surveyId: string) => {
     setAnalyzingId(surveyId);
     try {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (activeConfig) {
+        headers["x-ai-provider"] = activeConfig.provider;
+        headers["x-ai-api-key"] = activeConfig.apiKey;
+        headers["x-ai-model"] = activeConfig.model;
+      }
+
       await fetch("/api/jobs/analyze-surveys", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ surveyId }),
       });
       queryClient.invalidateQueries({ queryKey: ["surveys"] });

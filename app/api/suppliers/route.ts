@@ -52,7 +52,8 @@ export async function GET(request: NextRequest) {
         r.case_score,
         r.survey_score,
         r.training_score,
-        r.engagement_score
+        r.engagement_score,
+        r.reasons
       FROM clients_clientinfo c
       LEFT JOIN supplier_risk_scores r ON CAST(c.client_key AS VARCHAR) = r.supplier_id
       WHERE ${whereClause}
@@ -109,12 +110,12 @@ export async function GET(request: NextRequest) {
     const suppliers: Supplier[] = rows.map((row: any) => ({
       id: String(row.client_key),
       name: row.name,
-      region: "Global",
+      region: deriveRegion(row.country),
       country: row.country || "Unknown",
       location: row.country || "Unknown",
       workerCount: workerCountMap[parseInt(row.client_key)] || 0,
-      contactName: "N/A",
-      contactEmail: "n/a",
+      contactName: "N/A", // TODO: add contact columns to clients_clientinfo
+      contactEmail: "N/A",
       riskScore: row.risk_score || 50,
       riskLevel:
         (row.risk_score || 50) > 70
@@ -123,13 +124,13 @@ export async function GET(request: NextRequest) {
             ? "medium"
             : "low",
       status: row.is_active ? "active" : "inactive",
-      lastActivityDate: new Date().toISOString().split("T")[0],
+      lastActivityDate: new Date().toISOString().split("T")[0], // TODO: derive from latest case/survey date
       riskBreakdown: {
         caseScore: row.case_score || 50,
         surveyScore: row.survey_score || 50,
         trainingScore: row.training_score || 50,
         engagementScore: row.engagement_score || 50,
-        reasons: [],
+        reasons: Array.isArray(row.reasons) ? row.reasons : [],
       },
     }));
 
@@ -151,4 +152,67 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
+}
+
+const REGION_MAP: Record<string, string> = {
+  // Asia
+  Vietnam: "Asia",
+  Cambodia: "Asia",
+  Bangladesh: "Asia",
+  China: "Asia",
+  India: "Asia",
+  Indonesia: "Asia",
+  Thailand: "Asia",
+  Myanmar: "Asia",
+  Philippines: "Asia",
+  Malaysia: "Asia",
+  Pakistan: "Asia",
+  "Sri Lanka": "Asia",
+  Taiwan: "Asia",
+  Japan: "Asia",
+  "South Korea": "Asia",
+  Laos: "Asia",
+  Nepal: "Asia",
+  // Europe
+  Germany: "Europe",
+  France: "Europe",
+  Italy: "Europe",
+  Spain: "Europe",
+  UK: "Europe",
+  "United Kingdom": "Europe",
+  Portugal: "Europe",
+  Turkey: "Europe",
+  Poland: "Europe",
+  Romania: "Europe",
+  // Americas
+  USA: "Americas",
+  "United States": "Americas",
+  Mexico: "Americas",
+  Brazil: "Americas",
+  Colombia: "Americas",
+  Guatemala: "Americas",
+  Honduras: "Americas",
+  "El Salvador": "Americas",
+  Canada: "Americas",
+  // Africa
+  Ethiopia: "Africa",
+  Kenya: "Africa",
+  Madagascar: "Africa",
+  Tanzania: "Africa",
+  Mauritius: "Africa",
+  "South Africa": "Africa",
+  Egypt: "Africa",
+  Morocco: "Africa",
+  Tunisia: "Africa",
+  // Middle East
+  Jordan: "Middle East",
+  UAE: "Middle East",
+  "Saudi Arabia": "Middle East",
+  // Oceania
+  Australia: "Oceania",
+};
+
+function deriveRegion(country: string | null): string {
+  if (!country) return "Global";
+  return REGION_MAP[country] || "Global";
 }
