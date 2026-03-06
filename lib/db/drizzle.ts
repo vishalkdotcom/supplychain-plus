@@ -3,9 +3,7 @@ import postgres from "postgres";
 import * as schema from "./schema";
 
 // Build connection string from existing env vars, targeting the separate wovo_ai database
-const connectionString =
-  process.env.DRIZZLE_DATABASE_URL ||
-  `postgres://${process.env.POSTGRES_USER || "postgres"}:${process.env.POSTGRES_PASSWORD || ""}@${process.env.POSTGRES_HOST || "localhost"}:${process.env.POSTGRES_PORT || "5432"}/wovo_ai`;
+const connectionString = `postgres://${process.env.POSTGRES_USER || "postgres"}:${process.env.POSTGRES_PASSWORD || ""}@${process.env.POSTGRES_HOST || "localhost"}:${process.env.POSTGRES_PORT || "5432"}/${process.env.POSTGRES_DATABASE_WOVO_AI}`;
 
 // postgres.js client — connection pooling is built-in
 const client = postgres(connectionString, {

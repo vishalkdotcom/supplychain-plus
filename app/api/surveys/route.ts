@@ -141,3 +141,43 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { questions, languages, title } = body;
+
+    // Basic validation
+    if (!questions || !languages || !title) {
+      return NextResponse.json(
+        { error: "Missing required fields" },
+        { status: 400 },
+      );
+    }
+
+    // DEMO IMPLEMENTATION:
+    // In a production application, this would insert records into:
+    // - survey_mdlsurvey
+    // - survey_mdlsurvey_translated
+    // - survey_mdlsurveyquestion
+    // For this demo, we simulate a successful save to the database.
+
+    // Simulate network delay
+    await new Promise((resolve) => setTimeout(resolve, 800));
+
+    return NextResponse.json(
+      {
+        success: true,
+        message: "Survey draft saved successfully to database.",
+        draftId: `draft-${Date.now()}`,
+      },
+      { status: 200 },
+    );
+  } catch (error) {
+    console.error("Error saving survey draft:", error);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 },
+    );
+  }
+}

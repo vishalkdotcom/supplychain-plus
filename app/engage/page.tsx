@@ -60,9 +60,9 @@ export default function EngagePage() {
 
   const [designerPrompt, setDesignerPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>(["en"]);
-  const [isEditing, setIsEditing] = useState(false);
   const [analyzingId, setAnalyzingId] = useState<string | null>(null);
   const [generateError, setGenerateError] = useState("");
   const queryClient = useQueryClient();
@@ -150,19 +150,35 @@ export default function EngagePage() {
     );
   };
 
-  const handleSaveDraft = () => {
-    localStorage.setItem(
-      "survey_draft",
-      JSON.stringify({
-        questions: generatedQuestions,
-        languages: selectedLanguages,
-      }),
-    );
-    toast("Draft saved locally ✓");
+  const handleSaveDraft = async () => {
+    setIsSavingDraft(true);
+    try {
+      const res = await fetch("/api/surveys", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: surveyTitle,
+          questions: generatedQuestions,
+          languages: selectedLanguages,
+        }),
+      });
+
+      if (!res.ok) throw new Error("Failed to save draft");
+
+      const data = await res.json();
+      toast.success(data.message || "Draft saved to server ✓");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to save draft.");
+    } finally {
+      setIsSavingDraft(false);
+    }
   };
 
   const handleDeploy = () => {
-    toast("Demo mode — deployment coming in a future release.");
+    toast(
+      "Demo Mode: Deploying surveys is simulated and currently disabled in this environment.",
+    );
   };
 
   const handleAnalyze = async (surveyId: string) => {
@@ -313,16 +329,17 @@ export default function EngagePage() {
                 <Button
                   variant="outline"
                   className="flex-1"
-                  onClick={() => setIsEditing(!isEditing)}
-                >
-                  {isEditing ? "Done Editing" : "Edit Questions"}
-                </Button>
-                <Button
-                  variant="outline"
-                  className="flex-1"
                   onClick={handleSaveDraft}
+                  disabled={isSavingDraft}
                 >
-                  Save as Draft
+                  {isSavingDraft ? (
+                    <>
+                      <IconLoader className="w-4 h-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    "Save as Draft"
+                  )}
                 </Button>
                 <Button className="flex-1" onClick={handleDeploy}>
                   Deploy to Suppliers

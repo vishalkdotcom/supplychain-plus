@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { ModeToggle } from "@/components/mode-toggle";
 import {
   IconBrandOpenai,
   IconBuilding,
@@ -139,12 +140,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild>
-              <Link href="/settings">
-                <IconSettings />
-                <span>Settings</span>
-              </Link>
-            </SidebarMenuButton>
+            <div className="flex w-full items-center justify-between px-2 py-1">
+              <SidebarMenuButton asChild className="w-auto">
+                <Link href="/settings">
+                  <IconSettings className="mr-2" />
+                  <span>Settings</span>
+                </Link>
+              </SidebarMenuButton>
+              <ModeToggle />
+            </div>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>

@@ -8,6 +8,8 @@ import { ViewProvider } from "@/components/view-context";
 import { AppHeader } from "@/components/app-header";
 import { Toaster } from "@/components/ui/sonner";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
+import { ThemeProvider } from "@/components/theme-provider";
+import { ErrorBoundary } from "@/components/error-boundary";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -32,26 +34,33 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={inter.variable}>
+    <html lang="en" className={inter.variable} suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <NuqsAdapter>
-          <QueryProvider>
-            <ViewProvider>
-              <SidebarProvider>
-                <AppSidebar />
-                <div className="flex flex-1 flex-col overflow-hidden">
-                  <AppHeader />
-                  <main className="flex-1 overflow-y-auto p-6 md:p-8">
-                    {children}
-                  </main>
-                </div>
-              </SidebarProvider>
-            </ViewProvider>
-          </QueryProvider>
-        </NuqsAdapter>
-        <Toaster />
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <NuqsAdapter>
+            <QueryProvider>
+              <ViewProvider>
+                <SidebarProvider>
+                  <AppSidebar />
+                  <div className="flex flex-1 flex-col overflow-hidden">
+                    <AppHeader />
+                    <main className="flex-1 overflow-y-auto p-6 md:p-8">
+                      <ErrorBoundary>{children}</ErrorBoundary>
+                    </main>
+                  </div>
+                </SidebarProvider>
+              </ViewProvider>
+            </QueryProvider>
+          </NuqsAdapter>
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );

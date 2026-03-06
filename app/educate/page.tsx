@@ -375,7 +375,7 @@ export default function EducatePage() {
                         className="flex-1"
                         onClick={() =>
                           showToast(
-                            `Demo mode — "${item.title}" publish coming soon.`,
+                            `Demo Mode: Deployment of "${item.title}" is simulated and will not affect production.`,
                           )
                         }
                       >
