@@ -34,6 +34,8 @@ import { fetchSurveys } from "@/lib/api";
 import { toast } from "sonner";
 import { useQueryStates, parseAsInteger, parseAsString } from "nuqs";
 import { useAISettings } from "@/hooks/use-ai-settings";
+import { useEffect, useTransition } from "react";
+import { useDebounce } from "@/hooks/use-debounce";
 
 interface GeneratedQuestion {
   id: number;
@@ -55,6 +57,18 @@ export default function EngagePage() {
     page: parseAsInteger.withDefault(1),
     search: parseAsString.withDefault(""),
   });
+
+  const [searchTerm, setSearchTerm] = useState(params.search);
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+  const [isPendingTransition, startTransition] = useTransition();
+
+  useEffect(() => {
+    if (debouncedSearchTerm !== params.search) {
+      startTransition(() => {
+        setParams({ search: debouncedSearchTerm, page: 1 });
+      });
+    }
+  }, [debouncedSearchTerm, params.search, setParams]);
 
   const perPage = 8;
 
@@ -353,11 +367,15 @@ export default function EngagePage() {
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1 max-w-sm">
-          <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          {isPendingTransition ? (
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          )}
           <Input
             placeholder="Search surveys..."
-            value={params.search}
-            onChange={(e) => setParams({ search: e.target.value, page: 1 })}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-9"
           />
         </div>

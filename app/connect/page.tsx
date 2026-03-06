@@ -30,6 +30,8 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchCases } from "@/lib/api";
 import { useView } from "@/components/view-context";
 import { useQueryStates, parseAsInteger, parseAsString } from "nuqs";
+import { useState, useEffect, useTransition } from "react";
+import { useDebounce } from "@/hooks/use-debounce";
 
 export default function ConnectPage() {
   const [params, setParams] = useQueryStates({
@@ -38,6 +40,18 @@ export default function ConnectPage() {
     supplier: parseAsString.withDefault("all"),
     severity: parseAsString.withDefault("all"),
   });
+
+  const [searchTerm, setSearchTerm] = useState(params.search);
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+  const [isPendingTransition, startTransition] = useTransition();
+
+  useEffect(() => {
+    if (debouncedSearchTerm !== params.search) {
+      startTransition(() => {
+        setParams({ search: debouncedSearchTerm, page: 1 });
+      });
+    }
+  }, [debouncedSearchTerm, params.search, setParams]);
 
   const perPage = 8;
 
@@ -107,11 +121,15 @@ export default function ConnectPage() {
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1 max-w-sm">
-          <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          {isPendingTransition ? (
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          )}
           <Input
             placeholder="Search cases..."
-            value={params.search}
-            onChange={(e) => setParams({ search: e.target.value, page: 1 })}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-9"
           />
         </div>
