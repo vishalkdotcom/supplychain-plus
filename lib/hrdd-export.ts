@@ -7,15 +7,17 @@ interface HRDDReportData {
   supplier: Supplier;
   generatedDate: string;
   auditorName: string;
+  narrative?: string;
+  frameworkName?: string;
 }
 
 export const generateHRDDReport = (data: HRDDReportData) => {
   const doc = new jsPDF();
-  const { supplier, generatedDate, auditorName } = data;
+  const { supplier, generatedDate, auditorName, narrative, frameworkName } = data;
 
   // Title
   doc.setFontSize(20);
-  doc.text("HRDD Compliance Report", 14, 22);
+  doc.text(frameworkName ? `${frameworkName} Compliance Report` : "HRDD Compliance Report", 14, 22);
 
   // Metadata
   doc.setFontSize(10);
@@ -23,16 +25,41 @@ export const generateHRDDReport = (data: HRDDReportData) => {
   doc.text(`Generated on: ${generatedDate}`, 14, 30);
   doc.text(`Auditor: ${auditorName}`, 14, 35);
 
+  let currentY = 45;
+
+  // AI Narrative Section
+  if (narrative) {
+    doc.setDrawColor(200);
+    doc.line(14, currentY, 196, currentY);
+    currentY += 10;
+
+    doc.setFontSize(14);
+    doc.setTextColor(0);
+    doc.text("Executive Summary (AI Generated)", 14, currentY);
+    currentY += 8;
+
+    doc.setFontSize(10);
+    doc.setTextColor(50);
+    
+    // Split text to fit width
+    const splitText = doc.splitTextToSize(narrative, 180);
+    doc.text(splitText, 14, currentY);
+    
+    // Calculate new Y based on number of lines
+    currentY += (splitText.length * 5) + 10;
+  }
+
   // Supplier Info
   doc.setDrawColor(200);
-  doc.line(14, 40, 196, 40);
+  doc.line(14, currentY, 196, currentY);
+  currentY += 10;
 
   doc.setFontSize(14);
   doc.setTextColor(0);
-  doc.text("Supplier Profile", 14, 50);
+  doc.text("Supplier Profile", 14, currentY);
 
   autoTable(doc, {
-    startY: 55,
+    startY: currentY + 5,
     head: [["Field", "Value"]],
     body: [
       ["Name", supplier.name],
