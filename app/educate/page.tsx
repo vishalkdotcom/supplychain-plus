@@ -43,6 +43,20 @@ import { fetchCourses, fetchSuppliers, fetchRecommendations } from "@/lib/api";
 import { useQueryStates, parseAsInteger, parseAsString } from "nuqs";
 import { SearchInput } from "@/components/search-input";
 
+interface CourseData {
+  title: string;
+  description: string;
+  lessons: Array<{
+    title: string;
+    content: string;
+  }>;
+  quiz: Array<{
+    question: string;
+    options: string[];
+    correctAnswerIndex: number;
+  }>;
+}
+
 interface PipelineItem {
   id: string;
   title: string;
@@ -50,6 +64,7 @@ interface PipelineItem {
   progress: number;
   currentStep: string;
   sourceFile: string;
+  courseData?: CourseData;
 }
 
 type PipelineStatus = "uploading" | "extracting" | "generating" | "ready";
@@ -79,8 +94,8 @@ export default function EducatePage() {
     toast(msg);
   }, []);
 
-  // Simulate pipeline processing after file upload
-  const simulatePipeline = useCallback((file: File) => {
+  // Process document through real AI pipeline
+  const processDocument = useCallback(async (file: File) => {
     const id = `pipe-${Date.now()}`;
     const title = file.name.replace(/\.pdf$/i, "").replace(/[-_]/g, " ");
     const newItem: PipelineItem = {
@@ -93,54 +108,63 @@ export default function EducatePage() {
     };
     setPipelineItems((prev) => [newItem, ...prev]);
 
-    const steps: Array<{
-      status: PipelineStatus;
-      progress: number;
-      step: string;
-      delay: number;
-    }> = [
-      {
-        status: "extracting",
-        progress: 35,
-        step: "Extracting content...",
-        delay: 1500,
-      },
-      {
-        status: "generating",
-        progress: 65,
-        step: "Generating quiz questions...",
-        delay: 3000,
-      },
-      {
-        status: "generating",
-        progress: 85,
-        step: "Creating translations...",
-        delay: 4500,
-      },
-      { status: "ready", progress: 100, step: "Complete", delay: 6000 },
-    ];
+    try {
+      // Step 1: Uploading & Extracting
+      setPipelineItems((prev) =>
+        prev.map((item) =>
+          item.id === id
+            ? { ...item, status: "extracting", progress: 35, currentStep: "Extracting content..." }
+            : item,
+        ),
+      );
 
-    steps.forEach(({ status, progress, step, delay }) => {
-      setTimeout(() => {
-        setPipelineItems((prev) =>
-          prev.map((item) =>
-            item.id === id
-              ? { ...item, status, progress, currentStep: step }
-              : item,
-          ),
-        );
-      }, delay);
-    });
+      const formData = new FormData();
+      formData.append("file", file);
+
+      // Start generation step before awaiting API since extraction+generation happens there
+      setPipelineItems((prev) =>
+        prev.map((item) =>
+          item.id === id
+            ? { ...item, status: "generating", progress: 60, currentStep: "Generating lessons & quizzes..." }
+            : item,
+        ),
+      );
+
+      const res = await fetch("/api/ai/educate", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to process document");
+      }
+
+      const data = await res.json();
+
+      setPipelineItems((prev) =>
+        prev.map((item) =>
+          item.id === id
+            ? { ...item, status: "ready", progress: 100, currentStep: "Complete", courseData: data.course }
+            : item,
+        ),
+      );
+      toast(`Successfully generated course for ${title}`);
+
+    } catch (err) {
+      console.error(err);
+      toast(`Error processing ${title}`);
+      setPipelineItems((prev) => prev.filter((item) => item.id !== id));
+    }
   }, []);
 
   const handleFileUpload = useCallback(
     (file: File) => {
       if (file && file.type === "application/pdf") {
         setUploadedFile(file);
-        simulatePipeline(file);
+        processDocument(file);
       }
     },
-    [simulatePipeline],
+    [processDocument],
   );
 
   const { data: coursesResponse, isLoading: isCoursesLoading } = useQuery({
@@ -556,20 +580,59 @@ export default function EducatePage() {
         open={previewItem !== null}
         onOpenChange={(isOpen) => !isOpen && setPreviewItem(null)}
       >
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{previewItem?.title}</DialogTitle>
+            <DialogTitle>{previewItem?.courseData?.title || previewItem?.title}</DialogTitle>
             <DialogDescription>
-              Generated from {previewItem?.sourceFile}
+              {previewItem?.courseData?.description || `Generated from ${previewItem?.sourceFile}`}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <p className="text-sm text-muted-foreground">
-              This is a demo preview. In production, the full generated course
-              content (lessons, quizzes, translations) would appear here.
-            </p>
+          <div className="space-y-6 py-4">
+            {previewItem?.courseData ? (
+              <>
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <IconFileText className="w-5 h-5 text-indigo-500" />
+                    Lessons
+                  </h3>
+                  {previewItem.courseData.lessons.map((lesson, i) => (
+                    <Card key={i} className="bg-slate-50/50">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-md">Lesson {i + 1}: {lesson.title}</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">{lesson.content}</p>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <IconCheck className="w-5 h-5 text-green-500" />
+                    Knowledge Check
+                  </h3>
+                  {previewItem.courseData.quiz.map((q, i) => (
+                    <div key={i} className="space-y-2 p-4 border rounded-lg bg-white">
+                      <p className="font-medium text-sm">{i + 1}. {q.question}</p>
+                      <ul className="space-y-2 mt-3">
+                        {q.options.map((opt: string, j: number) => (
+                          <li key={j} className={`text-sm p-2 rounded-md border ${j === q.correctAnswerIndex ? "bg-green-50 border-green-200 text-green-800 font-medium" : "bg-muted/50 border-transparent"}`}>
+                            {opt}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                This is a demo preview. In production, the full generated course
+                content (lessons, quizzes, translations) would appear here.
+              </p>
+            )}
           </div>
-          <div className="flex gap-2 justify-end w-full">
+          <div className="flex gap-2 justify-end w-full pt-4 border-t">
             <Button
               variant="outline"
               className="flex-1"
@@ -578,15 +641,16 @@ export default function EducatePage() {
               Close
             </Button>
             <Button
-              className="flex-1"
+              className="flex-1 gap-2"
               onClick={() => {
                 showToast(
-                  `Demo mode — "${previewItem?.title}" publish coming soon.`,
+                  `Published "${previewItem?.courseData?.title || previewItem?.title}" to course catalog!`,
                 );
                 setPreviewItem(null);
               }}
             >
-              Publish
+              <IconSchool className="w-4 h-4" />
+              Publish Course
             </Button>
           </div>
         </DialogContent>
