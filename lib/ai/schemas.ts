@@ -19,6 +19,16 @@ export const caseGuidanceSchema = z.object({
   estimatedResolutionDays: z
     .number()
     .describe("Realistic resolution estimate in business days"),
+  suggestedFAQs: z
+    .array(
+      z.object({
+        question: z.string().describe("The matching FAQ question"),
+        answer: z.string().describe("The resolution or answer for the FAQ"),
+        confidence: z.number().describe("Confidence score between 0 and 100"),
+      })
+    )
+    .optional()
+    .describe("1-2 matching FAQs based on the case content to auto-resolve the issue"),
 });
 
 export type CaseGuidance = z.infer<typeof caseGuidanceSchema>;

@@ -20,6 +20,10 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
 import {
   IconArrowRight,
   IconCheck,
@@ -29,6 +33,9 @@ import {
   IconSchool,
   IconSparkles,
   IconUser,
+  IconBook,
+  IconWand,
+  IconLoader2
 } from "@tabler/icons-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchCase } from "@/lib/api";
@@ -53,6 +60,55 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
   const [summaryError, setSummaryError] = useState<string>("");
   const [copied, setCopied] = useState(false);
   const [isLoadingGuidance, setIsLoadingGuidance] = useState(false);
+  
+  const [draftResponseText, setDraftResponseText] = useState<string>("");
+  const [draftLanguage, setDraftLanguage] = useState("English");
+  const [draftTone, setDraftTone] = useState("Professional");
+  const [isRegeneratingDraft, setIsRegeneratingDraft] = useState(false);
+
+  // Sync draft response text with AI guidance
+  useEffect(() => {
+    if (caseData?.aiGuidance?.draftResponse && !draftResponseText) {
+      setDraftResponseText(caseData.aiGuidance.draftResponse);
+    }
+  }, [caseData?.aiGuidance?.draftResponse, draftResponseText]);
+
+  const handleRegenerateDraft = async () => {
+    if (!caseData?.fullContent) return;
+    setIsRegeneratingDraft(true);
+    try {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (activeConfig) {
+        headers["x-ai-provider"] = activeConfig.provider;
+        headers["x-ai-api-key"] = activeConfig.apiKey;
+        headers["x-ai-model"] = activeConfig.model;
+      }
+      const response = await fetch("/api/ai/draft-response", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          caseText: caseData.fullContent,
+          language: draftLanguage,
+          tone: draftTone,
+          currentDraft: draftResponseText,
+        }),
+      });
+      const data = await response.json();
+      if (response.ok && data.draftResponse) {
+        setDraftResponseText(data.draftResponse);
+        toast.success("Draft response regenerated");
+      } else {
+        toast.error(data.error || "Failed to regenerate response");
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Network error regenerating response");
+    } finally {
+      setIsRegeneratingDraft(false);
+    }
+  };
 
   // Sync aiSummary with loaded case data
   const displaySummary = aiSummary || caseData?.aiSummary || "";
@@ -380,32 +436,118 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
                 </CardContent>
               </Card>
 
-              {/* Draft Response */}
-              {caseData.aiGuidance.draftResponse && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">Draft Response</CardTitle>
-                    <CardDescription>
-                      Suggested reply to send to the worker
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground italic">
-                      &quot;{caseData.aiGuidance.draftResponse}&quot;
-                    </p>
+              {/* Draft Response & Multi-Language Hub */}
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-base">Draft Response</CardTitle>
+                      <CardDescription>
+                        Suggested reply to send to the worker
+                      </CardDescription>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Select value={draftLanguage} onValueChange={setDraftLanguage}>
+                        <SelectTrigger className="h-8 w-[120px] text-xs">
+                          <SelectValue placeholder="Language" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="English">English</SelectItem>
+                          <SelectItem value="Bengali">Bengali</SelectItem>
+                          <SelectItem value="Vietnamese">Vietnamese</SelectItem>
+                          <SelectItem value="Spanish">Spanish</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Select value={draftTone} onValueChange={setDraftTone}>
+                        <SelectTrigger className="h-8 w-[120px] text-xs">
+                          <SelectValue placeholder="Tone" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Professional">Professional</SelectItem>
+                          <SelectItem value="Empathetic">Empathetic</SelectItem>
+                          <SelectItem value="Firm">Firm</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <Textarea 
+                    value={draftResponseText}
+                    onChange={(e) => setDraftResponseText(e.target.value)}
+                    className="min-h-[120px] text-sm"
+                  />
+                  <div className="flex gap-2">
                     <Button
-                      className="mt-4 w-full"
+                      variant="secondary"
+                      className="flex-1"
+                      onClick={handleRegenerateDraft}
+                      disabled={isRegeneratingDraft}
+                    >
+                      {isRegeneratingDraft ? (
+                        <><IconLoader2 className="w-4 h-4 mr-2 animate-spin" /> Translating...</>
+                      ) : (
+                        <><IconWand className="w-4 h-4 mr-2" /> Regenerate</>
+                      )}
+                    </Button>
+                    <Button
+                      className="flex-1"
                       variant="outline"
                       onClick={() => {
-                        navigator.clipboard.writeText(
-                          caseData.aiGuidance!.draftResponse || "",
-                        );
+                        navigator.clipboard.writeText(draftResponseText);
                         setCopied(true);
                         setTimeout(() => setCopied(false), 2000);
                       }}
                     >
-                      {copied ? "✓ Copied to Clipboard" : "Use This Response"}
+                      {copied ? "✓ Copied" : "Copy to Clipboard"}
                     </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Smart FAQ Auto-Resolution */}
+              {caseData.aiGuidance.suggestedFAQs && caseData.aiGuidance.suggestedFAQs.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <IconBook className="h-5 w-5 text-blue-500" />
+                      Smart FAQ Matches
+                    </CardTitle>
+                    <CardDescription>
+                      Known resolutions that might apply
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Accordion type="single" collapsible className="w-full">
+                      {caseData.aiGuidance.suggestedFAQs.map((faq, idx) => (
+                        <AccordionItem key={idx} value={`item-${idx}`}>
+                          <AccordionTrigger className="text-sm text-left hover:no-underline">
+                            <div className="flex items-center gap-2">
+                              <Badge variant={faq.confidence > 80 ? "default" : "secondary"} className="text-[10px]">
+                                {faq.confidence}% Match
+                              </Badge>
+                              <span>{faq.question}</span>
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent className="space-y-3">
+                            <p className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-md">
+                              {faq.answer}
+                            </p>
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="w-full text-xs"
+                              onClick={() => {
+                                setDraftResponseText(prev => prev + "\n\nRegarding your concern: " + faq.answer);
+                                toast.success("FAQ applied to draft response");
+                              }}
+                            >
+                              1-Click Apply to Draft
+                            </Button>
+                          </AccordionContent>
+                        </AccordionItem>
+                      ))}
+                    </Accordion>
                   </CardContent>
                 </Card>
               )}

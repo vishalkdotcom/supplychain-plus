@@ -40,7 +40,7 @@ Severity: {severity}
 Case content:
 "{caseText}"
 
-Provide specific, actionable steps tailored to this exact issue. Do not give generic advice.`;
+Provide specific, actionable steps tailored to this exact issue. Do not give generic advice. Also, suggest 1-2 matching internal FAQs that might auto-resolve this issue. Give the question, a comprehensive answer, and your confidence score that this FAQ matches their exact problem.`;
 
 export const SURVEY_GENERATION_PROMPT = `You are an expert survey designer for factory workers in global supply chains.
 Design questions that are:

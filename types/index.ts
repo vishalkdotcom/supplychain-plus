@@ -99,6 +99,11 @@ export interface AIGuidance {
   relatedTraining?: string[];
   similarCases?: string[];
   estimatedResolutionDays: number;
+  suggestedFAQs?: Array<{
+    question: string;
+    answer: string;
+    confidence: number;
+  }>;
 }
 
 // ===============================
