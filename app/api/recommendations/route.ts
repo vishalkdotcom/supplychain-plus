@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db/drizzle";
 import { supplierRiskScores } from "@/lib/db/schema";
-import { desc } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { AIRecommendation } from "@/types";
 
 interface RiskReason {
@@ -11,19 +11,29 @@ interface RiskReason {
   module: string;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    // Fetch top risk suppliers from Drizzle
-    const topRisk = await db
+    const { searchParams } = new URL(request.url);
+    const supplierId = searchParams.get("supplierId");
+
+    let query = db
       .select()
       .from(supplierRiskScores)
       .orderBy(desc(supplierRiskScores.riskScore))
-      .limit(20);
+      .$dynamic();
 
+    if (supplierId) {
+      query = query.where(eq(supplierRiskScores.supplierId, supplierId));
+    } else {
+      // Top risk suppliers for dashboard if no ID
+      query = query.limit(20);
+    }
+
+    const rawData = await query;
     const recommendations: AIRecommendation[] = [];
     let recId = 1;
 
-    for (const supplier of topRisk) {
+    for (const supplier of rawData) {
       const reasons = (supplier.reasons || []) as RiskReason[];
 
       // High case score → investigation recommendation
@@ -92,7 +102,7 @@ export async function GET() {
       }
     }
 
-    // Sort by urgency (immediate first) and limit
+    // Sort by urgency (immediate first) and limit only if global
     const urgencyOrder: Record<string, number> = {
       immediate: 0,
       this_week: 1,
@@ -102,7 +112,7 @@ export async function GET() {
       (a, b) => (urgencyOrder[a.urgency] ?? 2) - (urgencyOrder[b.urgency] ?? 2),
     );
 
-    return NextResponse.json(recommendations.slice(0, 10));
+    return NextResponse.json(supplierId ? recommendations : recommendations.slice(0, 10));
   } catch (error) {
     console.error("Error generating recommendations:", error);
     return NextResponse.json(

@@ -8,6 +8,8 @@ import {
   AIRecommendation,
   TimelineEvent,
   PaginatedResponse,
+  Alert,
+  RiskHistoryEntry,
 } from "@/types";
 
 const API_BASE = "/api";
@@ -68,7 +70,7 @@ export async function fetchSupplier(id: string): Promise<Supplier> {
   return res.json();
 }
 
-export async function fetchSupplierHistory(id: string): Promise<any[]> {
+export async function fetchSupplierHistory(id: string): Promise<RiskHistoryEntry[]> {
   const res = await fetch(`${API_BASE}/suppliers/${id}/history`);
   if (!res.ok) throw new Error("Failed to fetch supplier history");
   return res.json();
@@ -135,8 +137,9 @@ export async function fetchMetrics(): Promise<DashboardMetrics> {
   return res.json();
 }
 
-export async function fetchRecommendations(): Promise<AIRecommendation[]> {
-  const res = await fetch(`${API_BASE}/recommendations`);
+export async function fetchRecommendations(supplierId?: string): Promise<AIRecommendation[]> {
+  const qs = supplierId ? `?supplierId=${supplierId}` : "";
+  const res = await fetch(`${API_BASE}/recommendations${qs}`);
   if (!res.ok) throw new Error("Failed to fetch recommendations");
   return res.json();
 }
@@ -159,7 +162,7 @@ export async function fetchTimeline(
   return res.json();
 }
 
-export async function fetchAlerts(unreadOnly = true, limit = 20): Promise<any[]> {
+export async function fetchAlerts(unreadOnly = true, limit = 20): Promise<Alert[]> {
   const qs = buildQueryString({ unreadOnly: unreadOnly ? "true" : "false", limit });
   const res = await fetch(`${API_BASE}/alerts${qs}`);
   if (!res.ok) throw new Error("Failed to fetch alerts");

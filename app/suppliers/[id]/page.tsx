@@ -28,15 +28,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { IconFileText, IconWand, IconLoader2, IconDownload } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
-import {
-  fetchSupplier,
-  fetchCases,
-  fetchSurveys,
-  fetchRecommendations,
-  fetchTimeline,
-  fetchTraining,
-} from "@/lib/api";
-import { Case, Survey } from "@/types";
+import { fetchSupplier, fetchCases, fetchSurveys, fetchRecommendations, fetchTimeline, fetchTraining } from "@/lib/api";
+import { Case, Survey, AIRecommendation } from "@/types";
 import { SupplierHero } from "@/components/suppliers/supplier-hero";
 import { toast } from "sonner";
 
@@ -69,9 +62,9 @@ export default function SupplierDetailPage({
     queryFn: () => fetchSurveys({ supplier: id }),
   });
 
-  const { data: recommendations } = useQuery({
-    queryKey: ["recommendations"],
-    queryFn: fetchRecommendations,
+  const { data: recommendations } = useQuery<AIRecommendation[]>({
+    queryKey: ["recommendations", id],
+    queryFn: () => fetchRecommendations(id),
   });
 
   const { data: timeline } = useQuery({
@@ -145,8 +138,7 @@ export default function SupplierDetailPage({
     allCasesRes?.data?.filter((c: Case) => c.supplierId === id) || [];
   const surveys =
     allSurveysRes?.data?.filter((s: Survey) => s.supplierId === id) || [];
-  const supplierRecommendations =
-    recommendations?.filter((r) => r.supplierId === id) || [];
+  const supplierRecommendations = recommendations || [];
   const timelineEvents = timeline || [];
 
   return (
