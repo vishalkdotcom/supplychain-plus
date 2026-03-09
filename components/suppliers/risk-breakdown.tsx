@@ -76,7 +76,7 @@ export function RiskBreakdown({ supplier }: RiskBreakdownProps) {
 
   return (
     <Card
-      className={`border-2 ${
+      className={`border-2 h-full flex flex-col ${
         riskLevel === "high"
           ? "border-red-200 bg-red-50/30"
           : riskLevel === "medium"

@@ -68,6 +68,12 @@ export async function fetchSupplier(id: string): Promise<Supplier> {
   return res.json();
 }
 
+export async function fetchSupplierHistory(id: string): Promise<any[]> {
+  const res = await fetch(`${API_BASE}/suppliers/${id}/history`);
+  if (!res.ok) throw new Error("Failed to fetch supplier history");
+  return res.json();
+}
+
 export async function fetchCases(
   params: CaseParams = {},
 ): Promise<PaginatedResponse<Case>> {
@@ -151,4 +157,20 @@ export async function fetchTimeline(
   const res = await fetch(url);
   if (!res.ok) throw new Error("Failed to fetch timeline");
   return res.json();
+}
+
+export async function fetchAlerts(unreadOnly = true, limit = 20): Promise<any[]> {
+  const qs = buildQueryString({ unreadOnly: unreadOnly ? "true" : "false", limit });
+  const res = await fetch(`${API_BASE}/alerts${qs}`);
+  if (!res.ok) throw new Error("Failed to fetch alerts");
+  return res.json();
+}
+
+export async function markAlertRead(alertId: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/alerts`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ alertId, isRead: true })
+  });
+  if (!res.ok) throw new Error("Failed to update alert");
 }

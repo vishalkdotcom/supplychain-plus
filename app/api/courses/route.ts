@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db/mysql";
 import { Course, PaginatedResponse } from "@/types";
+import { extractEnglishFromMlang } from "@/lib/mlang";
 
 export async function GET(request: NextRequest) {
   try {
@@ -64,9 +65,9 @@ export async function GET(request: NextRequest) {
 
     const courses: Course[] = result.map((row) => ({
       id: String(row.id),
-      title: row.fullname,
+      title: extractEnglishFromMlang(row.fullname),
       description:
-        row.summary?.replace(/<[^>]*>/g, "") || "No description available.",
+        extractEnglishFromMlang(row.summary?.replace(/<[^>]*>/g, "")) || "No description available.",
       enrollments: row.enrolled || 0,
       completionRate:
         row.enrolled > 0 ? Math.round((row.completed / row.enrolled) * 100) : 0,

@@ -6,6 +6,7 @@ import { RiskBreakdown } from "@/components/suppliers/risk-breakdown";
 import { CrossModulePanel } from "@/components/suppliers/cross-module-panel";
 import { SupplierTimeline } from "@/components/suppliers/supplier-timeline";
 import { AIRecommendations } from "@/components/suppliers/ai-recommendations";
+import { RiskTrendChart } from "@/components/suppliers/risk-trend-chart";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -149,34 +150,38 @@ export default function SupplierDetailPage({
 
   return (
     <div className="space-y-6">
-      {/* Breadcrumb */}
-      <Breadcrumb>
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink href="/suppliers">Suppliers</BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage>{supplier.name}</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
+      {/* Header Area */}
+      <div className="flex items-center justify-between">
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/suppliers">Suppliers</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>{supplier.name}</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+        
+        <Button
+          variant="outline"
+          onClick={() => setIsExportDialogOpen(true)}
+        >
+          <IconFileText className="w-4 h-4 mr-2" />
+          Export HRDD Report
+        </Button>
+      </div>
 
-      {/* Hero + Risk Card */}
+      {/* Hero */}
+      <SupplierHero supplier={supplier} />
+
+      {/* Risk Cards Matrix */}
       <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2 space-y-4">
-          <div className="flex justify-end">
-            <Button
-              variant="outline"
-              onClick={() => setIsExportDialogOpen(true)}
-            >
-              <IconFileText className="w-4 h-4 mr-2" />
-              Export HRDD Report
-            </Button>
-          </div>
-          <SupplierHero supplier={supplier} />
+        <div className="lg:col-span-2">
+          <RiskTrendChart supplierId={supplier.id} />
         </div>
-        <div>
+        <div className="h-full">
           <RiskBreakdown supplier={supplier} />
         </div>
       </div>
@@ -200,7 +205,7 @@ export default function SupplierDetailPage({
 
       {/* HRDD Export Dialog */}
       <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Generate HRDD Compliance Report</DialogTitle>
             <DialogDescription>

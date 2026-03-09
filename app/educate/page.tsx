@@ -580,7 +580,7 @@ export default function EducatePage() {
         open={previewItem !== null}
         onOpenChange={(isOpen) => !isOpen && setPreviewItem(null)}
       >
-        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{previewItem?.courseData?.title || previewItem?.title}</DialogTitle>
             <DialogDescription>

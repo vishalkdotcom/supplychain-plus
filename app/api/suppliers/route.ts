@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db/postgres";
 import { wcGlobalQuery } from "@/lib/db/postgres-wc-global";
 import { Supplier, PaginatedResponse } from "@/types";
+import { extractEnglishFromMlang } from "@/lib/mlang";
 
 export async function GET(request: NextRequest) {
   try {
@@ -109,7 +110,7 @@ export async function GET(request: NextRequest) {
 
     const suppliers: Supplier[] = rows.map((row: any) => ({
       id: String(row.client_key),
-      name: row.name,
+      name: extractEnglishFromMlang(row.name),
       region: deriveRegion(row.country),
       country: row.country || "Unknown",
       location: row.country || "Unknown",

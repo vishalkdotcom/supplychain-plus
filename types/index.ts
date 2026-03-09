@@ -204,3 +204,24 @@ export interface PaginatedResponse<T> {
   perPage: number;
   totalPages: number;
 }
+
+export interface RiskHistoryEntry {
+  id: number;
+  supplierId: string;
+  riskScore: number;
+  caseScore: number;
+  surveyScore: number;
+  trainingScore: number;
+  engagementScore: number;
+  snapshotDate: string;
+}
+
+export interface Alert {
+  id: string;
+  supplierId: string;
+  title: string;
+  message: string;
+  severity: "high" | "medium" | "low";
+  isRead: boolean;
+  createdAt: string;
+}

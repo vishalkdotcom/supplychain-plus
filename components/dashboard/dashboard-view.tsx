@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { AlertsCenter } from "@/components/dashboard/alerts-center";
 import {
   Card,
   CardContent,
@@ -216,41 +217,10 @@ export function DashboardView() {
             </CardContent>
           </Card>
 
-          {/* This Week's Priorities */}
-          {topRecommendations.length > 0 && (
-            <Card className="border-orange-200 bg-gradient-to-br from-orange-50/50 to-amber-50/50">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <IconSparkles className="h-5 w-5 text-orange-600" />
-                  Immediate Actions Required
-                </CardTitle>
-                <CardDescription>
-                  AI-prioritized actions based on cross-module analysis
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {topRecommendations.map((rec) => {
-                  const supplier = suppliers?.find(
-                    (s: Supplier) => s.id === rec.supplierId,
-                  );
-                  return (
-                    <div
-                      key={rec.id}
-                      className="flex items-start gap-3 p-3 rounded-lg bg-white/80 border border-orange-200"
-                    >
-                      <IconAlertTriangle className="h-4 w-4 text-orange-600 mt-0.5 shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium">{rec.action}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {supplier?.name} • {rec.category}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </CardContent>
-            </Card>
-          )}
+          {/* Proactive Alerts Center */}
+          <div className="mt-4">
+            <AlertsCenter />
+          </div>
         </div>
 
         {/* AI Activity Stream */}

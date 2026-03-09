@@ -46,7 +46,7 @@ export async function POST(request: Request) {
     // Generate Course with AI
     const result = await generateText({
       model,
-      system: "You are an expert compliance training course creator. You receive a policy document and transform it into an engaging, structured course with lessons and a quiz. Keep it concise, accessible, and informative for workers.",
+      system: "You are an expert compliance training course creator. You receive a policy document and transform it into an engaging, structured course with lessons and a quiz. Keep it concise, accessible, and informative for workers.\n\nCRITICAL: You must return the result EXACTLY as a JSON object with the following schema:\n{\n  \"title\": \"Title of the course\",\n  \"description\": \"A brief description of the course\",\n  \"lessons\": [{ \"title\": \"Lesson 1\", \"content\": \"Lesson content\" }],\n  \"quiz\": [{ \"question\": \"Quiz question?\", \"options\": [\"A\", \"B\", \"C\", \"D\"], \"correctAnswerIndex\": 0 }]\n}",
       prompt: `Generate a course from the following document:\n\n${truncatedText}`,
       output: Output.object({ schema: courseSchema }),
     });

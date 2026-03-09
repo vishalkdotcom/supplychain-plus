@@ -4,6 +4,7 @@ import { db } from "@/lib/db/drizzle";
 import { surveyAnalysis } from "@/lib/db/schema";
 import { inArray } from "drizzle-orm";
 import { Survey, PaginatedResponse } from "@/types";
+import { extractEnglishFromMlang } from "@/lib/mlang";
 
 export async function GET(request: NextRequest) {
   try {
@@ -96,8 +97,8 @@ export async function GET(request: NextRequest) {
           supplierId: row.client_key
             ? String(row.client_key)
             : String(row.client_id),
-          supplierName: row.client_name || "Unknown",
-          title: row.name,
+          supplierName: extractEnglishFromMlang(row.client_name || "Unknown"),
+          title: extractEnglishFromMlang(row.name),
           responses: parseInt(row.response_count) || 0,
           riskScore: analysis?.riskScore ?? 0,
           status:

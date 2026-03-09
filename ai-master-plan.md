@@ -5,10 +5,10 @@
 
 | Feature | Status/Source | Implementation Details | UI/UX Strategy (shadcn/ui) |
 | :--- | :--- | :--- | :--- |
-| **Real Education Pipeline** | 🔄 Mocked (Roadmap) | Replace `simulatePipeline` in `/educate` with a real `api/ai/educate` route. Use the Vercel AI SDK to extract PDF text, generate structured course outlines, and auto-generate knowledge check quizzes. | Use `Progress` and animated `Badge` components for real-time extraction status. Add a drag-and-drop zone using `Card`. |
-| **AI-Narrated Scorecards & HRDD** | 🔄 Mocked (Roadmap + Brainstorm #3, #10) | Connect the existing `jsPDF` export to an LLM prompt that writes a 3-paragraph executive summary per supplier. Add templates for EU CSDDD and UK Modern Slavery Act. | Add a "Preview Report" `Sheet` or `Dialog` before export. Render markdown summaries dynamically before burning to PDF. |
-| **Smart FAQ Auto-Resolution** | 🆕 Brainstorm #8 | Embed the existing 298 FAQs. In the `/connect` case guidance panel, automatically suggest the top matching FAQ resolution with a confidence score. | Render suggestions as `Collapsible` cards. Include a "1-Click Apply" `Button` to insert the FAQ response into the draft reply. |
-| **Multi-Language Hub** | 🆕 Brainstorm #12 | Upgrade the "Draft Response" feature in `/connect/[id]`. Allow users to select a target language (Bengali, Vietnamese, etc.) and tone (Formal, Empathetic). | Add a `Select` dropdown for language and a `ToggleGroup` for tone next to the drafting `Textarea`. |
+| **Real Education Pipeline** | ✅ Completed | Replace `simulatePipeline` in `/educate` with a real `api/ai/educate` route. Use the Vercel AI SDK to extract PDF text, generate structured course outlines, and auto-generate knowledge check quizzes. | Use `Progress` and animated `Badge` components for real-time extraction status. Add a drag-and-drop zone using `Card`. |
+| **AI-Narrated Scorecards & HRDD** | ✅ Completed | Connect the existing `jsPDF` export to an LLM prompt that writes a 3-paragraph executive summary per supplier. Add templates for EU CSDDD and UK Modern Slavery Act. | Add a "Preview Report" `Sheet` or `Dialog` before export. Render markdown summaries dynamically before burning to PDF. |
+| **Smart FAQ Auto-Resolution** | ✅ Completed | Embed the existing 298 FAQs. In the `/connect` case guidance panel, automatically suggest the top matching FAQ resolution with a confidence score. | Render suggestions as `Collapsible` cards. Include a "1-Click Apply" `Button` to insert the FAQ response into the draft reply. |
+| **Multi-Language Hub** | ✅ Completed | Upgrade the "Draft Response" feature in `/connect/[id]`. Allow users to select a target language (Bengali, Vietnamese, etc.) and tone (Formal, Empathetic). | Add a `Select` dropdown for language and a `ToggleGroup` for tone next to the drafting `Textarea`. |
 
 ---
 
@@ -17,8 +17,8 @@
 
 | Feature | Status/Source | Implementation Details | UI/UX Strategy (shadcn/ui) |
 | :--- | :--- | :--- | :--- |
-| **Risk Trend Visualization** | ⏳ Planned (Roadmap) | Query the existing `supplier_risk_history` table. Show improving or worsening trends over 30/60/90 days on both the Dashboard and Supplier Detail pages. | Integrate `Recharts` (Line/Area charts) within `Card` components. Use green/red text for % changes with `ArrowUpRight` icons. |
-| **Proactive Alerts Center** | ⏳ Planned (Roadmap) | The background job already generates alerts. Surface these in a global notification center and a dedicated dashboard widget. | Build a `Popover` notification bell in the `AppHeader`. Use `ScrollArea` to list unread alerts with distinct severity colors. |
+| **Risk Trend Visualization** | ✅ Completed | Query the existing `supplier_risk_history` table. Show improving or worsening trends over 30/60/90 days on both the Dashboard and Supplier Detail pages. | Integrate `Recharts` (Line/Area charts) within `Card` components. Use green/red text for % changes with `ArrowUpRight` icons. |
+| **Proactive Alerts Center** | ✅ Completed | The background job already generates alerts. Surface these in a global notification center and a dedicated dashboard widget. | Build a `Popover` notification bell in the `AppHeader`. Use `ScrollArea` to list unread alerts with distinct severity colors. |
 | **Engagement Health Score** | 🆕 Brainstorm #9 | Create a composite metric combining survey participation, post interactions, training completion, and case resolution times. | Display as a Radar Chart (`Recharts`) on the Supplier Detail page to visualize "genuine engagement vs. checkbox compliance." |
 | **Brand vs. Supplier Views** | 🔄 In Progress (Roadmap) | Finalize the toggle mechanism in the header to switch context between a portfolio-wide view and a single-factory view. | Use a specialized `Command` palette or `Combobox` in the navigation to easily swap contexts. |
 

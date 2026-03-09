@@ -5,6 +5,7 @@ import { caseSummaryCache } from "@/lib/db/schema";
 import { sql } from "drizzle-orm";
 import { Case, AIGuidance, PaginatedResponse } from "@/types";
 import mssql from "mssql";
+import { extractEnglishFromMlang } from "@/lib/mlang";
 
 export async function GET(request: NextRequest) {
   try {
@@ -122,13 +123,13 @@ export async function GET(request: NextRequest) {
       return {
         id: String(row.Id),
         supplierId: String(row.CompanyId),
-        supplierName: row.CompanyName || "Unknown",
-        topic: row.TypeName || "General",
+        supplierName: extractEnglishFromMlang(row.CompanyName || "Unknown"),
+        topic: extractEnglishFromMlang(row.TypeName || "General"),
         severity:
           row.Priority === 1 ? "high" : row.Priority === 2 ? "medium" : "low",
         status: mapStatus(row.StatusName),
         aiSummary: cached?.aiSummary || fallbackSummary,
-        fullContent: row.FirstMessage || row.Title || "No content.",
+        fullContent: extractEnglishFromMlang(row.FirstMessage || row.Title || "No content."),
         createdAt: row.Created
           ? new Date(row.Created).toISOString().split("T")[0]
           : "",

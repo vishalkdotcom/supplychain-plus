@@ -40,7 +40,22 @@ Severity: {severity}
 Case content:
 "{caseText}"
 
-Provide specific, actionable steps tailored to this exact issue. Do not give generic advice. Also, suggest 1-2 matching internal FAQs that might auto-resolve this issue. Give the question, a comprehensive answer, and your confidence score that this FAQ matches their exact problem.`;
+Provide specific, actionable steps tailored to this exact issue. Do not give generic advice. Also, suggest 1-2 matching internal FAQs that might auto-resolve this issue. Give the question, a comprehensive answer, and your confidence score that this FAQ matches their exact problem.
+
+CRITICAL: You must return the result EXACTLY as a JSON object with the following schema:
+{
+  "recommendedSteps": ["step 1", "step 2", "step 3"],
+  "draftResponse": "A professional reply to the worker acknowledging their concern (50-80 words).",
+  "relatedTraining": ["Relevant Course 1"],
+  "estimatedResolutionDays": 5,
+  "suggestedFAQs": [
+    {
+      "question": "Question text",
+      "answer": "Answer text",
+      "confidence": 90
+    }
+  ]
+}`;
 
 export const SURVEY_GENERATION_PROMPT = `You are an expert survey designer for factory workers in global supply chains.
 Design questions that are:
