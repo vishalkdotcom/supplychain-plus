@@ -12,6 +12,19 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 const SUPPORTED_PROVIDERS: { id: AIProvider; name: string; url?: string }[] = [
   { id: "openrouter", name: "OpenRouter", url: "https://openrouter.ai/keys" },
@@ -41,8 +54,14 @@ const SUPPORTED_PROVIDERS: { id: AIProvider; name: string; url?: string }[] = [
 ];
 
 export default function SettingsPage() {
-  const { settings, isLoaded, setActiveProvider, saveProviderConfig } =
-    useAISettings();
+  const {
+    settings,
+    isLoaded,
+    setActiveProvider,
+    saveProviderConfig,
+    deleteProviderConfig,
+    clearAllSettings,
+  } = useAISettings();
 
   if (!isLoaded) {
     return (
@@ -59,14 +78,50 @@ export default function SettingsPage() {
 
   return (
     <div className="container mx-auto p-4 md:p-8 max-w-4xl space-y-6 animate-in fade-in duration-500">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight mb-1">
-          AI Integrations
-        </h1>
-        <p className="text-muted-foreground text-sm">
-          Configure API keys and preferred models for Wovo&apos;s intelligent
-          features.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight mb-1">
+            AI Integrations
+          </h1>
+          <p className="text-muted-foreground text-sm">
+            Configure API keys and preferred models for Wovo&apos;s intelligent
+            features.
+          </p>
+        </div>
+
+        {Object.keys(settings.providers).length > 0 && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" size="sm">
+                Clear All Settings
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>
+                  Clear All AI Configurations?
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will remove all stored API keys and model preferences
+                  from your browser. Wovo&apos;s AI features will not work until
+                  you configure a provider again. This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => {
+                    clearAllSettings();
+                    toast.success("All AI configurations cleared.");
+                  }}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Clear All
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
       </div>
 
       <Alert>
@@ -99,6 +154,7 @@ export default function SettingsPage() {
                 settings={settings}
                 onSetActive={setActiveProvider}
                 saveProviderConfig={saveProviderConfig}
+                deleteProviderConfig={deleteProviderConfig}
               />
             ))}
           </div>

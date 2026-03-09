@@ -88,29 +88,40 @@ export function getModelFromRequest(
 
   if (customProvider && customModel) {
     if (customProvider === "openrouter") {
-      const openrouter = createOpenRouter({ apiKey: customKey || "" });
+      const openrouter = createOpenRouter({
+        apiKey: customKey || process.env.OPENROUTER_API_KEY || "",
+      });
       return openrouter(customModel);
     }
     if (customProvider === "nim") {
+      const key = customKey || process.env.NIM_API_KEY;
       const nim = createOpenAICompatible({
         name: "nim",
         baseURL: "https://integrate.api.nvidia.com/v1",
-        headers: customKey
-          ? { Authorization: `Bearer ${customKey}` }
-          : undefined,
+        headers: key ? { Authorization: `Bearer ${key}` } : undefined,
       });
       return nim.chatModel(customModel);
     }
     if (customProvider === "google") {
-      const google = createGoogleGenerativeAI({ apiKey: customKey || "" });
+      const google = createGoogleGenerativeAI({
+        apiKey:
+          customKey ||
+          process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
+          process.env.GEMINI_API_KEY ||
+          "",
+      });
       return google(customModel);
     }
     if (customProvider === "openai") {
-      const oai = createOpenAI({ apiKey: customKey || "" });
+      const oai = createOpenAI({
+        apiKey: customKey || process.env.OPENAI_API_KEY || "",
+      });
       return oai(customModel);
     }
     if (customProvider === "anthropic") {
-      const anthropic = createAnthropic({ apiKey: customKey || "" });
+      const anthropic = createAnthropic({
+        apiKey: customKey || process.env.ANTHROPIC_API_KEY || "",
+      });
       return anthropic(customModel);
     }
     if (customProvider === "perplexity") {

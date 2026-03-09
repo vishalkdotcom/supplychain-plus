@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db/postgres";
 import { db } from "@/lib/db/drizzle";
 import { surveyAnalysis } from "@/lib/db/schema";
-import { sql } from "drizzle-orm";
+import { inArray } from "drizzle-orm";
 import { Survey, PaginatedResponse } from "@/types";
 
 export async function GET(request: NextRequest) {
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
 
     // Build dynamic WHERE clauses
     const conditions: string[] = [];
-    const params: any[] = [];
+    const params: (string | number)[] = [];
     let paramIndex = 1;
 
     if (search) {
@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
       analyses = await db
         .select()
         .from(surveyAnalysis)
-        .where(sql`${surveyAnalysis.surveyId} = ANY(${surveyIds}::text[])`);
+        .where(inArray(surveyAnalysis.surveyId, surveyIds));
     }
     const analysisMap = new Map(analyses.map((a) => [a.surveyId, a]));
 

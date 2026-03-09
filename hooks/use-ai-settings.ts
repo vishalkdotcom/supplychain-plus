@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useSyncExternalStore } from "react";
 
 export type AIProvider =
   | "openrouter"
@@ -104,52 +104,60 @@ export const RECOMMENDED_MODELS = [
   { id: "local-model", name: "Default Local Model", provider: "lmstudio" },
 ];
 
-export function useAISettings() {
-  const [settings, setSettings] = useState<AISettingsState>({
-    activeProviderId: null,
-    providers: {},
-  });
-  const [isLoaded, setIsLoaded] = useState(false);
+const DEFAULT_SETTINGS: AISettingsState = { activeProviderId: null, providers: {} };
+let cachedSettingsStr: string | null = null;
+let cachedSettings: AISettingsState = DEFAULT_SETTINGS;
 
-  const loadSettings = () => {
-    const storedConfig = localStorage.getItem("wovo_ai_integrations");
-    if (storedConfig) {
-      try {
-        const parsed = JSON.parse(storedConfig);
-        setSettings(parsed);
-      } catch {
-        console.error("Failed to parse AI integrations from localStorage");
-      }
+const getSettings = () => {
+  if (typeof window === "undefined") return DEFAULT_SETTINGS;
+  
+  const str = localStorage.getItem("wovo_ai_integrations");
+  if (str === cachedSettingsStr) return cachedSettings;
+  
+  cachedSettingsStr = str;
+  if (str) {
+    try {
+      cachedSettings = JSON.parse(str);
+    } catch {
+      cachedSettings = DEFAULT_SETTINGS;
     }
+  } else {
+    cachedSettings = DEFAULT_SETTINGS;
+  }
+  return cachedSettings;
+};
+
+const getServerSettings = () => DEFAULT_SETTINGS;
+
+const subscribe = (listener: () => void) => {
+  window.addEventListener("wovo-ai-settings-changed", listener);
+  window.addEventListener("storage", (e) => {
+    if (e.key === "wovo_ai_integrations") listener();
+  });
+  return () => {
+    window.removeEventListener("wovo-ai-settings-changed", listener);
+    window.removeEventListener("storage", listener);
   };
+};
 
-  useEffect(() => {
-    // Initial load
+const emptySubscribe = () => () => {};
+const getTrue = () => true;
+const getFalse = () => false;
 
-    loadSettings();
-    setIsLoaded(true);
-
-    // Listen for cross-component changes
-    const handleStorageChange = () => loadSettings();
-    window.addEventListener("wovo-ai-settings-changed", handleStorageChange);
-
-    // Also attach normal storage event to support cross-tab syncing if needed
-    window.addEventListener("storage", (e) => {
-      if (e.key === "wovo_ai_integrations") loadSettings();
-    });
-
-    return () => {
-      window.removeEventListener(
-        "wovo-ai-settings-changed",
-        handleStorageChange,
-      );
-      window.removeEventListener("storage", handleStorageChange);
-    };
-  }, []);
+export function useAISettings() {
+  const settings = useSyncExternalStore(
+    subscribe,
+    getSettings,
+    getServerSettings,
+  );
+  const isLoaded = useSyncExternalStore(
+    emptySubscribe,
+    getTrue,
+    getFalse,
+  );
 
   const saveSettings = (newSettings: AISettingsState) => {
     localStorage.setItem("wovo_ai_integrations", JSON.stringify(newSettings));
-    setSettings(newSettings);
     // Dispatch custom event to notify other instances of the hook
     window.dispatchEvent(new Event("wovo-ai-settings-changed"));
   };
@@ -198,6 +206,13 @@ export function useAISettings() {
     }
   };
 
+  const clearAllSettings = () => {
+    saveSettings({
+      activeProviderId: null,
+      providers: {},
+    });
+  };
+
   // Helper for the backend hooks that just need the active config
   const activeConfig = settings.activeProviderId
     ? {
@@ -212,6 +227,7 @@ export function useAISettings() {
     activeConfig,
     saveProviderConfig,
     deleteProviderConfig,
+    clearAllSettings,
     setActiveProvider,
   };
 }

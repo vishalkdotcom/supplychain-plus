@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -18,12 +17,10 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { SupplierCard } from "@/components/suppliers/supplier-card";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { fetchSuppliers } from "@/lib/api";
-import { IconSearch } from "@tabler/icons-react";
 import { useQueryStates, parseAsInteger, parseAsString } from "nuqs";
-import { useState, useEffect, useTransition } from "react";
-import { useDebounce } from "@/hooks/use-debounce";
+import { SearchInput } from "@/components/search-input";
 
 export default function SuppliersPage() {
   const [params, setParams] = useQueryStates({
@@ -32,19 +29,6 @@ export default function SuppliersPage() {
     region: parseAsString.withDefault("all"),
     riskLevel: parseAsString.withDefault("all"),
   });
-
-  const [searchTerm, setSearchTerm] = useState(params.search);
-  const debouncedSearchTerm = useDebounce(searchTerm, 300);
-  const [isPendingTransition, startTransition] = useTransition();
-
-  // Update URL params when debounced search term changes
-  useEffect(() => {
-    if (debouncedSearchTerm !== params.search) {
-      startTransition(() => {
-        setParams({ search: debouncedSearchTerm, page: 1 });
-      });
-    }
-  }, [debouncedSearchTerm, params.search, setParams]);
 
   const perPage = 12;
 
@@ -64,6 +48,7 @@ export default function SuppliersPage() {
         region: params.region,
         riskLevel: params.riskLevel,
       }),
+    placeholderData: keepPreviousData,
   });
 
   const suppliers = response?.data || [];
@@ -100,19 +85,7 @@ export default function SuppliersPage() {
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1 max-w-sm">
-          {isPendingTransition ? (
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin" />
-          ) : (
-            <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          )}
-          <Input
-            placeholder="Search suppliers..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9"
-          />
-        </div>
+        <SearchInput placeholder="Search suppliers..." />
         <Select
           value={params.riskLevel}
           onValueChange={(val) => setParams({ riskLevel: val, page: 1 })}

@@ -11,7 +11,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
-  IconCheck,
   IconSettings,
   IconExternalLink,
   IconChevronRight,
@@ -19,6 +18,17 @@ import {
 } from "@tabler/icons-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface AIProviderRowProps {
   provider: { id: AIProvider; name: string; url?: string };
@@ -28,6 +38,7 @@ interface AIProviderRowProps {
     providerId: AIProvider,
     config: { apiKey: string; model: string },
   ) => void;
+  deleteProviderConfig: (providerId: AIProvider) => void;
 }
 
 export function AIProviderRow({
@@ -35,6 +46,7 @@ export function AIProviderRow({
   settings,
   onSetActive,
   saveProviderConfig,
+  deleteProviderConfig,
 }: AIProviderRowProps) {
   const config = settings.providers[provider.id];
   const isActive = settings.activeProviderId === provider.id;
@@ -216,6 +228,42 @@ export function AIProviderRow({
               )}
 
               <div className="flex gap-2">
+                {isConfigured && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button type="button" variant="destructive" size="sm">
+                        Delete
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>
+                          Delete Configuration
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to delete the configuration for{" "}
+                          {provider.name}? Wovo AI features using this provider
+                          will stop working.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={(e) => {
+                            // Don't submit the form when acknowledging
+                            e.preventDefault();
+                            deleteProviderConfig(provider.id);
+                            setIsExpanded(false);
+                            toast.success(`${provider.name} settings removed.`);
+                          }}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
                 <Button
                   type="button"
                   variant="ghost"

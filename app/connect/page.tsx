@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -25,13 +24,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { IconArrowRight, IconRobot, IconSearch } from "@tabler/icons-react";
-import { useQuery } from "@tanstack/react-query";
+import { IconArrowRight, IconRobot } from "@tabler/icons-react";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { fetchCases } from "@/lib/api";
 import { useView } from "@/components/view-context";
 import { useQueryStates, parseAsInteger, parseAsString } from "nuqs";
-import { useState, useEffect, useTransition } from "react";
-import { useDebounce } from "@/hooks/use-debounce";
+import { SearchInput } from "@/components/search-input";
 
 export default function ConnectPage() {
   const [params, setParams] = useQueryStates({
@@ -40,18 +38,6 @@ export default function ConnectPage() {
     supplier: parseAsString.withDefault("all"),
     severity: parseAsString.withDefault("all"),
   });
-
-  const [searchTerm, setSearchTerm] = useState(params.search);
-  const debouncedSearchTerm = useDebounce(searchTerm, 300);
-  const [isPendingTransition, startTransition] = useTransition();
-
-  useEffect(() => {
-    if (debouncedSearchTerm !== params.search) {
-      startTransition(() => {
-        setParams({ search: debouncedSearchTerm, page: 1 });
-      });
-    }
-  }, [debouncedSearchTerm, params.search, setParams]);
 
   const perPage = 8;
 
@@ -74,6 +60,7 @@ export default function ConnectPage() {
         supplier: params.supplier,
         severity: params.severity,
       }),
+    placeholderData: keepPreviousData,
   });
 
   const cases = response?.data || [];
@@ -120,19 +107,7 @@ export default function ConnectPage() {
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1 max-w-sm">
-          {isPendingTransition ? (
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin" />
-          ) : (
-            <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          )}
-          <Input
-            placeholder="Search cases..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9"
-          />
-        </div>
+        <SearchInput placeholder="Search cases..." />
         <Select
           value={params.severity}
           onValueChange={(val) => setParams({ severity: val, page: 1 })}

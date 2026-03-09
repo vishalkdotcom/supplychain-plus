@@ -3,7 +3,6 @@
 import { useState, useRef, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import {
   Card,
@@ -35,16 +34,14 @@ import {
   IconFileText,
   IconLoader,
   IconSchool,
-  IconSearch,
   IconSparkles,
   IconUpload,
   IconWand,
 } from "@tabler/icons-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { fetchCourses, fetchSuppliers, fetchRecommendations } from "@/lib/api";
 import { useQueryStates, parseAsInteger, parseAsString } from "nuqs";
-import { useEffect, useTransition } from "react";
-import { useDebounce } from "@/hooks/use-debounce";
+import { SearchInput } from "@/components/search-input";
 
 interface PipelineItem {
   id: string;
@@ -69,18 +66,6 @@ export default function EducatePage() {
     page: parseAsInteger.withDefault(1),
     search: parseAsString.withDefault(""),
   });
-
-  const [searchTerm, setSearchTerm] = useState(params.search);
-  const debouncedSearchTerm = useDebounce(searchTerm, 300);
-  const [isPendingTransition, startTransition] = useTransition();
-
-  useEffect(() => {
-    if (debouncedSearchTerm !== params.search) {
-      startTransition(() => {
-        setParams({ search: debouncedSearchTerm, page: 1 });
-      });
-    }
-  }, [debouncedSearchTerm, params.search, setParams]);
 
   const perPage = 8;
 
@@ -166,6 +151,7 @@ export default function EducatePage() {
         perPage,
         search: params.search,
       }),
+    placeholderData: keepPreviousData,
   });
 
   const { data: suppliersResponse, isLoading: isSuppliersLoading } = useQuery({
@@ -449,18 +435,8 @@ export default function EducatePage() {
       )}
 
       {/* Search */}
-      <div className="relative max-w-sm">
-        {isPendingTransition ? (
-          <div className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin" />
-        ) : (
-          <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        )}
-        <Input
-          placeholder="Search courses..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-9"
-        />
+      <div className="flex flex-col sm:flex-row gap-4 mb-4">
+        <SearchInput placeholder="Search courses..." />
       </div>
 
       {/* Course Catalog */}
