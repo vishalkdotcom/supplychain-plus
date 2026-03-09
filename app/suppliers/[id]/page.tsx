@@ -7,6 +7,7 @@ import { CrossModulePanel } from "@/components/suppliers/cross-module-panel";
 import { SupplierTimeline } from "@/components/suppliers/supplier-timeline";
 import { AIRecommendations } from "@/components/suppliers/ai-recommendations";
 import { RiskTrendChart } from "@/components/suppliers/risk-trend-chart";
+import { EngagementHealthScore } from "@/components/suppliers/engagement-health-score";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -185,11 +186,19 @@ export default function SupplierDetailPage({
           <RiskBreakdown supplier={supplier} />
         </div>
       </div>
-
-      {/* AI Recommendations */}
-      {supplierRecommendations.length > 0 && (
-        <AIRecommendations recommendations={supplierRecommendations} />
-      )}
+      
+      {/* Engagement Health & Recommendations */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-1">
+          <EngagementHealthScore supplier={supplier} />
+        </div>
+        <div className="lg:col-span-2">
+          {/* AI Recommendations */}
+          {supplierRecommendations.length > 0 && (
+            <AIRecommendations recommendations={supplierRecommendations} />
+          )}
+        </div>
+      </div>
 
       {/* Cross-Module Panel */}
       <CrossModulePanel

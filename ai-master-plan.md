@@ -20,7 +20,7 @@
 | **Risk Trend Visualization** | ✅ Completed | Query the existing `supplier_risk_history` table. Show improving or worsening trends over 30/60/90 days on both the Dashboard and Supplier Detail pages. | Integrate `Recharts` (Line/Area charts) within `Card` components. Use green/red text for % changes with `ArrowUpRight` icons. |
 | **Proactive Alerts Center** | ✅ Completed | The background job already generates alerts. Surface these in a global notification center and a dedicated dashboard widget. | Build a `Popover` notification bell in the `AppHeader`. Use `ScrollArea` to list unread alerts with distinct severity colors. |
 | **Engagement Health Score** | 🆕 Brainstorm #9 | Create a composite metric combining survey participation, post interactions, training completion, and case resolution times. | Display as a Radar Chart (`Recharts`) on the Supplier Detail page to visualize "genuine engagement vs. checkbox compliance." |
-| **Brand vs. Supplier Views** | 🔄 In Progress (Roadmap) | Finalize the toggle mechanism in the header to switch context between a portfolio-wide view and a single-factory view. | Use a specialized `Command` palette or `Combobox` in the navigation to easily swap contexts. |
+| **Brand vs. Supplier Views** | ✅ Completed | Finalize the toggle mechanism in the header to switch context between a portfolio-wide view and a single-factory view. | Use a specialized `Command` palette or `Combobox` in the navigation to easily swap contexts. |
 
 ---
 
