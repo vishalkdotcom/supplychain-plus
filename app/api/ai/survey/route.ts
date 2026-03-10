@@ -4,6 +4,8 @@ import { model } from "@/lib/ai/provider";
 import { surveyQuestionSchema } from "@/lib/ai/schemas";
 import { SURVEY_GENERATION_PROMPT } from "@/lib/ai/prompts";
 
+export const maxDuration = 60;
+
 export async function POST(request: Request) {
   try {
     const { prompt } = await request.json();

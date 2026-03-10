@@ -6,13 +6,30 @@ import * as schema from "./schema";
 const connectionString = `postgres://${process.env.POSTGRES_USER || "postgres"}:${process.env.POSTGRES_PASSWORD || ""}@${process.env.POSTGRES_HOST || "localhost"}:${process.env.POSTGRES_PORT || "5432"}/${process.env.POSTGRES_DATABASE_WOVO_AI}`;
 
 // postgres.js client — connection pooling is built-in
-const client = postgres(connectionString, {
-  max: 10, // Connection pool size
-  idle_timeout: 20, // Close idle connections after 20s
-  connect_timeout: 10, // Connection timeout
-});
+import { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 
-export const db = drizzle(client, { schema });
+declare global {
+  var drizzle: { db: PostgresJsDatabase<typeof schema>; client: postgres.Sql<Record<string, never>> } | undefined;
+}
 
-// Export client for raw queries if needed
-export { client };
+let dbInstance: PostgresJsDatabase<typeof schema>;
+let clientInstance: postgres.Sql<Record<string, never>>;
+
+if (global.drizzle) {
+  dbInstance = global.drizzle.db;
+  clientInstance = global.drizzle.client;
+} else {
+  clientInstance = postgres(connectionString, {
+    max: 10,
+    idle_timeout: 20,
+    connect_timeout: 10,
+  });
+  dbInstance = drizzle(clientInstance, { schema });
+
+  if (process.env.NODE_ENV !== "production") {
+    global.drizzle = { db: dbInstance, client: clientInstance };
+  }
+}
+
+export const db = dbInstance;
+export { clientInstance as client };

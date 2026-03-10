@@ -16,7 +16,28 @@ const config: mssql.config = {
   },
 };
 
-let poolPromise: Promise<mssql.ConnectionPool> | null = null;
+declare global {
+  var mssqlPoolPromise: Promise<mssql.ConnectionPool> | undefined;
+}
+
+const poolPromiseValue =
+  global.mssqlPoolPromise ||
+  new mssql.ConnectionPool(config)
+    .connect()
+    .then((pool) => {
+      console.log("Connected to SQL Server");
+      return pool;
+    })
+    .catch((err) => {
+      console.error("Database Connection Failed! Bad Config: ", err);
+      throw err;
+    });
+
+if (process.env.NODE_ENV !== "production") {
+  global.mssqlPoolPromise = poolPromiseValue;
+}
+
+let poolPromise: Promise<mssql.ConnectionPool> | null = poolPromiseValue;
 
 export const getPool = () => {
   if (poolPromise) return poolPromise;

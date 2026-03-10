@@ -1,16 +1,28 @@
 import mysql from "mysql2/promise";
 
-const pool = mysql.createPool({
-  host: process.env.MYSQL_HOST,
-  user: process.env.MYSQL_USER,
-  password: process.env.MYSQL_PASSWORD,
-  database: process.env.MYSQL_DATABASE,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-});
+declare global {
+  var mysqlPool: mysql.Pool | undefined;
+}
 
-export const query = async (sql: string, params?: any[]) => {
+const pool =
+  global.mysqlPool ||
+  mysql.createPool({
+    host: process.env.MYSQL_HOST,
+    user: process.env.MYSQL_USER,
+    password: process.env.MYSQL_PASSWORD,
+    database: process.env.MYSQL_DATABASE,
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 10000,
+  });
+
+if (process.env.NODE_ENV !== "production") {
+  global.mysqlPool = pool;
+}
+
+export const query = async (sql: string, params?: unknown[]) => {
   const [results] = await pool.query(sql, params);
   return results;
 };
