@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db/postgres";
 import { wcGlobalQuery } from "@/lib/db/postgres-wc-global";
+import { db } from "@/lib/db/drizzle";
+import { supplierRiskScores as supplierRiskScoresSchema } from "@/lib/db/schema";
 import { Supplier, PaginatedResponse } from "@/types";
 import { extractEnglishFromMlang } from "@/lib/mlang";
+import { inArray } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   try {
@@ -16,89 +19,110 @@ export async function GET(request: NextRequest) {
     const riskLevel = searchParams.get("riskLevel") || "all";
     const offset = (page - 1) * perPage;
 
-    // Build dynamic WHERE clauses
+    // Build dynamic WHERE clauses for basic supplier info
     const conditions: string[] = [
-      "c.is_deleted = false",
-      "c.client_key IS NOT NULL",
+      "is_deleted = false",
+      "client_key IS NOT NULL",
     ];
-    const params: any[] = [];
+    const params: (string | number)[] = [];
     let paramIndex = 1;
 
     if (search) {
-      conditions.push(`c.name ILIKE $${paramIndex}`);
+      conditions.push(`name ILIKE $${paramIndex}`);
       params.push(`%${search}%`);
       paramIndex++;
     }
 
     const whereClause = conditions.join(" AND ");
 
-    // Count total
-    const countResult = await query(
-      `SELECT COUNT(*) as total FROM clients_clientinfo c
-       LEFT JOIN supplier_risk_scores r ON CAST(c.client_key AS VARCHAR) = r.supplier_id
-       WHERE ${whereClause}`,
-      params,
-    );
-    let total = parseInt(countResult.rows[0].total);
-
-    // Fetch paginated data
+    // Fetch all matching suppliers from wovo_new without pagination yet
+    // since we need to sort and filter by risk_score which lives in wovo_ai
     const result = await query(
       `SELECT 
-        c.id, 
-        c.client_key,
-        c.name, 
-        c.country, 
-        c.is_active,
-        r.risk_score,
-        r.case_score,
-        r.survey_score,
-        r.training_score,
-        r.engagement_score,
-        r.reasons
-      FROM clients_clientinfo c
-      LEFT JOIN supplier_risk_scores r ON CAST(c.client_key AS VARCHAR) = r.supplier_id
-      WHERE ${whereClause}
-      ORDER BY r.risk_score DESC NULLS LAST, c.name ASC
-      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
-      [...params, perPage, offset],
+        id, 
+        client_key,
+        name, 
+        country, 
+        is_active
+      FROM clients_clientinfo
+      WHERE ${whereClause}`,
+      params,
     );
+    
+    interface ClientRow {
+      id: number;
+      client_key: number;
+      name: string;
+      country: string | null;
+      is_active: boolean;
+    }
+    
+    const rows: ClientRow[] = result.rows;
 
-    // Apply risk level filter in-memory (since it's derived from risk_score)
-    let rows = result.rows;
+    // Fetch risk scores from wovo_ai via Drizzle
+    const clientKeysForRisk = rows.map((r) => String(r.client_key));
+    const riskScoresMap: Record<string, any> = {};
+    
+    if (clientKeysForRisk.length > 0) {
+      const riskData = await db.select().from(supplierRiskScoresSchema).where(inArray(supplierRiskScoresSchema.supplierId, clientKeysForRisk));
+      for (const r of riskData) {
+        riskScoresMap[r.supplierId] = r;
+      }
+    }
+
+    interface MergedRow extends ClientRow {
+      risk_score: number;
+      case_score: number;
+      survey_score: number;
+      training_score: number;
+      engagement_score: number;
+      reasons: any[];
+    }
+
+    // Merge and filter
+    let mergedRows: MergedRow[] = rows.map((row) => {
+      const riskData = riskScoresMap[String(row.client_key)];
+      return {
+        ...row,
+        risk_score: riskData?.riskScore || 50,
+        case_score: riskData?.caseScore || 50,
+        survey_score: riskData?.surveyScore || 50,
+        training_score: riskData?.trainingScore || 50,
+        engagement_score: riskData?.engagementScore || 50,
+        reasons: riskData?.reasons || [],
+      };
+    });
+
     if (riskLevel !== "all") {
-      // Re-count with risk filter applied
-      const allRows = await query(
-        `SELECT c.client_key, r.risk_score
-         FROM clients_clientinfo c
-         LEFT JOIN supplier_risk_scores r ON CAST(c.client_key AS VARCHAR) = r.supplier_id
-         WHERE ${whereClause}`,
-        params,
-      );
-      const filteredKeys = allRows.rows.filter((row: any) => {
-        const score = row.risk_score || 50;
+      mergedRows = mergedRows.filter((row: MergedRow) => {
+        const score = row.risk_score;
         if (riskLevel === "high") return score > 70;
         if (riskLevel === "medium") return score > 30 && score <= 70;
         if (riskLevel === "low") return score <= 30;
         return true;
       });
-      total = filteredKeys.length;
-      const keySet = new Set(filteredKeys.map((r: any) => r.client_key));
-      rows = rows.filter((r: any) => keySet.has(r.client_key));
     }
 
+    // Sort by risk_score DESC
+    mergedRows.sort((a, b) => b.risk_score - a.risk_score);
+
+    // Apply pagination
+    const total = mergedRows.length;
+    const paginatedRows = mergedRows.slice(offset, offset + perPage);
+
     // Fetch worker counts from wc_global
-    const clientKeys = rows
-      .map((r: any) => parseInt(r.client_key))
+    const clientKeysForWorkers = paginatedRows
+      .map((r) => Number(r.client_key))
       .filter(Boolean);
     const workerCountMap: Record<number, number> = {};
-    if (clientKeys.length > 0) {
+    if (clientKeysForWorkers.length > 0) {
       try {
         const workerRes = await wcGlobalQuery(
           `SELECT client_id, COUNT(*) as count 
            FROM mdl_participant 
            WHERE client_id = ANY($1) AND is_deleted = false 
            GROUP BY client_id`,
-          [clientKeys],
+          [clientKeysForWorkers],
         );
         for (const row of workerRes.rows) {
           workerCountMap[row.client_id] = parseInt(row.count);
@@ -108,30 +132,30 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const suppliers: Supplier[] = rows.map((row: any) => ({
+    const suppliers: Supplier[] = paginatedRows.map((row) => ({
       id: String(row.client_key),
       name: extractEnglishFromMlang(row.name),
       region: deriveRegion(row.country),
       country: row.country || "Unknown",
       location: row.country || "Unknown",
-      workerCount: workerCountMap[parseInt(row.client_key)] || 0,
+      workerCount: workerCountMap[Number(row.client_key)] || 0,
       contactName: "N/A", // TODO: add contact columns to clients_clientinfo
       contactEmail: "N/A",
-      riskScore: row.risk_score || 50,
+      riskScore: row.risk_score,
       riskLevel:
-        (row.risk_score || 50) > 70
+        row.risk_score > 70
           ? "high"
-          : (row.risk_score || 50) > 30
+          : row.risk_score > 30
             ? "medium"
             : "low",
       status: row.is_active ? "active" : "inactive",
-      lastActivityDate: new Date().toISOString().split("T")[0], // TODO: derive from latest case/survey date
+      lastActivityDate: new Date().toISOString().split("T")[0],
       riskBreakdown: {
-        caseScore: row.case_score || 50,
-        surveyScore: row.survey_score || 50,
-        trainingScore: row.training_score || 50,
-        engagementScore: row.engagement_score || 50,
-        reasons: Array.isArray(row.reasons) ? row.reasons : [],
+        caseScore: row.case_score,
+        surveyScore: row.survey_score,
+        trainingScore: row.training_score,
+        engagementScore: row.engagement_score,
+        reasons: row.reasons,
       },
     }));
 

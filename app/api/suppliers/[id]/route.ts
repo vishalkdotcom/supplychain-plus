@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { query as pgQuery } from "@/lib/db/postgres";
 import { wcGlobalQuery } from "@/lib/db/postgres-wc-global";
+import { db } from "@/lib/db/drizzle";
+import { supplierRiskScores as supplierRiskScoresSchema } from "@/lib/db/schema";
 import { Supplier } from "@/types";
+import { eq } from "drizzle-orm";
 
 export async function GET(
   request: Request,
@@ -12,10 +15,9 @@ export async function GET(
 
     // 1. Get supplier basic info from Postgres using client_key (maps to SQL Server Company.Id)
     const supplierRes = await pgQuery(
-      `SELECT c.id, c.client_key, c.name, c.country, c.is_active, r.* 
-       FROM clients_clientinfo c 
-       LEFT JOIN supplier_risk_scores r ON CAST(c.client_key AS VARCHAR) = r.supplier_id 
-       WHERE c.client_key = $1`,
+      `SELECT id, client_key, name, country, is_active
+       FROM clients_clientinfo 
+       WHERE client_key = $1`,
       [id],
     );
 
@@ -39,6 +41,14 @@ export async function GET(
     }
 
     const row = supplierRes.rows[0];
+    
+    // 3. Get risk score from Drizzle (wovo_ai)
+    const riskData = await db.select()
+      .from(supplierRiskScoresSchema)
+      .where(eq(supplierRiskScoresSchema.supplierId, String(row.client_key)))
+      .limit(1);
+    const risk = riskData[0];
+
     const supplier: Supplier = {
       id: String(row.client_key),
       name: row.name,
@@ -48,21 +58,21 @@ export async function GET(
       workerCount,
       contactName: "N/A",
       contactEmail: "n/a",
-      riskScore: row.risk_score || 50,
+      riskScore: risk?.riskScore || 50,
       riskLevel:
-        (row.risk_score || 50) > 70
+        (risk?.riskScore || 50) > 70
           ? "high"
-          : (row.risk_score || 50) > 30
+          : (risk?.riskScore || 50) > 30
             ? "medium"
             : "low",
       status: row.is_active ? "active" : "inactive",
       lastActivityDate: new Date().toISOString().split("T")[0],
       riskBreakdown: {
-        caseScore: row.case_score || 50,
-        surveyScore: row.survey_score || 50,
-        trainingScore: row.training_score || 50,
-        engagementScore: row.engagement_score || 50,
-        reasons: [],
+        caseScore: risk?.caseScore || 50,
+        surveyScore: risk?.surveyScore || 50,
+        trainingScore: risk?.trainingScore || 50,
+        engagementScore: risk?.engagementScore || 50,
+        reasons: risk?.reasons || [],
       },
     };
 

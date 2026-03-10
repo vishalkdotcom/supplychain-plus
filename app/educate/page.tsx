@@ -42,6 +42,7 @@ import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { fetchCourses, fetchSuppliers, fetchRecommendations } from "@/lib/api";
 import { useQueryStates, parseAsInteger, parseAsString } from "nuqs";
 import { SearchInput } from "@/components/search-input";
+import { AIRecommendation } from "@/types";
 
 interface CourseData {
   title: string;
@@ -184,9 +185,9 @@ export default function EducatePage() {
   });
 
   const { data: recommendationsData, isLoading: isRecommendationsLoading } =
-    useQuery({
+    useQuery<AIRecommendation[]>({
       queryKey: ["recommendations"],
-      queryFn: fetchRecommendations,
+      queryFn: () => fetchRecommendations(),
     });
 
   const courses = coursesResponse?.data || [];
@@ -196,8 +197,8 @@ export default function EducatePage() {
 
   // Training recommendations based on AI analysis
   const trainingRecommendations = (recommendationsData || [])
-    .filter((r) => r.category === "training")
-    .map((rec) => {
+    .filter((r: AIRecommendation) => r.category === "training")
+    .map((rec: AIRecommendation) => {
       const supplier = suppliers.find((s) => s.id === rec.supplierId);
       return { ...rec, supplierName: supplier?.name || "Unknown" };
     });

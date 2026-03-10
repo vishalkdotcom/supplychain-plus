@@ -29,7 +29,7 @@
 
 | Feature | Status/Source | Implementation Details | UI/UX Strategy (shadcn/ui) |
 | :--- | :--- | :--- | :--- |
-| **Geographic Risk Heatmap** | 🆕 Brainstorm #5 | Utilize `CompanyPost.Latitude/Longitude` and `MailingCountry` data. Plot suppliers on a world map colored by risk level, overlaid with case density. | Integrate a map library (e.g., Mapbox GL JS or React Simple Maps) inside a large Dashboard `Card` with interactive tooltips. |
+| **Geographic Risk Heatmap** | ✅ Completed | Utilize `CompanyPost.Latitude/Longitude` and `MailingCountry` data. Plot suppliers on a world map colored by risk level, overlaid with case density. | Integrate a map library (e.g., Mapbox GL JS or React Simple Maps) inside a large Dashboard `Card` with interactive tooltips. |
 | **Supply Chain Network Graph** | 🆕 Brainstorm #6 | Traverse `CompanyHierarchy` to visualize parent-child corporate structures. Aggregate risk up the hierarchy to show group-level risk. | Use `React Flow` to build an interactive, force-directed node graph. Nodes will use shadcn `Avatar` and `Badge` styling. |
 | **Case Resolution Playbook** | 🆕 Brainstorm #11 | Analyze the 2,944 resolved cases + 81 case notes to extract the fastest resolution paths for specific regions/case types. | Surface insights in the `/connect` view as a "Historical Context" `Accordion`, showing average resolution times and best practices. |
 

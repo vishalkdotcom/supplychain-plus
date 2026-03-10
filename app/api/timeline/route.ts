@@ -4,6 +4,8 @@ import { query as pgQuery } from "@/lib/db/postgres";
 import { query as mysqlQuery } from "@/lib/db/mysql";
 import { TimelineEvent } from "@/types";
 import mssql from "mssql";
+import { extractEnglishFromMlang } from "@/lib/mlang";
+
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -50,8 +52,8 @@ export async function GET(request: Request) {
           date: new Date(row.Created).toISOString().split("T")[0],
           type: row.Priority === 1 ? "alert" : "problem",
           module: "connect",
-          title: row.Title || `Case #${row.Id}`,
-          description: `${row.TypeName || "Case"} - ${row.StatusName || "Open"} (${row.Priority === 1 ? "High" : row.Priority === 2 ? "Medium" : "Low"} priority)`,
+          title: extractEnglishFromMlang(row.Title || `Case #${row.Id}`),
+          description: extractEnglishFromMlang(`${row.TypeName || "Case"} - ${row.StatusName || "Open"} (${row.Priority === 1 ? "High" : row.Priority === 2 ? "Medium" : "Low"} priority)`),
         });
       }
     } catch {
@@ -94,8 +96,8 @@ export async function GET(request: Request) {
                 ? "action"
                 : "action",
           module: "engage",
-          title: row.name || "Survey",
-          description: `Survey ${statusLabel} - ${row.client_name || "Unknown supplier"}`,
+          title: extractEnglishFromMlang(row.name || "Survey"),
+          description: extractEnglishFromMlang(`Survey ${statusLabel} - ${row.client_name || "Unknown supplier"}`),
         });
       }
     } catch {
@@ -127,8 +129,8 @@ export async function GET(request: Request) {
           date: new Date(row.timecreated * 1000).toISOString().split("T")[0],
           type: "action",
           module: "educate",
-          title: `Training: ${row.fullname}`,
-          description: `Course deployed with ${row.enrolled || 0} enrollments`,
+          title: `Training: ${extractEnglishFromMlang(row.fullname)}`,
+          description: extractEnglishFromMlang(`Course deployed with ${row.enrolled || 0} enrollments`),
         });
       }
     } catch {

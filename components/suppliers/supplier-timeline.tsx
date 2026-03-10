@@ -19,6 +19,8 @@ import {
   IconSettings,
 } from "@tabler/icons-react";
 
+
+
 interface SupplierTimelineProps {
   events: TimelineEvent[];
 }
@@ -96,7 +98,7 @@ export function SupplierTimeline({ events }: SupplierTimelineProps) {
 
           {/* Events */}
           <div className="space-y-6">
-            {events.map((event, idx) => (
+            {events.map((event) => (
               <div key={event.id} className="relative flex gap-4">
                 {/* Icon */}
                 <div className="relative z-10">{getEventIcon(event.type)}</div>
@@ -104,7 +106,7 @@ export function SupplierTimeline({ events }: SupplierTimelineProps) {
                 {/* Content */}
                 <div className="flex-1 pb-2">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="font-medium text-sm">{event.title}</span>
+                      {event.title}
                     <span className="text-xs text-muted-foreground">
                       {formatDate(event.date)}
                     </span>

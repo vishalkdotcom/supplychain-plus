@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { AlertsCenter } from "@/components/dashboard/alerts-center";
+import { GeographicRiskMap } from "@/components/dashboard/geographic-risk-map";
+import { SupplyChainNetwork } from "@/components/dashboard/supply-chain-network";
 import {
   Card,
   CardContent,
@@ -29,7 +31,7 @@ import {
   fetchSuppliers,
   fetchRecommendations,
 } from "@/lib/api";
-import { Supplier } from "@/types";
+import { AIRecommendation, Supplier } from "@/types";
 
 export function DashboardView() {
   const { data: metrics, isLoading: isMetricsLoading } = useQuery({
@@ -47,12 +49,13 @@ export function DashboardView() {
     queryFn: () => fetchSuppliers(),
   });
 
-  const suppliers = suppliersRes?.data;
+  const EMPTY_SUPPLIERS: Supplier[] = [];
+  const suppliers = suppliersRes?.data || EMPTY_SUPPLIERS;
 
   const { data: recommendations, isLoading: isRecommendationsLoading } =
-    useQuery({
+    useQuery<AIRecommendation[]>({
       queryKey: ["recommendations"],
-      queryFn: fetchRecommendations,
+      queryFn: () => fetchRecommendations(),
     });
 
   const highRiskSuppliers =
@@ -60,7 +63,7 @@ export function DashboardView() {
       ?.filter((s: Supplier) => s.riskLevel === "high")
       .sort((a: Supplier, b: Supplier) => b.riskScore - a.riskScore) || [];
   const topRecommendations = (recommendations || [])
-    .filter((r) => r.urgency === "immediate")
+    .filter((r: AIRecommendation) => r.urgency === "immediate")
     .slice(0, 3);
 
   if (
@@ -161,6 +164,14 @@ export function DashboardView() {
             </p>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Geographic & Network Visualizations */}
+      <div className="grid gap-6 grid-cols-1 xl:grid-cols-3 mb-6">
+        <GeographicRiskMap suppliers={suppliers} />
+        <div className="col-span-full xl:col-span-1">
+          <SupplyChainNetwork suppliers={suppliers} />
+        </div>
       </div>
 
       {/* Main Content Grid */}
