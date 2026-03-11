@@ -17,13 +17,8 @@ const chatModel = ollama.chatModel("qwen3:4b");
 
 async function fetchRealResponses() {
   const validSurveyIds = [
-    "f02391c3-bd37-4707-9d37-88ecfe22ccfc",
-    "c9f36ec8-c7e7-4794-8ac3-d000a39da186",
-    "904739be-bee2-4cc6-b91a-7d031cfc964c",
-    "3c92dcee-5282-42d2-b8cd-aab4f2d6ff9f",
-    "e76798dd-d819-4dcd-b8ea-d94e13cf124d",
     "fe2a74e0-d248-4048-bf47-321044f3cf6f",
-    "bcd3b894-f3ab-47b0-a541-eeddee1ee206"
+    "354b209b-9e8c-47cf-814a-3a4a35b193b0"
   ];
   
   const placeholders = validSurveyIds.map((_, i) => `$${i + 1}`).join(", ");
@@ -34,7 +29,6 @@ async function fetchRealResponses() {
     WHERE text_response IS NOT NULL 
       AND LENGTH(text_response) > 10 
       AND survey_id IN (${placeholders})
-    LIMIT 50
   `, validSurveyIds);
 
   return res.rows.map(r => ({
@@ -103,7 +97,7 @@ async function processWorkerVoice() {
   const rawResponses = await fetchRealResponses();
   console.log(`Found ${rawResponses.length} substantive responses.`);
 
-  const responses = DRY_RUN ? rawResponses.slice(0, 3) : rawResponses;
+  const responses = rawResponses;
   
   let processed = 0;
   for (const resp of responses) {
@@ -122,6 +116,14 @@ async function processWorkerVoice() {
         sentimentScore: analysis.sentimentScore,
         topics: analysis.topics,
         embedding: analysis.embedding,
+      }).onConflictDoUpdate({
+        target: surveyResponseAnalysis.responseId,
+        set: {
+          sentiment: analysis.sentiment,
+          sentimentScore: analysis.sentimentScore,
+          topics: analysis.topics,
+          embedding: analysis.embedding,
+        }
       });
     }
     processed++;

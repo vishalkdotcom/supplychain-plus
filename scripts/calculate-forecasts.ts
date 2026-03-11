@@ -80,7 +80,7 @@ async function generateNarrative(
 async function calculateForecasts() {
   console.log(DRY_RUN ? "🧪 DRY RUN MODE (3 suppliers only)\n" : "🚀 Calculating risk forecasts...\n");
 
-  const validSupplierIds = ["136745", "137483", "136993", "137089", "136742"];
+  const validSupplierIds = ["137089", "136747", "137308", "137284", "137088"];
 
   // Get all supplier IDs with risk scores
   const suppliers = await db
@@ -91,8 +91,7 @@ async function calculateForecasts() {
     })
     .from(supplierRiskScores)
     .where(inArray(supplierRiskScores.supplierId, validSupplierIds))
-    .orderBy(desc(supplierRiskScores.riskScore))
-    .limit(DRY_RUN ? 3 : 1000);
+    .orderBy(desc(supplierRiskScores.riskScore));
 
   console.log(`Found ${suppliers.length} suppliers with risk scores.\n`);
 

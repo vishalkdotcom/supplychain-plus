@@ -17,16 +17,20 @@ const ollama = createOpenAICompatible({ name: "ollama", baseURL: ollamaUrl });
 const embeddingModel = ollama.textEmbeddingModel("bge-m3:latest");
 
 async function fetchRealCases() {
-  const caseIds = [1522255, 1522672, 1522696, 1522062];
   try {
     const result = await sqlServerQuery(`
       SELECT 
-        CAST(CaseId AS VARCHAR) as id,
-        ISNULL(MessageText, 'No message provided') as text,
-        'Unknown' as company,
+        CAST(m.CaseId AS VARCHAR) as id,
+        ISNULL(m.MessageText, 'No message provided') as text,
+        c.Name as company,
         'Unknown' as country
-      FROM [Message]
-      WHERE CaseId IN (${caseIds.join(", ")})
+      FROM [Message] m
+      JOIN Company c ON m.CompanyId = c.Id
+      WHERE m.CompanyId IN (137089, 136747, 137308)
+        AND LEN(m.MessageText) > 20
+        AND m.MessageText NOT LIKE '%test%'
+        AND m.MessageText NOT LIKE '%Description:%'
+        AND m.MessageText NOT LIKE '%http%'
     `);
     
     return result.recordset.map((row: any) => ({
@@ -70,7 +74,7 @@ async function runClustering() {
   const rawCases = await fetchRealCases();
   console.log(`Found ${rawCases.length} cases to process.`);
 
-  const casesToProcess = DRY_RUN ? rawCases.slice(0, 3) : rawCases;
+  const casesToProcess = rawCases;
   const vectors: number[][] = [];
   const processedCases: Array<{id: string, text: string, company: string, country: string, embedding: number[]}> = [];
 
