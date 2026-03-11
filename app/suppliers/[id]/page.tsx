@@ -31,6 +31,7 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchSupplier, fetchSupplierHistory, fetchCases, fetchSurveys, fetchRecommendations, fetchTimeline, fetchTraining } from "@/lib/api";
 import { Case, Survey, AIRecommendation } from "@/types";
 import { SupplierHero } from "@/components/suppliers/supplier-hero";
+import { RiskForecast } from "@/components/suppliers/risk-forecast";
 import { toast } from "sonner";
 
 interface SupplierDetailPageProps {
@@ -176,6 +177,9 @@ export default function SupplierDetailPage({
 
       {/* Hero */}
       <SupplierHero supplier={supplier} />
+
+      {/* Risk Forecast Banner */}
+      <RiskForecast supplierId={supplier.id} />
 
       {/* Risk Cards Matrix */}
       <div className="grid gap-6 lg:grid-cols-3">

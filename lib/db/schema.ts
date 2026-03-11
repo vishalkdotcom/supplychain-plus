@@ -158,3 +158,103 @@ export const aiChatHistory = pgTable(
     index("idx_chat_created").on(table.createdAt),
   ],
 );
+// ===============================
+// Case Embeddings (for clustering)
+// ===============================
+export const caseEmbeddings = pgTable(
+  "case_embeddings",
+  {
+    id: serial("id").primaryKey(),
+    caseId: varchar("case_id", { length: 50 }).notNull(),
+    messageId: varchar("message_id", { length: 50 }),
+    messageText: text("message_text").notNull(),
+    embedding: jsonb("embedding").$type<number[]>().default([]),
+    clusterId: integer("cluster_id"),
+    clusterLabel: varchar("cluster_label", { length: 255 }),
+    companyId: varchar("company_id", { length: 50 }),
+    companyName: varchar("company_name", { length: 255 }),
+    country: varchar("country", { length: 100 }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("idx_case_embed_case").on(table.caseId),
+    index("idx_case_embed_cluster").on(table.clusterId),
+    index("idx_case_embed_company").on(table.companyId),
+  ],
+);
+// ===============================
+// Survey Response Analysis (batch NLP results)
+// ===============================
+export const surveyResponseAnalysis = pgTable(
+  "survey_response_analysis",
+  {
+    id: serial("id").primaryKey(),
+    responseId: varchar("response_id", { length: 50 }).notNull().unique(),
+    surveyId: varchar("survey_id", { length: 50 }),
+    responseText: text("response_text").notNull(),
+    sentiment: varchar("sentiment", { length: 20 }), // positive, negative, neutral
+    sentimentScore: real("sentiment_score").default(0),
+    topics: jsonb("topics").$type<string[]>().default([]),
+    embedding: jsonb("embedding").$type<number[]>().default([]),
+    analyzedAt: timestamp("analyzed_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("idx_survey_resp_survey").on(table.surveyId),
+    index("idx_survey_resp_sentiment").on(table.sentiment),
+  ],
+);
+// ===============================
+// Supplier Risk Forecast (predictions)
+// ===============================
+export const supplierRiskForecast = pgTable(
+  "supplier_risk_forecast",
+  {
+    id: serial("id").primaryKey(),
+    supplierId: varchar("supplier_id", { length: 50 }).notNull(),
+    supplierName: varchar("supplier_name", { length: 255 }),
+    currentScore: integer("current_score").notNull(),
+    predictedScore: integer("predicted_score").notNull(),
+    trend: varchar("trend", { length: 20 }).notNull(), // improving, worsening, stable
+    trendMagnitude: real("trend_magnitude").default(0), // % change
+    aiNarrative: text("ai_narrative"),
+    dataPoints: integer("data_points").default(0), // number of history points used
+    forecastDate: timestamp("forecast_date", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("idx_forecast_supplier").on(table.supplierId),
+  ],
+);
+// ===============================
+// Payslip Anomalies (flagged issues)
+// ===============================
+export const payslipAnomalies = pgTable(
+  "payslip_anomalies",
+  {
+    id: serial("id").primaryKey(),
+    payslipId: varchar("payslip_id", { length: 50 }).notNull(),
+    supplierId: varchar("supplier_id", { length: 50 }).notNull(),
+    supplierName: varchar("supplier_name", { length: 255 }),
+    country: varchar("country", { length: 100 }),
+    anomalyType: varchar("anomaly_type", { length: 50 }).notNull(), // below_minimum_wage, sudden_drop, overtime_missing
+    severity: varchar("severity", { length: 20 }).notNull(), // critical, warning, info
+    actualWage: real("actual_wage"),
+    expectedWage: real("expected_wage"),
+    deviationPercent: real("deviation_percent"),
+    details: jsonb("details").$type<Record<string, unknown>>().default({}),
+    aiExplanation: text("ai_explanation"),
+    detectedAt: timestamp("detected_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("idx_anomaly_supplier").on(table.supplierId),
+    index("idx_anomaly_severity").on(table.severity),
+    index("idx_anomaly_type").on(table.anomalyType),
+  ],
+);

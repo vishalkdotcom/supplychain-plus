@@ -40,6 +40,7 @@ import {
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchCase } from "@/lib/api";
 import { useAISettings } from "@/hooks/use-ai-settings";
+import { ResolutionPlaybook } from "@/components/connect/resolution-playbook";
 
 interface CaseDetailPageProps {
   params: Promise<{ id: string }>;
@@ -435,6 +436,9 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Case Resolution Playbook */}
+              <ResolutionPlaybook caseType={caseData.topic} region={caseData.supplierName} />
 
               {/* Draft Response & Multi-Language Hub */}
               <Card>

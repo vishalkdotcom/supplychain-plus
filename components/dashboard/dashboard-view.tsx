@@ -4,6 +4,8 @@ import Link from "next/link";
 import { AlertsCenter } from "@/components/dashboard/alerts-center";
 import { GeographicRiskMap } from "@/components/dashboard/geographic-risk-map";
 import { SupplyChainNetwork } from "@/components/dashboard/supply-chain-network";
+import { PayslipAnomalyTable } from "@/components/analytics/payslip-anomaly-table";
+import { WorkerVoiceDashboard } from "@/components/analytics/worker-voice-dashboard";
 import {
   Card,
   CardContent,
@@ -179,6 +181,14 @@ export function DashboardView() {
         <div className="col-span-full xl:col-span-1">
           <SupplyChainNetwork suppliers={suppliers} hierarchy={hierarchy} />
         </div>
+      </div>
+
+      {/* NLP Worker Voice Analytics */}
+      <WorkerVoiceDashboard />
+
+      {/* Payslip Anomalies AI Detection */}
+      <div className="mt-6 mb-6">
+        <PayslipAnomalyTable />
       </div>
 
       {/* Main Content Grid */}

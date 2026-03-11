@@ -30,6 +30,7 @@ import { fetchCases } from "@/lib/api";
 import { useView } from "@/components/view-context";
 import { useQueryStates, parseAsInteger, parseAsString } from "nuqs";
 import { SearchInput } from "@/components/search-input";
+import { CaseClusterView } from "@/components/analytics/case-cluster-view";
 
 export default function ConnectPage() {
   const [params, setParams] = useQueryStates({
@@ -123,6 +124,8 @@ export default function ConnectPage() {
           </SelectContent>
         </Select>
       </div>
+
+      <CaseClusterView />
 
       <p className="text-sm text-muted-foreground">
         Showing {cases.length} of {total} cases

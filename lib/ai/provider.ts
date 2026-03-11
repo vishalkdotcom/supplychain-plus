@@ -14,7 +14,7 @@ const thinkingMiddleware = extractReasoningMiddleware({
 });
 
 // ─── Switch providers by changing AI_PROVIDER in .env.local ───
-// Valid values: "openai" | "nim" | "perplexity" | "lmstudio"
+// Valid values: "openai" | "nim" | "perplexity" | "lmstudio" | "google" | "ollama"
 const activeProvider = process.env.AI_PROVIDER ?? "openai";
 
 // ─── Provider factories ───────────────────────────────────
@@ -55,6 +55,31 @@ function buildModels() {
       return {
         model: lms.chatModel(modelName),
         strongModel: lms.chatModel(modelName),
+      };
+    }
+
+    case "google": {
+      const google = createGoogleGenerativeAI({
+        apiKey:
+          process.env.GOOGLE_GENERATIVE_AI_API_KEY ??
+          process.env.GEMINI_API_KEY ??
+          "",
+      });
+      return {
+        model: google("gemini-2.5-flash-lite-preview-06-17"),
+        strongModel: google("gemini-2.5-flash"),
+      };
+    }
+
+    case "ollama": {
+      const ollama = createOpenAICompatible({
+        name: "ollama",
+        baseURL: process.env.OLLAMA_BASE_URL ?? "http://localhost:11434/v1",
+      });
+      const modelName = process.env.OLLAMA_MODEL ?? "qwen3:4b";
+      return {
+        model: ollama.chatModel(modelName),
+        strongModel: ollama.chatModel(modelName),
       };
     }
 
