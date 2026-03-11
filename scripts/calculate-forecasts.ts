@@ -17,13 +17,16 @@
  * - wovo_ai database with supplier_risk_history populated (run seed-risk-scores.ts first)
  */
 
+import { loadEnvConfig } from "@next/env";
+loadEnvConfig(process.cwd());
+
 import { db } from "../lib/db/drizzle";
 import {
   supplierRiskHistory,
   supplierRiskScores,
   supplierRiskForecast,
 } from "../lib/db/schema";
-import { eq, sql, desc } from "drizzle-orm";
+import { eq, sql, desc, inArray } from "drizzle-orm";
 import { linearRegression, linearRegressionLine } from "simple-statistics";
 
 const DRY_RUN = process.argv.includes("--dry-run");
@@ -77,6 +80,8 @@ async function generateNarrative(
 async function calculateForecasts() {
   console.log(DRY_RUN ? "🧪 DRY RUN MODE (3 suppliers only)\n" : "🚀 Calculating risk forecasts...\n");
 
+  const validSupplierIds = ["136745", "137483", "136993", "137089", "136742"];
+
   // Get all supplier IDs with risk scores
   const suppliers = await db
     .select({
@@ -85,6 +90,7 @@ async function calculateForecasts() {
       currentScore: supplierRiskScores.riskScore,
     })
     .from(supplierRiskScores)
+    .where(inArray(supplierRiskScores.supplierId, validSupplierIds))
     .orderBy(desc(supplierRiskScores.riskScore))
     .limit(DRY_RUN ? 3 : 1000);
 
@@ -101,8 +107,8 @@ async function calculateForecasts() {
       .where(eq(supplierRiskHistory.supplierId, supplier.supplierId))
       .orderBy(supplierRiskHistory.snapshotDate);
 
-    if (history.length < 3) {
-      console.log(`  ⏭ ${supplier.supplierName}: only ${history.length} data points (need 3+), skipping`);
+    if (history.length < 2) {
+      console.log(`  ⏭ ${supplier.supplierName}: only ${history.length} data points (need 2+), skipping`);
       skipped++;
       continue;
     }

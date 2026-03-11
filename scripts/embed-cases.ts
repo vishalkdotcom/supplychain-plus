@@ -1,9 +1,13 @@
+import { loadEnvConfig } from "@next/env";
+loadEnvConfig(process.cwd());
+
 import { db } from "../lib/db/drizzle";
 import { caseEmbeddings } from "../lib/db/schema";
 import { embed } from "ai";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { resilientGenerateText } from "../lib/ai/resilient-generate";
 import { kmeans } from "ml-kmeans";
+import { query as sqlServerQuery } from "../lib/db/sql-server";
 
 const DRY_RUN = process.argv.includes("--dry-run");
 
@@ -12,19 +16,30 @@ const ollamaUrl = process.env.OLLAMA_BASE_URL ?? "http://localhost:11434/v1";
 const ollama = createOpenAICompatible({ name: "ollama", baseURL: ollamaUrl });
 const embeddingModel = ollama.textEmbeddingModel("bge-m3:latest");
 
-// Mocking cases to bypass complex SQL Server querying for this demo script
-const SYNTHETIC_CASES = [
-  { id: "CASE-001", text: "My supervisor threatened to fire me if I didn't work overtime on Sunday.", company: "TechSew", country: "Vietnam" },
-  { id: "CASE-002", text: "The line manager yells at the women on line 4 every day.", company: "TechSew", country: "Vietnam" },
-  { id: "CASE-003", text: "We were forced to work through our lunch break again.", company: "GarmentCo", country: "Bangladesh" },
-  { id: "CASE-004", text: "I received only half my overtime pay for last month.", company: "ShoeMaker Inc", country: "China" },
-  { id: "CASE-005", text: "The ventilation in section B is broken and it is extremely hot.", company: "TechSew", country: "Vietnam" },
-  { id: "CASE-006", text: "The manager touched me inappropriately during the shift change.", company: "ApparelPro", country: "India" },
-  { id: "CASE-007", text: "No drinking water available on the third floor.", company: "TechSew", country: "Vietnam" },
-  { id: "CASE-008", text: "They are paying us less than the minimum wage for piece-rate work.", company: "ShoeMaker Inc", country: "China" },
-  { id: "CASE-009", text: "Mandatory overtime without extra pay is illegal.", company: "GarmentCo", country: "Bangladesh" },
-  { id: "CASE-010", text: "A worker fainted today because of the heat in the finishing department.", company: "TechSew", country: "Vietnam" }
-];
+async function fetchRealCases() {
+  const caseIds = [1522255, 1522672, 1522696, 1522062];
+  try {
+    const result = await sqlServerQuery(`
+      SELECT 
+        CAST(CaseId AS VARCHAR) as id,
+        ISNULL(MessageText, 'No message provided') as text,
+        'Unknown' as company,
+        'Unknown' as country
+      FROM [Message]
+      WHERE CaseId IN (${caseIds.join(", ")})
+    `);
+    
+    return result.recordset.map((row: any) => ({
+      id: row.id,
+      text: row.text,
+      company: row.company || 'Unknown',
+      country: row.country || 'Unknown'
+    }));
+  } catch (error) {
+    console.warn("Could not fetch from SQL Server, falling back to empty array.", error);
+    return [];
+  }
+}
 
 async function generateClusterLabel(messages: string[]) {
   const prompt = `You are a compliance analyst grouping worker complaints.
@@ -51,13 +66,21 @@ Return ONLY the label, no quotes or formatting.`;
 async function runClustering() {
   console.log(DRY_RUN ? "🧪 DRY RUN MODE\n" : "🚀 Running Case Embedding & Clustering...\n");
 
-  const casesToProcess = DRY_RUN ? SYNTHETIC_CASES.slice(0, 3) : SYNTHETIC_CASES;
+  console.log("Fetching real case data from sqlserver-qa...");
+  const rawCases = await fetchRealCases();
+  console.log(`Found ${rawCases.length} cases to process.`);
+
+  const casesToProcess = DRY_RUN ? rawCases.slice(0, 3) : rawCases;
   const vectors: number[][] = [];
   const processedCases: Array<{id: string, text: string, company: string, country: string, embedding: number[]}> = [];
 
   console.log(`1. Generating embeddings via local bge-m3 for ${casesToProcess.length} cases...`);
   
   for (const c of casesToProcess) {
+    if (!c.text || c.text === 'No notes provided') {
+      console.warn(`  ⚠ Skipping case ${c.id} due to empty text.`);
+      continue;
+    }
     try {
       const { embedding } = await embed({
         model: embeddingModel,
@@ -73,6 +96,11 @@ async function runClustering() {
   // If there are too few cases, fake the clustering
   const k = Math.min(3, Math.max(1, Math.floor(processedCases.length / 3)));
   
+  if (processedCases.length === 0) {
+    console.log("No valid cases embedded. Exiting.");
+    process.exit(0);
+  }
+
   console.log(`\n2. Running k-means clustering (k=${k})...`);
   const clusterResult = kmeans(vectors, k, { initialization: "kmeans++" });
   

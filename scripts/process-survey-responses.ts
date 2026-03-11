@@ -1,32 +1,48 @@
+import { loadEnvConfig } from "@next/env";
+loadEnvConfig(process.cwd());
+
 import { db } from "../lib/db/drizzle";
 import { surveyResponseAnalysis, surveyAnalysis } from "../lib/db/schema";
 import { embed, generateText } from "ai";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
-import { desc, sql } from "drizzle-orm";
+import { query as pgQuery } from "../lib/db/postgres";
 
 const DRY_RUN = process.argv.includes("--dry-run");
 
 // Setup local Ollama providers
 const ollamaUrl = process.env.OLLAMA_BASE_URL ?? "http://localhost:11434/v1";
 const ollama = createOpenAICompatible({ name: "ollama", baseURL: ollamaUrl });
-const embeddingModel = ollama.textEmbeddingModel("bge-m3:latest");
+const embeddingModel = ollama.embeddingModel("bge-m3:latest");
 const chatModel = ollama.chatModel("qwen3:4b");
 
-// Synthetic survey responses simulating worker feedback
-const RAW_RESPONSES = [
-  "The new safety training was very helpful, but the machines on line 3 still break down often.",
-  "Great food in the canteen today. Thank you.",
-  "I haven't been paid for my overtime last week.",
-  "Supervisors are yelling at us to meet the quota.",
-  "The dormitories are too hot at night. Please fix the AC.",
-  "I am happy with the recent bonus.",
-  "Harassment from the line manager is unacceptable. Several women want to quit.",
-  "Can we have more breaks during the summer months?",
-  "The factory is safe and clean.",
-  "Wages are too low compared to other factories in the area.",
-  "I was forced to work 12 hours without a proper meal break.",
-  "Thank you for providing the female hygiene products."
-];
+async function fetchRealResponses() {
+  const validSurveyIds = [
+    "f02391c3-bd37-4707-9d37-88ecfe22ccfc",
+    "c9f36ec8-c7e7-4794-8ac3-d000a39da186",
+    "904739be-bee2-4cc6-b91a-7d031cfc964c",
+    "3c92dcee-5282-42d2-b8cd-aab4f2d6ff9f",
+    "e76798dd-d819-4dcd-b8ea-d94e13cf124d",
+    "fe2a74e0-d248-4048-bf47-321044f3cf6f",
+    "bcd3b894-f3ab-47b0-a541-eeddee1ee206"
+  ];
+  
+  const placeholders = validSurveyIds.map((_, i) => `$${i + 1}`).join(", ");
+  
+  const res = await pgQuery(`
+    SELECT id, survey_id, text_response 
+    FROM survey_mdlsurveyquestionresponses 
+    WHERE text_response IS NOT NULL 
+      AND LENGTH(text_response) > 10 
+      AND survey_id IN (${placeholders})
+    LIMIT 50
+  `, validSurveyIds);
+
+  return res.rows.map(r => ({
+    id: r.id,
+    surveyId: r.survey_id,
+    text: r.text_response
+  }));
+}
 
 async function analyzeResponse(text: string) {
   try {
@@ -83,10 +99,15 @@ Sentiments can be positive, negative, or neutral. Keep topics to 1-2 words.`;
 async function processWorkerVoice() {
   console.log(DRY_RUN ? "🧪 DRY RUN MODE\n" : "🚀 Processing Worker Voice Analytics...\n");
 
-  const responses = DRY_RUN ? RAW_RESPONSES.slice(0, 3) : RAW_RESPONSES;
+  console.log("Fetching real survey responses from wovo_new/wovo_ai...");
+  const rawResponses = await fetchRealResponses();
+  console.log(`Found ${rawResponses.length} substantive responses.`);
+
+  const responses = DRY_RUN ? rawResponses.slice(0, 3) : rawResponses;
   
   let processed = 0;
-  for (const text of responses) {
+  for (const resp of responses) {
+    const text = resp.text;
     console.log(`Analyzing: "${text.substring(0, 40)}..."`);
     
     // Process via Ollama locally
@@ -94,8 +115,8 @@ async function processWorkerVoice() {
     
     if (!DRY_RUN) {
       await db.insert(surveyResponseAnalysis).values({
-        responseId: `RESP-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-        surveyId: "SURVEY-2026-Q1",
+        responseId: resp.id || `RESP-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        surveyId: resp.surveyId || "SURVEY-2026-Q1",
         responseText: text,
         sentiment: analysis.sentiment,
         sentimentScore: analysis.sentimentScore,

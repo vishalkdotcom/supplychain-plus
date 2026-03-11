@@ -15,11 +15,14 @@ async function main() {
     `;
     console.log("Columns:", cols);
 
-    const questions = await sql_pg`
-      SELECT * FROM survey_mdlsurveyquestionresponses LIMIT 5
+    const tables = await sql_pg`
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_schema = 'public' 
+      AND table_name LIKE 'worker_contact%'
     `;
-    console.log("\nSample Question Responses:");
-    console.log(questions);
+    console.log("\nWorker Contact Tables in public:");
+    console.log(tables);
 
   } catch(e) {
     console.log("Postgres error", e);
