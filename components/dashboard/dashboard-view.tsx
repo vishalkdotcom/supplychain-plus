@@ -30,8 +30,10 @@ import {
   fetchActivities,
   fetchSuppliers,
   fetchRecommendations,
+  fetchHierarchy,
 } from "@/lib/api";
 import { AIRecommendation, Supplier } from "@/types";
+import type { HierarchyRelation } from "@/lib/api";
 
 export function DashboardView() {
   const { data: metrics, isLoading: isMetricsLoading } = useQuery({
@@ -57,6 +59,11 @@ export function DashboardView() {
       queryKey: ["recommendations"],
       queryFn: () => fetchRecommendations(),
     });
+
+  const { data: hierarchy } = useQuery<HierarchyRelation[]>({
+    queryKey: ["hierarchy"],
+    queryFn: () => fetchHierarchy(),
+  });
 
   const highRiskSuppliers =
     suppliers
@@ -170,7 +177,7 @@ export function DashboardView() {
       <div className="grid gap-6 grid-cols-1 xl:grid-cols-3 mb-6">
         <GeographicRiskMap suppliers={suppliers} />
         <div className="col-span-full xl:col-span-1">
-          <SupplyChainNetwork suppliers={suppliers} />
+          <SupplyChainNetwork suppliers={suppliers} hierarchy={hierarchy} />
         </div>
       </div>
 

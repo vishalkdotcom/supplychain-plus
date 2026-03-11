@@ -28,7 +28,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { IconFileText, IconWand, IconLoader2, IconDownload } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
-import { fetchSupplier, fetchCases, fetchSurveys, fetchRecommendations, fetchTimeline, fetchTraining } from "@/lib/api";
+import { fetchSupplier, fetchSupplierHistory, fetchCases, fetchSurveys, fetchRecommendations, fetchTimeline, fetchTraining } from "@/lib/api";
 import { Case, Survey, AIRecommendation } from "@/types";
 import { SupplierHero } from "@/components/suppliers/supplier-hero";
 import { toast } from "sonner";
@@ -76,6 +76,14 @@ export default function SupplierDetailPage({
     queryKey: ["training", id],
     queryFn: () => fetchTraining(id),
   });
+
+  const { data: history } = useQuery({
+    queryKey: ["supplierHistory", id],
+    queryFn: () => fetchSupplierHistory(id),
+  });
+
+  // Compute the previous risk score from the oldest history entry
+  const previousRiskScore = history && history.length > 1 ? history[0].riskScore : undefined;
 
   const handleGenerateNarrative = async () => {
     if (!supplier) return;
@@ -175,7 +183,7 @@ export default function SupplierDetailPage({
           <RiskTrendChart supplierId={supplier.id} />
         </div>
         <div className="h-full">
-          <RiskBreakdown supplier={supplier} />
+          <RiskBreakdown supplier={supplier} previousRiskScore={previousRiskScore} />
         </div>
       </div>
       

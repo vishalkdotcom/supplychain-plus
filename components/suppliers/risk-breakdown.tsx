@@ -1,5 +1,3 @@
-import { useMemo } from "react";
-
 import type { Supplier } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -15,9 +13,14 @@ import {
 
 interface RiskBreakdownProps {
   supplier: Supplier;
+  /** The oldest risk score from history, used to compute the trend badge. */
+  previousRiskScore?: number;
 }
 
-export function RiskBreakdown({ supplier }: RiskBreakdownProps) {
+export function RiskBreakdown({
+  supplier,
+  previousRiskScore,
+}: RiskBreakdownProps) {
   const { riskBreakdown, riskScore, riskLevel } = supplier;
 
   const getRiskColor = (score: number) => {
@@ -61,16 +64,11 @@ export function RiskBreakdown({ supplier }: RiskBreakdownProps) {
     },
   ];
 
-  // Mock previous score for trend calculation (in real app, fetch from history)
-  const previousRiskScore = useMemo(() => {
-    // Deterministic mock value based on risk score
-    const pseudoRandom = (riskScore * 13) % 10;
-    return Math.max(0, Math.min(100, riskScore + (pseudoRandom > 5 ? 5 : -5)));
-  }, [riskScore]);
+  // Compute trend from real historical data (previousRiskScore prop)
   const trend =
-    riskScore < previousRiskScore
+    previousRiskScore != null && riskScore < previousRiskScore
       ? "improving"
-      : riskScore > previousRiskScore
+      : previousRiskScore != null && riskScore > previousRiskScore
         ? "worsening"
         : "stable";
 

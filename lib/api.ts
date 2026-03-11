@@ -177,3 +177,16 @@ export async function markAlertRead(alertId: string): Promise<void> {
   });
   if (!res.ok) throw new Error("Failed to update alert");
 }
+
+export interface HierarchyRelation {
+  parentClientKey: string;
+  parentName: string;
+  childClientKey: string;
+  childName: string;
+}
+
+export async function fetchHierarchy(): Promise<HierarchyRelation[]> {
+  const res = await fetch(`${API_BASE}/suppliers/hierarchy`);
+  if (!res.ok) throw new Error("Failed to fetch hierarchy");
+  return res.json();
+}
