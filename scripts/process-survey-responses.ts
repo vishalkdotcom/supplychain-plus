@@ -5,9 +5,11 @@ import { db } from "../lib/db/drizzle";
 import { surveyResponseAnalysis, surveyAnalysis } from "../lib/db/schema";
 import { embed, generateText } from "ai";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
-import { query as pgQuery } from "../lib/db/postgres";
+// using sqlServerQuery instead
 
 const DRY_RUN = process.argv.includes("--dry-run");
+
+import { query as sqlServerQuery } from "../lib/db/sql-server";
 
 // Setup local Ollama providers
 const ollamaUrl = process.env.OLLAMA_BASE_URL ?? "http://localhost:11434/v1";
@@ -16,22 +18,21 @@ const embeddingModel = ollama.embeddingModel("bge-m3:latest");
 const chatModel = ollama.chatModel("qwen3:4b");
 
 async function fetchRealResponses() {
-  const validSurveyIds = [
-    "fe2a74e0-d248-4048-bf47-321044f3cf6f",
-    "354b209b-9e8c-47cf-814a-3a4a35b193b0"
-  ];
-  
-  const placeholders = validSurveyIds.map((_, i) => `$${i + 1}`).join(", ");
-  
-  const res = await pgQuery(`
-    SELECT id, survey_id, text_response 
-    FROM survey_mdlsurveyquestionresponses 
-    WHERE text_response IS NOT NULL 
-      AND LENGTH(text_response) > 10 
-      AND survey_id IN (${placeholders})
-  `, validSurveyIds);
+  const result = await sqlServerQuery(`
+    SELECT TOP 1000
+      CAST(m.Id AS VARCHAR) as id,
+      'SURVEY-2026-Q1' as survey_id,
+      ISNULL(m.MessageText, '') as text_response
+    FROM [Message] m
+    JOIN Company c ON m.CompanyId = c.Id
+    WHERE c.Id IN (137089, 136747, 137308)
+      AND LEN(m.MessageText) > 20
+      AND m.MessageText NOT LIKE '%test%'
+      AND m.MessageText NOT LIKE '%Description:%'
+      AND m.MessageText NOT LIKE '%http%'
+  `);
 
-  return res.rows.map(r => ({
+  return result.recordset.map((r: any) => ({
     id: r.id,
     surveyId: r.survey_id,
     text: r.text_response
