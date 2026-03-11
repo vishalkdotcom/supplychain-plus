@@ -57,8 +57,8 @@ export function EngagementHealthScore({ supplier }: EngagementHealthScoreProps) 
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="h-[250px] w-full min-h-[250px]">
-          <ResponsiveContainer width="100%" height="100%" minHeight={250} minWidth={100}>
+        <div className="w-full min-h-[250px]">
+          <ResponsiveContainer width="100%" height={250} minWidth={0}>
             <RadarChart cx="50%" cy="50%" outerRadius="70%" data={data}>
               <PolarGrid />
               <PolarAngleAxis 
