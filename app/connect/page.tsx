@@ -58,7 +58,7 @@ export default function ConnectPage() {
         page: params.page,
         perPage,
         search: params.search,
-        supplier: params.supplier,
+        supplier: viewMode === "supplier" && currentSupplierId ? currentSupplierId : params.supplier,
         severity: params.severity,
       }),
     placeholderData: keepPreviousData,

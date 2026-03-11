@@ -51,7 +51,7 @@ export async function POST(request: Request) {
             SUM(CASE WHEN c.CaseStatusId IN (SELECT Id FROM CaseStatus WHERE Name = 'Open') THEN 1 ELSE 0 END) as open_cases
           FROM [Case] c
           JOIN Company co ON c.CompanyId = co.Id
-          WHERE c.Deleted = 0 AND co.Id = ${supplier.id}
+          WHERE c.Deleted = 0 AND co.Id = ${supplier.client_key}
         `);
         const row = caseResult.recordset[0];
         const total = row?.total || 0;
@@ -92,7 +92,7 @@ export async function POST(request: Request) {
                   SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END) as active
            FROM survey_mdlsurvey
            WHERE client_id = $1`,
-          [supplier.id],
+          [supplier.client_key],
         );
         const sRow = surveyResult.rows[0];
         const totalSurveys = parseInt(sRow?.total) || 0;

@@ -266,7 +266,7 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
           <div className="flex items-center gap-3 mb-2">
             <h1 className="text-2xl font-bold">{caseData.id}</h1>
             <Badge variant={getSeverityVariant(caseData.severity)}>
-              {caseData.severity.toUpperCase()}
+              {(caseData.severity || "unknown").toUpperCase()}
             </Badge>
             <Badge variant="outline">{caseData.status.replace("_", " ")}</Badge>
           </div>

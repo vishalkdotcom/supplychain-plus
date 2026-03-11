@@ -50,7 +50,7 @@ export async function GET() {
         c.id as client_id,
         c.client_key
       FROM survey_mdlsurvey s
-      LEFT JOIN clients_clientinfo c ON s.client_id = c.id
+      LEFT JOIN clients_clientinfo c ON s.client_id = c.client_key
       ORDER BY s.created_date DESC
       LIMIT 3
     `);

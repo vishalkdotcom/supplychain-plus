@@ -231,9 +231,9 @@ export function DashboardView() {
                     </div>
                     <p className="text-sm text-muted-foreground">
                       {supplier.country} •{" "}
-                      {supplier.workerCount.toLocaleString()} workers
+                      {(supplier.workerCount || 0).toLocaleString()} workers
                     </p>
-                    {supplier.riskBreakdown.reasons[0] && (
+                    {supplier.riskBreakdown?.reasons?.[0] && (
                       <p className="text-xs text-red-600 mt-1">
                         {supplier.riskBreakdown.reasons[0].factor}
                       </p>

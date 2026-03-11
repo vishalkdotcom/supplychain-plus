@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { paramQuery as sqlParamQuery } from "@/lib/db/sql-server";
+import { query as sqlQuery } from "@/lib/db/sql-server";
 import { query as pgQuery } from "@/lib/db/postgres";
 import { query as mysqlQuery } from "@/lib/db/mysql";
 import { TimelineEvent } from "@/types";
@@ -17,21 +17,12 @@ export async function GET(request: Request) {
   try {
     // 1. Case events from SQL Server
     try {
-      const caseWhere = supplierId
-        ? "WHERE c.Deleted = 0 AND co.Id = @supplierId"
-        : "WHERE c.Deleted = 0";
-      const caseParams: Record<
-        string,
-        { type: (() => mssql.ISqlType) | mssql.ISqlType; value: unknown }
-      > = {};
+      let caseWhere = "WHERE c.Deleted = 0";
       if (supplierId) {
-        caseParams.supplierId = {
-          type: mssql.Int,
-          value: parseInt(supplierId),
-        };
+        caseWhere += ` AND co.Id = ${parseInt(supplierId)}`;
       }
 
-      const caseResult = await sqlParamQuery(
+      const caseResult = await sqlQuery(
         `SELECT TOP 20
           c.Id, c.Name as Title, c.Created, c.Priority,
           co.Id as CompanyId, co.Name as CompanyName,
@@ -41,8 +32,7 @@ export async function GET(request: Request) {
         LEFT JOIN CaseStatusCultureText csct ON c.CaseStatusId = csct.CaseStatusId AND csct.CultureCodeId = 1
         LEFT JOIN CaseTypeCultureText ctct ON c.CaseTypeId = ctct.CaseTypeId AND ctct.CultureCodeId = 1
         ${caseWhere}
-        ORDER BY c.Created DESC`,
-        caseParams,
+        ORDER BY c.Created DESC`
       );
 
       for (const row of caseResult.recordset) {
@@ -56,7 +46,9 @@ export async function GET(request: Request) {
           description: extractEnglishFromMlang(`${row.TypeName || "Case"} - ${row.StatusName || "Open"} (${row.Priority === 1 ? "High" : row.Priority === 2 ? "Medium" : "Low"} priority)`),
         });
       }
-    } catch {
+    } catch (e) {
+      console.error("SQL SERVER ERROR:", e);
+      require("fs").writeFileSync("sql-error.log", String(e) + "\\n" + (e instanceof Error ? e.stack : ""));
       // SQL Server may be unavailable
     }
 
@@ -73,7 +65,7 @@ export async function GET(request: Request) {
         `SELECT s.id, s.name, s.status, s.from_date, s.to_date,
                c.client_key, c.name as client_name
         FROM survey_mdlsurvey s
-        LEFT JOIN clients_clientinfo c ON s.client_id = c.id
+        LEFT JOIN clients_clientinfo c ON s.client_id = c.client_key
         ${surveyWhere}
         ORDER BY s.created_date DESC
         LIMIT 10`,

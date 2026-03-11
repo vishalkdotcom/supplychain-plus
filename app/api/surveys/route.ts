@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
       paramIndex++;
     }
     if (supplier !== "all") {
-      conditions.push(`c.name = $${paramIndex}`);
+      conditions.push(`c.client_key = $${paramIndex}`);
       params.push(supplier);
       paramIndex++;
     }
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
     const countResult = await query(
       `SELECT COUNT(*) as total
        FROM survey_mdlsurvey s
-       LEFT JOIN clients_clientinfo c ON s.client_id = c.id
+       LEFT JOIN clients_clientinfo c ON s.client_id = c.client_key
        ${whereClause}`,
       params,
     );
@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
         (SELECT COUNT(*) FROM survey_mdlsurveyquestionresponses r 
          WHERE r.survey_id = s.id) as response_count
       FROM survey_mdlsurvey s
-      LEFT JOIN clients_clientinfo c ON s.client_id = c.id
+      LEFT JOIN clients_clientinfo c ON s.client_id = c.client_key
       ${whereClause}
       ORDER BY s.created_date DESC
       LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,

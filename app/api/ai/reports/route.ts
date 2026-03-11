@@ -21,6 +21,14 @@ export async function POST(request: Request) {
         ? "EU Corporate Sustainability Due Diligence Directive (CSDDD)"
         : "UK Modern Slavery Act";
 
+    const riskBreakdown = supplier.riskBreakdown || {
+      caseScore: 50,
+      surveyScore: 50,
+      trainingScore: 50,
+      engagementScore: 50,
+      reasons: []
+    };
+
     const prompt = `
       You are an expert compliance auditor generating an executive summary for an HRDD (Human Rights Due Diligence) report.
       
@@ -33,13 +41,13 @@ export async function POST(request: Request) {
       Risk Level: ${supplier.riskLevel}
       
       Risk Breakdown:
-      - Grievance Cases: ${supplier.riskBreakdown.caseScore}/100
-      - Worker Surveys: ${supplier.riskBreakdown.surveyScore}/100
-      - Compliance Training: ${supplier.riskBreakdown.trainingScore}/100
-      - Engagement: ${supplier.riskBreakdown.engagementScore}/100
+      - Grievance Cases: ${riskBreakdown.caseScore}/100
+      - Worker Surveys: ${riskBreakdown.surveyScore}/100
+      - Compliance Training: ${riskBreakdown.trainingScore}/100
+      - Engagement: ${riskBreakdown.engagementScore}/100
       
       Key Risk Factors identified by our system:
-      ${supplier.riskBreakdown.reasons.map((r: RiskReason) => `- [${r.impact.toUpperCase()}] ${r.factor}: ${r.description}`).join("\n")}
+      ${riskBreakdown.reasons.map((r: RiskReason) => `- [${(r.impact || "unknown").toUpperCase()}] ${r.factor}: ${r.description}`).join("\n")}
       
       Structure the 3 paragraphs as follows:
       1. Supplier Overview & General Risk Posture

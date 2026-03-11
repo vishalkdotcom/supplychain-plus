@@ -43,6 +43,7 @@ import { fetchCourses, fetchSuppliers, fetchRecommendations } from "@/lib/api";
 import { useQueryStates, parseAsInteger, parseAsString } from "nuqs";
 import { SearchInput } from "@/components/search-input";
 import { AIRecommendation } from "@/types";
+import { useView } from "@/components/view-context";
 
 interface CourseData {
   title: string;
@@ -190,6 +191,8 @@ export default function EducatePage() {
       queryFn: () => fetchRecommendations(),
     });
 
+  const { viewMode, currentSupplierId } = useView();
+
   const courses = coursesResponse?.data || [];
   const totalPages = coursesResponse?.totalPages || 0;
   const total = coursesResponse?.total || 0;
@@ -198,6 +201,7 @@ export default function EducatePage() {
   // Training recommendations based on AI analysis
   const trainingRecommendations = (recommendationsData || [])
     .filter((r: AIRecommendation) => r.category === "training")
+    .filter((r: AIRecommendation) => viewMode === "brand" || r.supplierId === currentSupplierId)
     .map((rec: AIRecommendation) => {
       const supplier = suppliers.find((s) => s.id === rec.supplierId);
       return { ...rec, supplierName: supplier?.name || "Unknown" };

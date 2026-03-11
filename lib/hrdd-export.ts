@@ -64,7 +64,7 @@ export const generateHRDDReport = (data: HRDDReportData) => {
     body: [
       ["Name", supplier.name],
       ["Location", supplier.location],
-      ["Risk Level", supplier.riskLevel.toUpperCase()],
+      ["Risk Level", (supplier.riskLevel || "unknown").toUpperCase()],
       ["Risk Score", supplier.riskScore.toString()],
     ],
     theme: "striped",
@@ -76,11 +76,19 @@ export const generateHRDDReport = (data: HRDDReportData) => {
   doc.setFontSize(14);
   doc.text("Risk Analysis", 14, riskY);
 
+  const riskBreakdown = supplier.riskBreakdown || {
+    caseScore: 50,
+    surveyScore: 50,
+    trainingScore: 50,
+    engagementScore: 50,
+    reasons: []
+  };
+
   const riskData = [
-    ["Cases", supplier.riskBreakdown.caseScore.toString()],
-    ["Surveys", supplier.riskBreakdown.surveyScore.toString()],
-    ["Training", supplier.riskBreakdown.trainingScore.toString()],
-    ["Engagement", supplier.riskBreakdown.engagementScore.toString()],
+    ["Cases", riskBreakdown.caseScore.toString()],
+    ["Surveys", riskBreakdown.surveyScore.toString()],
+    ["Training", riskBreakdown.trainingScore.toString()],
+    ["Engagement", riskBreakdown.engagementScore.toString()],
   ];
 
   autoTable(doc, {
@@ -92,12 +100,12 @@ export const generateHRDDReport = (data: HRDDReportData) => {
   });
 
   // Contributing Factors
-  if (supplier.riskBreakdown.reasons.length > 0) {
+  if (riskBreakdown.reasons.length > 0) {
     const reasonY = (doc as any).lastAutoTable.finalY + 15;
     doc.setFontSize(12);
     doc.text("Contributing Factors", 14, reasonY);
 
-    const reasonsData = supplier.riskBreakdown.reasons.map((r) => [
+    const reasonsData = riskBreakdown.reasons.map((r) => [
       r.factor,
       r.description,
       r.impact.toUpperCase(),

@@ -10,7 +10,6 @@ import {
 } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchSuppliers } from "@/lib/api";
-import { Supplier } from "@/types";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,15 +25,29 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { useRouter, usePathname } from "next/navigation";
+import { useDebounce } from "@/hooks/use-debounce";
 
 export function ViewToggle() {
   const { viewMode, setViewMode, currentSupplierId, setCurrentSupplierId } =
     useView();
   const [open, setOpen] = React.useState(false);
+  const [searchQuery, setSearchQuery] = React.useState("");
+
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
+  const router = useRouter();
+  const pathname = usePathname();
 
   const { data: suppliersRes } = useQuery({
-    queryKey: ["suppliers"],
-    queryFn: () => fetchSuppliers(),
+    queryKey: ["suppliers", debouncedSearchQuery],
+    queryFn: () => fetchSuppliers({ search: debouncedSearchQuery, perPage: 50 }),
+  });
+
+  // We need to keep track of the current supplier if they aren't in the current search results
+  const { data: currentSupplierRes } = useQuery({
+    queryKey: ["suppliers", currentSupplierId],
+    queryFn: () => currentSupplierId ? fetchSuppliers({ search: currentSupplierId, perPage: 1 }) : null,
+    enabled: !!currentSupplierId,
   });
 
   const suppliers = suppliersRes?.data || [];
@@ -43,17 +56,24 @@ export function ViewToggle() {
     setViewMode("brand");
     setCurrentSupplierId(null);
     setOpen(false);
+    if (pathname?.startsWith("/suppliers/")) {
+      router.push("/");
+    }
   };
 
   const handleSupplierSelect = (supplierId: string) => {
     setViewMode("supplier");
     setCurrentSupplierId(supplierId);
     setOpen(false);
+    if (pathname === "/" || pathname === "/suppliers") {
+      router.push(`/suppliers/${supplierId}`);
+    }
   };
 
-  const currentSupplier = suppliers.find(
-    (s) => s.id === currentSupplierId
-  );
+  // Find the current supplier name, either from the current search results or the dedicated fetch
+  const currentSupplier =
+    suppliers.find((s) => s.id === currentSupplierId) ||
+    currentSupplierRes?.data?.find((s) => s.id === currentSupplierId);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -73,7 +93,7 @@ export function ViewToggle() {
             <div className="flex items-center gap-2 overflow-hidden">
               <IconBuilding className="h-4 w-4 shrink-0 text-muted-foreground" />
               <span className="truncate">
-                {currentSupplier?.name || "Select a supplier..."}
+                {currentSupplier?.name || "Loading..."}
               </span>
             </div>
           )}
@@ -81,8 +101,13 @@ export function ViewToggle() {
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[300px] p-0 shadow-lg" align="end">
-        <Command>
-          <CommandInput placeholder="Search portfolio..." className="h-9" />
+        <Command shouldFilter={false}>
+          <CommandInput 
+            placeholder="Search portfolio..." 
+            className="h-9" 
+            value={searchQuery}
+            onValueChange={setSearchQuery}
+          />
           <CommandList>
             <CommandEmpty>No results found.</CommandEmpty>
             <CommandGroup heading="Global View">

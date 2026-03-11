@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/sidebar";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useView } from "@/components/view-context";
 
 const primaryNav = [
   {
@@ -67,6 +68,18 @@ const moduleNav = [
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
+  const { viewMode, currentSupplierId } = useView();
+
+  const dynamicPrimaryNav = primaryNav.map(item => {
+    if (item.url === "/suppliers" && viewMode === "supplier" && currentSupplierId) {
+      return {
+        ...item,
+        title: "Supplier Overview",
+        url: `/suppliers/${currentSupplierId}`
+      };
+    }
+    return item;
+  });
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -91,7 +104,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {primaryNav.map((item) => (
+              {dynamicPrimaryNav.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     asChild

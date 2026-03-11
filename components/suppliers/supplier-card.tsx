@@ -49,7 +49,7 @@ export function SupplierCard({ supplier }: SupplierCardProps) {
     }
   };
 
-  const topReason = supplier.riskBreakdown.reasons[0];
+  const topReason = supplier.riskBreakdown?.reasons?.[0];
 
   return (
     <Card className="hover:shadow-lg transition-shadow cursor-pointer group">
@@ -65,7 +65,7 @@ export function SupplierCard({ supplier }: SupplierCardProps) {
             </CardDescription>
           </div>
           <Badge variant={getRiskBadgeVariant(supplier.riskLevel)}>
-            {supplier.riskLevel.toUpperCase()}
+            {(supplier.riskLevel || "unknown").toUpperCase()}
           </Badge>
         </div>
       </CardHeader>
@@ -108,7 +108,7 @@ export function SupplierCard({ supplier }: SupplierCardProps) {
         <div className="flex items-center justify-between text-sm text-muted-foreground pt-2 border-t">
           <div className="flex items-center gap-1">
             <IconUsers className="h-4 w-4" />
-            <span>{supplier.workerCount.toLocaleString()} workers</span>
+            <span>{(supplier.workerCount || 0).toLocaleString()} workers</span>
           </div>
           <span className="text-xs">{supplier.region}</span>
         </div>

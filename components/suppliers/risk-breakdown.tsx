@@ -21,7 +21,15 @@ export function RiskBreakdown({
   supplier,
   previousRiskScore,
 }: RiskBreakdownProps) {
-  const { riskBreakdown, riskScore, riskLevel } = supplier;
+  const { riskBreakdown: rawRiskBreakdown, riskScore, riskLevel } = supplier;
+  
+  const riskBreakdown = rawRiskBreakdown || {
+    caseScore: 50,
+    surveyScore: 50,
+    trainingScore: 50,
+    engagementScore: 50,
+    reasons: []
+  };
 
   const getRiskColor = (score: number) => {
     if (score > 70) return "bg-red-500";
@@ -84,7 +92,7 @@ export function RiskBreakdown({
     >
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center justify-between text-base">
-          <span>Why {riskLevel.toUpperCase()} Risk?</span>
+          <span>Why {(riskLevel || "unknown").toUpperCase()} Risk?</span>
           <div className="flex items-center gap-2">
             <div
               className={`flex items-center text-sm font-normal px-2 py-0.5 rounded-full ${

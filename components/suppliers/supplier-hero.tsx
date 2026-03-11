@@ -38,10 +38,10 @@ export function SupplierHero({ supplier }: SupplierHeroProps) {
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-bold">{supplier.name}</h1>
               <Badge
-                variant={getRiskBadgeVariant(supplier.riskLevel)}
+                variant={getRiskBadgeVariant(supplier.riskLevel || "unknown")}
                 className="text-xs"
               >
-                {supplier.riskLevel.toUpperCase()} RISK
+                {(supplier.riskLevel || "unknown").toUpperCase()} RISK
               </Badge>
             </div>
 
@@ -54,7 +54,7 @@ export function SupplierHero({ supplier }: SupplierHeroProps) {
               </div>
               <div className="flex items-center gap-1.5">
                 <IconUsers className="h-4 w-4" />
-                <span>{supplier.workerCount.toLocaleString()} workers</span>
+                <span>{(supplier.workerCount || 0).toLocaleString()} workers</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <IconCalendar className="h-4 w-4" />
