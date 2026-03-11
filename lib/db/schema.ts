@@ -11,6 +11,7 @@ import {
   uniqueIndex,
   index,
   real,
+  vector,
 } from "drizzle-orm/pg-core";
 // ===============================
 // Types for JSON columns
@@ -168,7 +169,7 @@ export const caseEmbeddings = pgTable(
     caseId: varchar("case_id", { length: 50 }).notNull(),
     messageId: varchar("message_id", { length: 50 }),
     messageText: text("message_text").notNull(),
-    embedding: jsonb("embedding").$type<number[]>().default([]),
+    embedding: vector("embedding", { dimensions: 1024 }),
     clusterId: integer("cluster_id"),
     clusterLabel: varchar("cluster_label", { length: 255 }),
     companyId: varchar("company_id", { length: 50 }),
@@ -182,6 +183,7 @@ export const caseEmbeddings = pgTable(
     index("idx_case_embed_case").on(table.caseId),
     index("idx_case_embed_cluster").on(table.clusterId),
     index("idx_case_embed_company").on(table.companyId),
+    index("idx_case_embed_vector").using("hnsw", table.embedding.op("vector_cosine_ops")),
   ],
 );
 // ===============================
@@ -197,7 +199,7 @@ export const surveyResponseAnalysis = pgTable(
     sentiment: varchar("sentiment", { length: 20 }), // positive, negative, neutral
     sentimentScore: real("sentiment_score").default(0),
     topics: jsonb("topics").$type<string[]>().default([]),
-    embedding: jsonb("embedding").$type<number[]>().default([]),
+    embedding: vector("embedding", { dimensions: 1024 }),
     analyzedAt: timestamp("analyzed_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -205,6 +207,7 @@ export const surveyResponseAnalysis = pgTable(
   (table) => [
     index("idx_survey_resp_survey").on(table.surveyId),
     index("idx_survey_resp_sentiment").on(table.sentiment),
+    index("idx_survey_resp_vector").using("hnsw", table.embedding.op("vector_cosine_ops")),
   ],
 );
 // ===============================

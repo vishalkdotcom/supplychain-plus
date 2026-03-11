@@ -8,6 +8,13 @@
       "when": 1772683868567,
       "tag": "0000_fearless_menace",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1773235300401,
+      "tag": "0001_sour_wither",
+      "breakpoints": true
     }
   ]
 }
