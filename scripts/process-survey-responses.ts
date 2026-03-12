@@ -3,11 +3,14 @@ loadEnvConfig(process.cwd());
 
 import { db } from "../lib/db/drizzle";
 import { surveyResponseAnalysis, surveyAnalysis } from "../lib/db/schema";
+import { sql } from "drizzle-orm";
 import { embed, generateText } from "ai";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 // using sqlServerQuery instead
 
 const DRY_RUN = process.argv.includes("--dry-run");
+const RESUME = process.argv.includes("--resume");
+const REUSE = process.argv.includes("--reuse");
 
 import { query as sqlServerQuery } from "../lib/db/sql-server";
 
@@ -98,7 +101,26 @@ async function processWorkerVoice() {
   const rawResponses = await fetchRealResponses();
   console.log(`Found ${rawResponses.length} substantive responses.`);
 
-  const responses = rawResponses;
+  let responses = rawResponses;
+
+  if (RESUME) {
+    console.log("Resume mode enabled: Filtering already processed responses...");
+    const existingRecords = await db.select({ id: surveyResponseAnalysis.responseId }).from(surveyResponseAnalysis);
+    const existingIds = new Set(existingRecords.map(r => r.id));
+    
+    responses = rawResponses.filter(r => !existingIds.has(r.id));
+    
+    if (responses.length < rawResponses.length) {
+      console.log(`Skipping ${rawResponses.length - responses.length} already processed responses.`);
+    }
+  } else {
+    console.log("Full refresh mode: Processing all responses.");
+  }
+
+  if (responses.length === 0) {
+    console.log("No responses to process.");
+    return;
+  }
   
   let processed = 0;
   for (const resp of responses) {
@@ -106,7 +128,27 @@ async function processWorkerVoice() {
     console.log(`Analyzing: "${text.substring(0, 40)}..."`);
     
     // Process via Ollama locally
-    const analysis = await analyzeResponse(text);
+    let analysis;
+    if (REUSE) {
+      const existing = await db.select()
+        .from(surveyResponseAnalysis)
+        .where(sql`${surveyResponseAnalysis.responseText} = ${text}`)
+        .limit(1);
+
+      if (existing.length > 0) {
+        console.log(`  ♻ Reusing existing analysis for identical content.`);
+        analysis = {
+          sentiment: existing[0].sentiment,
+          sentimentScore: existing[0].sentimentScore,
+          topics: existing[0].topics,
+          embedding: existing[0].embedding,
+        };
+      }
+    }
+
+    if (!analysis) {
+      analysis = await analyzeResponse(text);
+    }
     
     if (!DRY_RUN) {
       await db.insert(surveyResponseAnalysis).values({

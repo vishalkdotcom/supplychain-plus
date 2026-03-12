@@ -3,6 +3,7 @@ loadEnvConfig(process.cwd());
 
 import { db } from "../lib/db/drizzle";
 import { caseEmbeddings } from "../lib/db/schema";
+import { sql } from "drizzle-orm";
 import { embed } from "ai";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { resilientGenerateText } from "../lib/ai/resilient-generate";
@@ -10,6 +11,8 @@ import { kmeans } from "ml-kmeans";
 import { query as sqlServerQuery } from "../lib/db/sql-server";
 
 const DRY_RUN = process.argv.includes("--dry-run");
+const RESUME = process.argv.includes("--resume");
+const REUSE = process.argv.includes("--reuse");
 
 // Setup local Ollama
 const ollamaUrl = process.env.OLLAMA_BASE_URL ?? "http://localhost:11434/v1";
@@ -74,7 +77,26 @@ async function runClustering() {
   const rawCases = await fetchRealCases();
   console.log(`Found ${rawCases.length} cases to process.`);
 
-  const casesToProcess = rawCases;
+  let casesToProcess = rawCases;
+
+  if (RESUME) {
+    console.log("Resume mode enabled: Filtering already embedded cases...");
+    const existingRecords = await db.select({ id: caseEmbeddings.caseId }).from(caseEmbeddings);
+    const existingIds = new Set(existingRecords.map(r => r.id));
+    
+    casesToProcess = rawCases.filter(c => !existingIds.has(c.id));
+    
+    if (casesToProcess.length < rawCases.length) {
+      console.log(`Skipping ${rawCases.length - casesToProcess.length} already embedded cases.`);
+    }
+  } else {
+    console.log("Full refresh mode: Embedding all cases.");
+  }
+
+  if (casesToProcess.length === 0) {
+    console.log("No cases to process.");
+    return;
+  }
   const vectors: number[][] = [];
   const processedCases: Array<{id: string, text: string, company: string, country: string, embedding: number[]}> = [];
 
@@ -86,10 +108,27 @@ async function runClustering() {
       continue;
     }
     try {
-      const { embedding } = await embed({
-        model: embeddingModel,
-        value: c.text,
-      });
+      let embedding;
+      if (REUSE) {
+        const existing = await db.select()
+          .from(caseEmbeddings)
+          .where(sql`${caseEmbeddings.messageText} = ${c.text}`)
+          .limit(1);
+
+        if (existing.length > 0) {
+          console.log(`  ♻ Reusing existing embedding for identical content.`);
+          embedding = existing[0].embedding;
+        }
+      }
+
+      if (!embedding) {
+        const result = await embed({
+          model: embeddingModel,
+          value: c.text,
+        });
+        embedding = result.embedding;
+      }
+      
       vectors.push(embedding);
       processedCases.push({ ...c, embedding });
     } catch (e) {
@@ -129,9 +168,6 @@ async function runClustering() {
   if (!DRY_RUN) {
     console.log("\n4. Saving results to database...");
     
-    // Clear old embeddings (for demo purposes)
-    await db.delete(caseEmbeddings);
-
     for (let i = 0; i < processedCases.length; i++) {
       const c = processedCases[i];
       const clusterId = clusterResult.clusters[i];
@@ -144,6 +180,16 @@ async function runClustering() {
         clusterLabel: clusterLabels[clusterId],
         companyName: c.company,
         country: c.country,
+      }).onConflictDoUpdate({
+        target: caseEmbeddings.caseId,
+        set: {
+          messageText: c.text,
+          embedding: c.embedding,
+          clusterId: clusterId,
+          clusterLabel: clusterLabels[clusterId],
+          companyName: c.company,
+          country: c.country,
+        }
       });
     }
   }

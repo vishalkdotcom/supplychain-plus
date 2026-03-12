@@ -26,10 +26,12 @@ import {
   supplierRiskScores,
   supplierRiskForecast,
 } from "../lib/db/schema";
-import { eq, sql, desc, inArray } from "drizzle-orm";
+import { eq, sql, desc, inArray, gte } from "drizzle-orm";
 import { linearRegression, linearRegressionLine } from "simple-statistics";
 
 const DRY_RUN = process.argv.includes("--dry-run");
+const RESUME = process.argv.includes("--resume");
+const REUSE = process.argv.includes("--reuse");
 const OLLAMA_URL = process.env.OLLAMA_BASE_URL?.replace("/v1", "") || "http://localhost:11434";
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "qwen3:4b";
 const FORECAST_DAYS = 60;
@@ -95,10 +97,38 @@ async function calculateForecasts() {
 
   console.log(`Found ${suppliers.length} suppliers with risk scores.\n`);
 
+  let suppliersToProcess = suppliers;
+
+  if (RESUME) {
+    console.log("Resume mode enabled: Filtering suppliers already forecasted today...");
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const existingForecasts = await db
+      .select({ supplierId: supplierRiskForecast.supplierId })
+      .from(supplierRiskForecast)
+      .where(gte(supplierRiskForecast.forecastDate, today));
+      
+    const existingSupplierIds = new Set(existingForecasts.map(f => f.supplierId));
+    
+    suppliersToProcess = suppliers.filter(s => !existingSupplierIds.has(s.supplierId));
+    
+    if (suppliersToProcess.length < suppliers.length) {
+      console.log(`Skipping ${suppliers.length - suppliersToProcess.length} suppliers already forecasted today.`);
+    }
+  } else {
+    console.log("Full refresh mode: Calculating all forecasts.");
+  }
+
+  if (suppliersToProcess.length === 0) {
+    console.log("No suppliers to process.");
+    return;
+  }
+
   let processed = 0;
   let skipped = 0;
 
-  for (const supplier of suppliers) {
+  for (const supplier of suppliersToProcess) {
     // Get history for this supplier
     const history = await db
       .select()
@@ -141,13 +171,35 @@ async function calculateForecasts() {
     // Generate narrative via local Ollama
     console.log(`  📊 ${supplier.supplierName}: ${currentScore} → ${predictedScore} (${trend}, ${trendMagnitude > 0 ? "+" : ""}${trendMagnitude.toFixed(1)}%)`);
 
-    const narrative = await generateNarrative(
-      supplier.supplierName || "Unknown Supplier",
-      currentScore,
-      predictedScore,
-      trend,
-      trendMagnitude,
-    );
+    let narrative;
+    if (REUSE) {
+      const historyFingerprint = JSON.stringify(history.map(h => ({ d: h.snapshotDate, s: h.riskScore })));
+      const existing = await db.select()
+        .from(supplierRiskForecast)
+        .where(sql`${supplierRiskForecast.supplierId} = ${supplier.supplierId}`)
+        .limit(1);
+
+      // Simple heuristic: if the number of data points matches and it was forecasted today,
+      // it's likely the same history. For a more robust check, we could store a hash of history.
+      // But here we'll just check if the predicted score and trend match exactly.
+      if (existing.length > 0 && 
+          existing[0].predictedScore === predictedScore && 
+          existing[0].trend === trend &&
+          existing[0].dataPoints === history.length) {
+        console.log(`    ♻ Reusing existing narrative for identical trend.`);
+        narrative = existing[0].aiNarrative;
+      }
+    }
+
+    if (!narrative) {
+      narrative = await generateNarrative(
+        supplier.supplierName || "Unknown Supplier",
+        currentScore,
+        predictedScore,
+        trend,
+        trendMagnitude,
+      );
+    }
 
     if (DRY_RUN) {
       console.log(`    📝 Narrative: ${narrative}\n`);
