@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -la /c/vishal/xp/wovo/*.ts /c/vishal/xp/wovo/*.js /c/vishal/xp/wovo/*.json /c/vishal/xp/wovo/*.md)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(docker compose:*)",
+      "Bash(grep -r \"FROM\\\\|JOIN\\\\|INSERT\\\\|UPDATE\\\\|DELETE\" C:/vishal/xp/wovo/lib/db/sql-server.ts C:/vishal/xp/wovo/app --include=*.ts -l)",
+      "Bash(grep -r \"sqlServerQuery\\\\|mysqlQuery\\\\|from.*lib/db\" /c/vishal/xp/wovo/app/api --include=*.ts)",
+      "Bash(grep -r \"sqlServerQuery\\\\|mysqlQuery\\\\|sqlQuery\" /c/vishal/xp/wovo/scripts --include=*.ts)",
+      "Bash(grep -rn \"SELECT\\\\|FROM\\\\|JOIN\" /c/vishal/xp/wovo/app/api --include=*.ts)",
+      "Bash(grep -rn \"query\\\\|Query\" /c/vishal/xp/wovo/app/api --include=*.ts)",
+      "Bash(docker exec:*)",
+      "Bash(bun run:*)",
+      "Bash(printf '\\\\\\\\connect wovo_new\\\\n')",
+      "Bash(grep -v \"SET transaction_timeout\\\\|\\\\\\\\restrict \" schemas/postgres_schema.sql)",
+      "Bash(pwsh -File fix-sqlserver-schema.ps1)"
+    ]
+  }
+}
