@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Next.js Dev Server",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "cd /d C:\\vishal\\xp\\wovo && bun run dev"],
+      "port": 3030
+    },
+    {
+      "name": "Drizzle Studio",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "cd /d C:\\vishal\\xp\\wovo && bun run db:studio"],
+      "port": 4983
+    }
+  ]
+}
