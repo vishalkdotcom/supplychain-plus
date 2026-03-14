@@ -5,6 +5,7 @@ import { wrapLanguageModel, extractReasoningMiddleware } from "ai";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createAnthropic } from "@ai-sdk/anthropic";
+import { createOllama } from "ollama-ai-provider-v2";
 
 // Middleware to extract <think>...</think> reasoning from NIM models
 // into a separate `reasoning` field, keeping `text` clean.
@@ -55,6 +56,18 @@ function buildModels() {
       return {
         model: lms.chatModel(modelName),
         strongModel: lms.chatModel(modelName),
+      };
+    }
+
+    case "ollama": {
+      const ollamaProvider = createOllama({
+        baseURL: process.env.OLLAMA_BASE_URL ?? "http://localhost:11434/api",
+      });
+      const ollamaModelName =
+        process.env.OLLAMA_MODEL ?? "qwen3.5:4b";
+      return {
+        model: ollamaProvider(ollamaModelName),
+        strongModel: ollamaProvider(ollamaModelName),
       };
     }
 
@@ -136,12 +149,32 @@ export function getModelFromRequest(
       return lms.chatModel(customModel);
     }
     if (customProvider === "ollama") {
-      const url = customKey || "http://localhost:11434/v1";
-      const ollama = createOpenAICompatible({ name: "ollama", baseURL: url });
-      return ollama.chatModel(customModel);
+      const url = customKey || "http://localhost:11434/api";
+      const ollamaProvider = createOllama({ baseURL: url });
+      return ollamaProvider(customModel);
     }
   }
 
   // Fallback to defaults
   return type === "strong" ? strongModel : model;
 }
+
+// ─── Ollama helpers for batch jobs (Phase 4) ───────────────
+const ollamaBatch = createOllama({
+  baseURL: process.env.OLLAMA_BASE_URL ?? "http://localhost:11434/api",
+});
+
+/** Get a specific Ollama model for batch processing. */
+export function getOllamaModel(modelName: string) {
+  return ollamaBatch(modelName);
+}
+
+/** Get an Ollama embedding model (e.g. bge-m3). */
+export function getOllamaEmbedding(modelName: string = "bge-m3") {
+  return ollamaBatch.embedding(modelName);
+}
+
+/** Provider options to disable thinking mode on Qwen models. */
+export const OLLAMA_NO_THINK = {
+  ollama: { think: false },
+};

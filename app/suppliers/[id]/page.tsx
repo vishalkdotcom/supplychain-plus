@@ -26,10 +26,11 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { IconFileText, IconWand, IconLoader2, IconDownload } from "@tabler/icons-react";
+import { IconFileText, IconWand, IconLoader2, IconDownload, IconListCheck } from "@tabler/icons-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useQuery } from "@tanstack/react-query";
 import { fetchSupplier, fetchCases, fetchSurveys, fetchRecommendations, fetchTimeline, fetchTraining } from "@/lib/api";
-import { Case, Survey, AIRecommendation } from "@/types";
+import { Case, Survey, AIRecommendation, EvidenceLink } from "@/types";
 import { SupplierHero } from "@/components/suppliers/supplier-hero";
 import { toast } from "sonner";
 
@@ -46,6 +47,7 @@ export default function SupplierDetailPage({
   const [regulatoryFramework, setRegulatoryFramework] = useState("csddd");
   const [isGeneratingNarrative, setIsGeneratingNarrative] = useState(false);
   const [narrative, setNarrative] = useState("");
+  const [includeEvidence, setIncludeEvidence] = useState(true);
 
   const { data: supplier, isLoading } = useQuery({
     queryKey: ["suppliers", id],
@@ -103,15 +105,55 @@ export default function SupplierDetailPage({
 
   const handleExportPDF = async () => {
     if (!supplier) return;
-    
+
     try {
       const { generateHRDDReport } = await import("@/lib/hrdd-export");
+
+      // Build evidence links from available data
+      let evidence: EvidenceLink[] | undefined;
+      if (includeEvidence) {
+        evidence = [];
+        // Cases
+        for (const c of cases.slice(0, 10)) {
+          evidence.push({
+            module: "connect",
+            referenceId: `CASE-${c.id}`,
+            title: c.topic || "Worker Grievance",
+            date: c.createdAt,
+            relevance: `${c.severity} severity — ${c.status}`,
+          });
+        }
+        // Surveys
+        for (const s of surveys.slice(0, 5)) {
+          evidence.push({
+            module: "engage",
+            referenceId: `SURVEY-${s.id}`,
+            title: s.title,
+            date: s.createdAt,
+            relevance: `${s.responses} responses — risk score ${s.riskScore}`,
+          });
+        }
+        // Training
+        if (training) {
+          for (const t of (training as Array<{ courseId: string; courseName: string; completionRate: number; lastActivityDate: string }>).slice(0, 5)) {
+            evidence.push({
+              module: "educate",
+              referenceId: `COURSE-${t.courseId}`,
+              title: t.courseName,
+              date: t.lastActivityDate || "",
+              relevance: `${t.completionRate}% completion`,
+            });
+          }
+        }
+      }
+
       generateHRDDReport({
         supplier,
         generatedDate: new Date().toLocaleDateString(),
         auditorName: "Current User",
         narrative: narrative || undefined,
-        frameworkName: regulatoryFramework === "csddd" ? "EU CSDDD" : "UK Modern Slavery Act"
+        frameworkName: regulatoryFramework === "csddd" ? "EU CSDDD" : "UK Modern Slavery Act",
+        evidence,
       });
       toast.success("Report downloaded successfully");
       setIsExportDialogOpen(false);
@@ -255,6 +297,18 @@ export default function SupplierDetailPage({
                 onChange={(e) => setNarrative(e.target.value)}
               />
             </div>
+          </div>
+
+          <div className="flex items-center gap-2 py-2">
+            <Checkbox
+              id="include-evidence"
+              checked={includeEvidence}
+              onCheckedChange={(v) => setIncludeEvidence(v === true)}
+            />
+            <label htmlFor="include-evidence" className="text-sm font-medium flex items-center gap-2 cursor-pointer">
+              <IconListCheck className="w-4 h-4 text-green-600" />
+              Include Supporting Evidence (cases, surveys, training)
+            </label>
           </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t">

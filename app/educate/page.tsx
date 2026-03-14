@@ -32,12 +32,14 @@ import {
   IconArrowRight,
   IconCheck,
   IconFileText,
+  IconLanguage,
   IconLoader,
   IconSchool,
   IconSparkles,
   IconUpload,
   IconWand,
 } from "@tabler/icons-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { fetchCourses, fetchSuppliers, fetchRecommendations } from "@/lib/api";
 import { useQueryStates, parseAsInteger, parseAsString } from "nuqs";
@@ -77,6 +79,60 @@ const PIPELINE_STEPS: { key: PipelineStatus; label: string }[] = [
   { key: "ready", label: "Ready" },
 ];
 
+function CoursePreviewContent({ course }: { course: CourseData }) {
+  return (
+    <>
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold flex items-center gap-2">
+          <IconFileText className="w-5 h-5 text-indigo-500" />
+          Lessons
+        </h3>
+        {course.lessons.map((lesson, i) => (
+          <Card key={i} className="bg-slate-50/50">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-md">
+                Lesson {i + 1}: {lesson.title}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
+                {lesson.content}
+              </p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold flex items-center gap-2">
+          <IconCheck className="w-5 h-5 text-green-500" />
+          Knowledge Check
+        </h3>
+        {course.quiz.map((q, i) => (
+          <div key={i} className="space-y-2 p-4 border rounded-lg bg-white">
+            <p className="font-medium text-sm">
+              {i + 1}. {q.question}
+            </p>
+            <ul className="space-y-2 mt-3">
+              {q.options.map((opt: string, j: number) => (
+                <li
+                  key={j}
+                  className={`text-sm p-2 rounded-md border ${
+                    j === q.correctAnswerIndex
+                      ? "bg-green-50 border-green-200 text-green-800 font-medium"
+                      : "bg-muted/50 border-transparent"
+                  }`}
+                >
+                  {opt}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
 export default function EducatePage() {
   const [params, setParams] = useQueryStates({
     page: parseAsInteger.withDefault(1),
@@ -90,6 +146,40 @@ export default function EducatePage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [pipelineItems, setPipelineItems] = useState<PipelineItem[]>([]);
   const [previewItem, setPreviewItem] = useState<PipelineItem | null>(null);
+  const [translations, setTranslations] = useState<Record<string, CourseData>>({});
+  const [translatingLang, setTranslatingLang] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("en");
+
+  const LANGUAGES: Record<string, string> = {
+    vi: "Vietnamese",
+    bn: "Bengali",
+    zh: "Chinese",
+    km: "Khmer",
+    id: "Indonesian",
+    th: "Thai",
+    hi: "Hindi",
+    es: "Spanish",
+  };
+
+  const handleTranslate = useCallback(async (lang: string, course: CourseData) => {
+    setTranslatingLang(lang);
+    try {
+      const res = await fetch("/api/ai/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ course, language: lang }),
+      });
+      if (!res.ok) throw new Error("Translation failed");
+      const data = await res.json();
+      setTranslations((prev) => ({ ...prev, [lang]: data.translated }));
+      setActiveTab(lang);
+      toast.success(`Translated to ${LANGUAGES[lang]}`);
+    } catch {
+      toast.error(`Failed to translate to ${LANGUAGES[lang]}`);
+    } finally {
+      setTranslatingLang(null);
+    }
+  }, []);
 
   const showToast = useCallback((msg: string) => {
     toast(msg);
@@ -579,7 +669,13 @@ export default function EducatePage() {
       {/* Preview dialog */}
       <Dialog
         open={previewItem !== null}
-        onOpenChange={(isOpen) => !isOpen && setPreviewItem(null)}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) {
+            setPreviewItem(null);
+            setTranslations({});
+            setActiveTab("en");
+          }
+        }}
       >
         <DialogContent className="sm:max-w-xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
@@ -588,51 +684,59 @@ export default function EducatePage() {
               {previewItem?.courseData?.description || `Generated from ${previewItem?.sourceFile}`}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-6 py-4">
-            {previewItem?.courseData ? (
-              <>
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold flex items-center gap-2">
-                    <IconFileText className="w-5 h-5 text-indigo-500" />
-                    Lessons
-                  </h3>
-                  {previewItem.courseData.lessons.map((lesson, i) => (
-                    <Card key={i} className="bg-slate-50/50">
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-md">Lesson {i + 1}: {lesson.title}</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">{lesson.content}</p>
-                      </CardContent>
-                    </Card>
+          {previewItem?.courseData ? (
+            <div className="space-y-4 py-4">
+              {/* Translation Controls */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <IconLanguage className="w-4 h-4 text-indigo-500" />
+                <span className="text-sm font-medium">Translate to:</span>
+                {Object.entries(LANGUAGES).map(([code, name]) => (
+                  <Button
+                    key={code}
+                    size="sm"
+                    variant={translations[code] ? "secondary" : "outline"}
+                    disabled={translatingLang !== null}
+                    onClick={() => handleTranslate(code, previewItem.courseData!)}
+                    className="text-xs h-7"
+                  >
+                    {translatingLang === code ? (
+                      <><IconLoader className="w-3 h-3 animate-spin mr-1" />{name}</>
+                    ) : (
+                      name
+                    )}
+                  </Button>
+                ))}
+              </div>
+
+              <Tabs value={activeTab} onValueChange={setActiveTab}>
+                <TabsList>
+                  <TabsTrigger value="en">English</TabsTrigger>
+                  {Object.entries(translations).map(([code]) => (
+                    <TabsTrigger key={code} value={code}>
+                      {LANGUAGES[code]}
+                    </TabsTrigger>
                   ))}
-                </div>
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold flex items-center gap-2">
-                    <IconCheck className="w-5 h-5 text-green-500" />
-                    Knowledge Check
-                  </h3>
-                  {previewItem.courseData.quiz.map((q, i) => (
-                    <div key={i} className="space-y-2 p-4 border rounded-lg bg-white">
-                      <p className="font-medium text-sm">{i + 1}. {q.question}</p>
-                      <ul className="space-y-2 mt-3">
-                        {q.options.map((opt: string, j: number) => (
-                          <li key={j} className={`text-sm p-2 rounded-md border ${j === q.correctAnswerIndex ? "bg-green-50 border-green-200 text-green-800 font-medium" : "bg-muted/50 border-transparent"}`}>
-                            {opt}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                This is a demo preview. In production, the full generated course
-                content (lessons, quizzes, translations) would appear here.
-              </p>
-            )}
-          </div>
+                </TabsList>
+
+                {/* English Tab */}
+                <TabsContent value="en" className="space-y-4 mt-4">
+                  <CoursePreviewContent course={previewItem.courseData} />
+                </TabsContent>
+
+                {/* Translated Tabs */}
+                {Object.entries(translations).map(([code, translated]) => (
+                  <TabsContent key={code} value={code} className="space-y-4 mt-4">
+                    <CoursePreviewContent course={translated} />
+                  </TabsContent>
+                ))}
+              </Tabs>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground py-4">
+              This is a demo preview. In production, the full generated course
+              content (lessons, quizzes, translations) would appear here.
+            </p>
+          )}
           <div className="flex gap-2 justify-end w-full pt-4 border-t">
             <Button
               variant="outline"

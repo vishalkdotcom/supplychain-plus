@@ -27,28 +27,34 @@ interface GeographicRiskMapProps {
   suppliers: Supplier[];
 }
 
-// Map countries to approximate coordinates since we don't have exact lat/long in the API yet
-const countryCoordinates: Record<string, [number, number]> = {
-  "Vietnam": [108.2772, 14.0583],
-  "Bangladesh": [90.3563, 23.685],
-  "China": [104.1954, 35.8617],
-  "India": [78.9629, 20.5937],
-  "Cambodia": [104.991, 12.5657],
-  "Indonesia": [78.9629, 20.5937],
-  "Turkey": [35.2433, 38.9637],
-  "Mexico": [35.2433, 38.9637],
-  "Taiwan": [35.2433, 38.9637], // Fallbacks
+// Country centroid fallbacks — only used when real lat/lng is not available
+const countryCentroids: Record<string, [number, number]> = {
+  "Vietnam": [108.28, 14.06],
+  "Bangladesh": [90.36, 23.69],
+  "China": [104.20, 35.86],
+  "India": [78.96, 20.59],
+  "Cambodia": [104.99, 12.57],
+  "Indonesia": [113.92, -0.79],
+  "Turkey": [35.24, 38.96],
+  "Mexico": [-102.55, 23.63],
+  "Taiwan": [120.96, 23.69],
+  "Thailand": [100.99, 15.87],
+  "Myanmar": [95.96, 21.91],
+  "Pakistan": [69.35, 30.38],
+  "Sri Lanka": [80.77, 7.87],
+  "Ethiopia": [40.49, 9.15],
+  "Honduras": [-86.24, 15.20],
+  "Guatemala": [-90.23, 15.78],
 };
 
-// Simple hash function to slightly offset multiple suppliers in the same country
+// Small offset for suppliers sharing the same coordinates
 const getOffset = (str: string, index: number) => {
-  let hash = index; // Use index to further differentiate hash
+  let hash = index;
   for (let i = 0; i < str.length; i++) {
     hash = str.charCodeAt(i) + ((hash << 5) - hash);
   }
-  // Pseudo-random offset based on ID and index
-  const x = (Math.abs(hash) % 80) / 10 - 4; 
-  const y = ((Math.abs(hash) >> 2) % 80) / 10 - 4;
+  const x = (Math.abs(hash) % 40) / 10 - 2;
+  const y = ((Math.abs(hash) >> 2) % 40) / 10 - 2;
   return [x, y];
 };
 
@@ -86,31 +92,43 @@ export function GeographicRiskMap({ suppliers }: GeographicRiskMapProps) {
   };
 
   const mapData = useMemo(() => {
-    return suppliers.map((s, i) => {
-      let baseCoords = countryCoordinates[s.country] || [0, 0];
-      
-      // If we don't have coordinates mapped, use a fallback based on region
-      if (baseCoords[0] === 0 && baseCoords[1] === 0) {
-        if (s.region === "Asia") baseCoords = [100, 20];
-        else if (s.region === "Europe") baseCoords = [15, 50];
-        else if (s.region === "Americas") baseCoords = [-90, 15];
-        else baseCoords = [0, 0];
-      }
+    return suppliers
+      .map((s, i) => {
+        // Use real lat/lng from database if available
+        let coords: [number, number];
+        let hasRealCoords = false;
 
-      const offset = getOffset(s.id, i);
-      const coords: [number, number] = [baseCoords[0] + offset[0], baseCoords[1] + offset[1]];
+        if (s.longitude != null && s.latitude != null) {
+          coords = [s.longitude, s.latitude];
+          hasRealCoords = true;
+        } else {
+          // Fallback to country centroid
+          const centroid = countryCentroids[s.country];
+          if (centroid) {
+            const offset = getOffset(s.id, i);
+            coords = [centroid[0] + offset[0], centroid[1] + offset[1]];
+          } else {
+            // Last resort: region-based fallback
+            if (s.region?.includes("Asia")) coords = [100 + i * 0.5, 20];
+            else if (s.region?.includes("Europe")) coords = [15 + i * 0.5, 50];
+            else if (s.region?.includes("America")) coords = [-90 + i * 0.5, 15];
+            else coords = [0, 0];
+          }
+        }
 
-      // Determine color based on risk score
-      let color = "#10b981"; // green (low)
-      if (s.riskScore > 70) color = "#ef4444"; // red (high)
-      else if (s.riskScore > 30) color = "#f59e0b"; // orange (medium)
+        // Determine color based on risk score
+        let color = "#10b981"; // green (low)
+        if (s.riskScore > 70) color = "#ef4444"; // red (high)
+        else if (s.riskScore > 30) color = "#f59e0b"; // orange (medium)
 
-      return {
-        ...s,
-        coordinates: coords,
-        color,
-      };
-    });
+        return {
+          ...s,
+          coordinates: coords,
+          color,
+          hasRealCoords,
+        };
+      })
+      .filter((s) => s.coordinates[0] !== 0 || s.coordinates[1] !== 0);
   }, [suppliers]);
 
   return (

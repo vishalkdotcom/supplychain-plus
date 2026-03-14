@@ -77,6 +77,10 @@ export async function GET(request: NextRequest) {
       training_score: number;
       engagement_score: number;
       reasons: any[];
+      cached_region: string | null;
+      latitude: number | null;
+      longitude: number | null;
+      parent_company_id: string | null;
     }
 
     // Merge and filter
@@ -90,6 +94,10 @@ export async function GET(request: NextRequest) {
         training_score: riskData?.trainingScore || 50,
         engagement_score: riskData?.engagementScore || 50,
         reasons: riskData?.reasons || [],
+        cached_region: riskData?.region || null,
+        latitude: riskData?.latitude || null,
+        longitude: riskData?.longitude || null,
+        parent_company_id: riskData?.parentCompanyId || null,
       };
     });
 
@@ -135,11 +143,11 @@ export async function GET(request: NextRequest) {
     const suppliers: Supplier[] = paginatedRows.map((row) => ({
       id: String(row.client_key),
       name: extractEnglishFromMlang(row.name),
-      region: deriveRegion(row.country),
+      region: row.cached_region || deriveRegion(row.country),
       country: row.country || "Unknown",
       location: row.country || "Unknown",
       workerCount: workerCountMap[Number(row.client_key)] || 0,
-      contactName: "N/A", // TODO: add contact columns to clients_clientinfo
+      contactName: "N/A",
       contactEmail: "N/A",
       riskScore: row.risk_score,
       riskLevel:
@@ -157,6 +165,9 @@ export async function GET(request: NextRequest) {
         engagementScore: row.engagement_score,
         reasons: row.reasons,
       },
+      ...(row.latitude != null && { latitude: row.latitude }),
+      ...(row.longitude != null && { longitude: row.longitude }),
+      ...(row.parent_company_id && { parentCompanyId: row.parent_company_id }),
     }));
 
     const totalPages = Math.ceil(total / perPage);

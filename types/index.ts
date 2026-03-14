@@ -18,6 +18,9 @@ export interface Supplier {
   status: "active" | "inactive" | "onboarding";
   lastActivityDate: string;
   riskBreakdown: RiskBreakdown;
+  latitude?: number;
+  longitude?: number;
+  parentCompanyId?: string;
 }
 
 export interface RiskBreakdown {
@@ -76,6 +79,7 @@ export interface Case {
   supplierId: string;
   supplierName: string;
   topic: string;
+  caseTypeId?: string;
   severity: "high" | "medium" | "low";
   status:
     | "new"
@@ -196,6 +200,14 @@ export type ViewPerspective = "brand" | "supplier";
 // ===============================
 // Pagination
 // ===============================
+
+export interface EvidenceLink {
+  module: "connect" | "engage" | "educate";
+  referenceId: string;
+  title: string;
+  date: string;
+  relevance: string;
+}
 
 export interface PaginatedResponse<T> {
   data: T[];
