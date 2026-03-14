@@ -12507,5 +12507,5 @@ ALTER PUBLICATION peerflow_pub_survey_data_mirror ADD TABLE ONLY public.translat
 -- PostgreSQL database dump complete
 --
 
-\unrestrict nwqCiUHC0ZqVdJx8j24Hj44RxWaJIHjfBRKq6xB9vjc3dbhrnGXqpoxFCL8ert5
+-- \unrestrict removed (Supabase artifact, not valid in standard psql)
 

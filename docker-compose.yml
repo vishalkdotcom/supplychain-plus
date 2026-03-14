@@ -51,6 +51,7 @@ services:
       - sqlserver_data:/var/opt/mssql
       - ./init/sqlserver/entrypoint.sh:/entrypoint.sh
       - ./init/sqlserver/01_schema.sql:/init/01_schema.sql
+      - ./init/sqlserver/02_seed_data.sql:/init/02_seed_data.sql
     entrypoint: ["/bin/bash", "/entrypoint.sh"]
     healthcheck:
       test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'SqlServer@123!' -C -Q 'SELECT 1' -b"]
