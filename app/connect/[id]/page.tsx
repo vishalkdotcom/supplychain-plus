@@ -35,7 +35,9 @@ import {
   IconUser,
   IconBook,
   IconWand,
-  IconLoader2
+  IconLoader2,
+  IconHistory,
+  IconTrendingUp,
 } from "@tabler/icons-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchCase } from "@/lib/api";
@@ -552,6 +554,11 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
                 </Card>
               )}
 
+              {/* Historical Context (Case Resolution Playbook) */}
+              {caseData.caseTypeId && (
+                <PlaybookCard caseTypeId={caseData.caseTypeId} caseTopic={caseData.topic} />
+              )}
+
               {/* Related Training */}
               {caseData.aiGuidance.relatedTraining &&
                 caseData.aiGuidance.relatedTraining.length > 0 && (
@@ -589,5 +596,103 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
         </div>
       </div>
     </div>
+  );
+}
+
+interface PlaybookData {
+  caseTypeName: string | null;
+  avgResolutionDays: number | null;
+  bestResolutionDays: number | null;
+  totalResolved: number;
+  bestPractices: string[];
+  aiSummary: string;
+}
+
+function PlaybookCard({ caseTypeId, caseTopic }: { caseTypeId: string; caseTopic: string }) {
+  const { data: playbook, isLoading } = useQuery<PlaybookData>({
+    queryKey: ["playbook", caseTypeId],
+    queryFn: async () => {
+      const res = await fetch(`/api/ai/playbook?caseTypeId=${caseTypeId}`);
+      if (!res.ok) throw new Error("Failed to fetch playbook");
+      return res.json();
+    },
+  });
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <IconHistory className="h-5 w-5 text-violet-500" />
+            Historical Context
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="animate-pulse space-y-2">
+            <div className="h-4 bg-muted rounded w-3/4" />
+            <div className="h-4 bg-muted rounded w-1/2" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!playbook || playbook.totalResolved === 0) return null;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <IconHistory className="h-5 w-5 text-violet-500" />
+          Historical Context
+        </CardTitle>
+        <CardDescription>
+          Resolution patterns from {playbook.totalResolved} resolved &ldquo;{caseTopic}&rdquo; cases
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Stats */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-muted/50 rounded-lg p-3 text-center">
+            <div className="text-2xl font-bold text-foreground">
+              {playbook.avgResolutionDays != null ? Math.round(playbook.avgResolutionDays) : "—"}
+            </div>
+            <div className="text-xs text-muted-foreground">Avg Days to Resolve</div>
+          </div>
+          <div className="bg-muted/50 rounded-lg p-3 text-center">
+            <div className="text-2xl font-bold text-emerald-600">
+              {playbook.bestResolutionDays ?? "—"}
+            </div>
+            <div className="text-xs text-muted-foreground">Best Resolution</div>
+          </div>
+        </div>
+
+        {/* AI Summary */}
+        <p className="text-sm text-muted-foreground bg-violet-50 dark:bg-violet-950/20 p-3 rounded-md border border-violet-100 dark:border-violet-900">
+          {playbook.aiSummary}
+        </p>
+
+        {/* Best Practices */}
+        {playbook.bestPractices.length > 0 && (
+          <Accordion type="single" collapsible className="w-full">
+            <AccordionItem value="practices">
+              <AccordionTrigger className="text-sm hover:no-underline">
+                <div className="flex items-center gap-2">
+                  <IconTrendingUp className="h-4 w-4 text-emerald-500" />
+                  Best Practices ({playbook.bestPractices.length})
+                </div>
+              </AccordionTrigger>
+              <AccordionContent>
+                <ol className="list-decimal list-inside space-y-1.5 text-sm text-muted-foreground">
+                  {playbook.bestPractices.map((practice, idx) => (
+                    <li key={idx}>{practice}</li>
+                  ))}
+                </ol>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        )}
+      </CardContent>
+    </Card>
   );
 }

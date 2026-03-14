@@ -1,7 +1,12 @@
 import { tool } from "ai";
 import { z } from "zod";
 import { db } from "@/lib/db/drizzle";
-import { supplierRiskScores, alerts, surveyAnalysis } from "@/lib/db/schema";
+import {
+  supplierRiskScores,
+  alerts,
+  surveyAnalysis,
+  casePlaybookCache,
+} from "@/lib/db/schema";
 import { query as pgQuery } from "@/lib/db/postgres";
 import { paramQuery as mssqlParamQuery } from "@/lib/db/sql-server";
 import { query as mysqlQuery } from "@/lib/db/mysql";
@@ -289,6 +294,54 @@ export const markAlertRead = tool({
     await db.update(alerts).set({ isRead: true }).where(eq(alerts.id, alertId));
 
     return { success: true, message: `Alert ${alertId} marked as read.` };
+  },
+});
+
+export const queryPlaybook = tool({
+  description:
+    "Get historical resolution patterns for a case type and region. Use when the user asks about best practices, how cases were resolved before, average resolution times, or resolution strategies.",
+  inputSchema: z.object({
+    caseTypeId: z
+      .string()
+      .optional()
+      .describe("Case type ID to look up playbook for"),
+    region: z
+      .string()
+      .optional()
+      .describe("Region to filter by (e.g. Southeast Asia, South Asia)"),
+  }),
+  execute: async ({ caseTypeId, region }) => {
+    const conditions = [];
+    if (caseTypeId) {
+      conditions.push(eq(casePlaybookCache.caseTypeId, caseTypeId));
+    }
+    if (region) {
+      conditions.push(eq(casePlaybookCache.region, region));
+    }
+
+    const results = await db
+      .select()
+      .from(casePlaybookCache)
+      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .orderBy(desc(casePlaybookCache.totalResolved))
+      .limit(5);
+
+    if (results.length === 0) {
+      return {
+        found: false,
+        message: "No playbook data available yet. Run the playbook generation job first.",
+      };
+    }
+
+    return results.map((r) => ({
+      caseType: r.caseTypeName,
+      region: r.region,
+      avgResolutionDays: r.avgResolutionDays,
+      bestResolutionDays: r.bestResolutionDays,
+      totalResolved: r.totalResolved,
+      bestPractices: r.bestPractices,
+      aiSummary: r.aiSummary,
+    }));
   },
 });
 

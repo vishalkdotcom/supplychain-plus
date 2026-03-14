@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { Supplier } from "@/types";
+import { Supplier, EvidenceLink } from "@/types";
 
 interface HRDDReportData {
   supplier: Supplier;
@@ -9,11 +9,12 @@ interface HRDDReportData {
   auditorName: string;
   narrative?: string;
   frameworkName?: string;
+  evidence?: EvidenceLink[];
 }
 
 export const generateHRDDReport = (data: HRDDReportData) => {
   const doc = new jsPDF();
-  const { supplier, generatedDate, auditorName, narrative, frameworkName } = data;
+  const { supplier, generatedDate, auditorName, narrative, frameworkName, evidence } = data;
 
   // Title
   doc.setFontSize(20);
@@ -110,6 +111,37 @@ export const generateHRDDReport = (data: HRDDReportData) => {
       body: reasonsData,
       styles: { fontSize: 8 },
       columnStyles: { 1: { cellWidth: 80 } },
+    });
+  }
+
+  // Supporting Evidence
+  if (evidence && evidence.length > 0) {
+    const evidenceY = (doc as any).lastAutoTable.finalY + 15;
+    doc.setFontSize(14);
+    doc.setTextColor(0);
+    doc.text("Supporting Evidence", 14, evidenceY);
+
+    const moduleLabel: Record<string, string> = {
+      connect: "Connect (Cases)",
+      engage: "Engage (Surveys)",
+      educate: "Educate (Training)",
+    };
+
+    const evidenceData = evidence.map((e) => [
+      moduleLabel[e.module] || e.module,
+      e.referenceId,
+      e.title,
+      e.date,
+      e.relevance,
+    ]);
+
+    autoTable(doc, {
+      startY: evidenceY + 5,
+      head: [["Module", "Ref ID", "Title", "Date", "Relevance"]],
+      body: evidenceData,
+      styles: { fontSize: 7 },
+      columnStyles: { 2: { cellWidth: 50 }, 4: { cellWidth: 45 } },
+      headStyles: { fillColor: [40, 167, 69] },
     });
   }
 

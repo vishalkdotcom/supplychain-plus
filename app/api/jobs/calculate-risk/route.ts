@@ -16,6 +16,14 @@ interface SupplierRow {
   name: string;
 }
 
+interface CompanyGeoRow {
+  Id: number;
+  MailingCountry: string | null;
+  ParentCompanyId: number | null;
+  Latitude: number | null;
+  Longitude: number | null;
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({}));
@@ -34,6 +42,28 @@ export async function POST(request: Request) {
 
     const suppliersResult = await pgQuery(supplierQuery);
     const suppliers: SupplierRow[] = suppliersResult.rows;
+
+    // Fetch geo/hierarchy data from SQL Server (batch query for all suppliers)
+    const companyGeoMap = new Map<number, CompanyGeoRow>();
+    try {
+      const geoResult = await mssqlQuery(`
+        SELECT co.Id, co.MailingCountry, co.ParentCompanyId,
+               cp.Latitude, cp.Longitude
+        FROM Company co
+        LEFT JOIN (
+          SELECT CompanyId, Latitude, Longitude,
+                 ROW_NUMBER() OVER (PARTITION BY CompanyId ORDER BY Id DESC) as rn
+          FROM CompanyPost
+          WHERE Latitude IS NOT NULL AND Longitude IS NOT NULL
+        ) cp ON cp.CompanyId = co.Id AND cp.rn = 1
+        WHERE co.Deleted = 0
+      `);
+      for (const row of geoResult.recordset) {
+        companyGeoMap.set(row.Id, row);
+      }
+    } catch {
+      // SQL Server may be unreachable; proceed without geo data
+    }
 
     let processedCount = 0;
 
@@ -171,7 +201,36 @@ export async function POST(request: Request) {
       if (processedCount === 3) riskScore = 78;
 
 
-      // Upsert risk score
+      // Lookup cached geo/hierarchy data for this supplier
+      const geo = companyGeoMap.get(supplier.id);
+      const country = geo?.MailingCountry || null;
+      const latitude = geo?.Latitude || null;
+      const longitude = geo?.Longitude || null;
+      const parentCompanyId = geo?.ParentCompanyId
+        ? String(geo.ParentCompanyId)
+        : null;
+      // Derive region from country
+      const regionMap: Record<string, string> = {
+        Vietnam: "Southeast Asia",
+        Bangladesh: "South Asia",
+        Cambodia: "Southeast Asia",
+        Indonesia: "Southeast Asia",
+        Myanmar: "Southeast Asia",
+        Thailand: "Southeast Asia",
+        India: "South Asia",
+        Pakistan: "South Asia",
+        "Sri Lanka": "South Asia",
+        China: "East Asia",
+        Taiwan: "East Asia",
+        Turkey: "Europe",
+        Ethiopia: "Africa",
+        Mexico: "Americas",
+        Honduras: "Americas",
+        Guatemala: "Americas",
+      };
+      const region = country ? regionMap[country] || "Other" : null;
+
+      // Upsert risk score with cached geo/hierarchy data
       await db
         .insert(supplierRiskScores)
         .values({
@@ -183,6 +242,11 @@ export async function POST(request: Request) {
           trainingScore,
           engagementScore,
           reasons,
+          country,
+          region,
+          latitude,
+          longitude,
+          parentCompanyId,
           calculatedAt: new Date(),
         })
         .onConflictDoUpdate({
@@ -195,6 +259,11 @@ export async function POST(request: Request) {
             trainingScore,
             engagementScore,
             reasons,
+            country,
+            region,
+            latitude,
+            longitude,
+            parentCompanyId,
             calculatedAt: new Date(),
           },
         });

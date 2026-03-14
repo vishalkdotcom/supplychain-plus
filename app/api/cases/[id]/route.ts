@@ -20,6 +20,7 @@ export async function GET(
           c.Created,
           c.Modified,
           c.Priority,
+          c.CaseTypeId,
           co.Name as CompanyName,
           co.Id as CompanyId,
           csct.Name as StatusName,
@@ -60,6 +61,7 @@ export async function GET(
       supplierId: String(row.CompanyId),
       supplierName: row.CompanyName || "Unknown",
       topic: row.TypeName || "General",
+      caseTypeId: row.CaseTypeId ? String(row.CaseTypeId) : undefined,
       severity:
         row.Priority === 1 ? "high" : row.Priority === 2 ? "medium" : "low",
       status: mapStatus(row.StatusName),

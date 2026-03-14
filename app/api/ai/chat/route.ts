@@ -9,6 +9,7 @@ import {
   getAlerts,
   markAlertRead,
   triggerRiskRecalculation,
+  queryPlaybook,
 } from "@/lib/ai/tools";
 import { db } from "@/lib/db/drizzle";
 import { aiChatHistory } from "@/lib/db/schema";
@@ -51,6 +52,7 @@ export async function POST(req: Request) {
       getAlerts,
       markAlertRead,
       triggerRiskRecalculation,
+      queryPlaybook,
     },
     stopWhen: stepCountIs(3),
     onFinish: async ({ text }) => {
