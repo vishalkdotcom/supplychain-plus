@@ -52,4 +52,18 @@ if [ -f /init/01_schema.sql ]; then
   fi
 fi
 
+# Seed data only if Company table is empty (idempotent)
+if [ -f /init/02_seed_data.sql ]; then
+  ROWS=$("$SQLCMD" -S localhost -U sa -P "$SA_PASSWORD" -C -d "$MSSQL_DATABASE" \
+    -Q "SET NOCOUNT ON; SELECT COUNT(*) FROM Company" -h -1 2>/dev/null | tr -d '[:space:]')
+  if [ "$ROWS" = "0" ]; then
+    echo "Seeding data..."
+    "$SQLCMD" -S localhost -U sa -P "$SA_PASSWORD" -C -d "$MSSQL_DATABASE" -i /init/02_seed_data.sql \
+      && echo "Seed data applied." \
+      || echo "Seed data applied with warnings."
+  else
+    echo "Data already seeded ($ROWS companies), skipping."
+  fi
+fi
+
 wait $MSSQL_PID

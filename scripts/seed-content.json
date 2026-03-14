@@ -1,0 +1,1296 @@
+{
+  "factoryNames": [
+    "Vinh Gia Garment Manufacturing Co., Ltd.",
+    "Binh Duong Textile Industries Co., Ltd.",
+    "Can Tho Apparel Co., Ltd.",
+    "Hue Garment Manufacturing Industries Co., Ltd.",
+    "Da Nang Textile Co., Ltd.",
+    "Binh Thuan Garment Manufacturing Co., Ltd.",
+    "Bac Giang Apparel Industries Co., Ltd.",
+    "Thai Binh Textile Manufacturing Co., Ltd.",
+    "Quang Ninh Garment Industries Co., Ltd.",
+    "Nam Dinh Textile Co., Ltd.",
+    "Thanh Hoa Garment Manufacturing Co., Ltd.",
+    "Nguyen Long Textile Industries Co., Ltd.",
+    "Ha Nam Apparel Co., Ltd.",
+    "Phu Yen Garment Manufacturing Co., Ltd.",
+    "Binh Phuoc Textile Industries Co., Ltd.",
+    "Kien Giang Apparel Co., Ltd.",
+    "Hai Phong Garment Manufacturing Co., Ltd.",
+    "Thai Nguyen Textile Industries Co., Ltd.",
+    "Ca Mau Apparel Co., Ltd.",
+    "Vinh Son Garment Manufacturing Co., Ltd.",
+    "Vietnam Garment Manufacturing Co., Ltd.",
+    "Hanoi Textile Industries Co., Ltd.",
+    "Sai Gon Apparel Co., Ltd.",
+    "Northern Silk Garment Co., Ltd.",
+    "Southern Cotton Textile Manufacturing Co., Ltd.",
+    "Da Nang Weaving Industries Co., Ltd.",
+    "Hue Traditional Garment Co., Ltd.",
+    "Phu Quoc Textile Manufacturing Co., Ltd.",
+    "Can Tho Apparel Industries Co., Ltd.",
+    "Hai Phong Garment Textile Co., Ltd.",
+    "Vung Tau Fiber Manufacturing Co., Ltd.",
+    "Bac Lieu Cotton Textile Co., Ltd.",
+    "Ba Ria Garment Industries Co., Ltd.",
+    "Ben Tre Silk Manufacturing Co., Ltd.",
+    "Tien Giang Textile Co., Ltd.",
+    "Long An Apparel Industries Co., Ltd.",
+    "Binh Phuoc Garment Textile Co., Ltd.",
+    "Dak Lak Weaving Co., Ltd.",
+    "Lam Dong Silk Manufacturing Co., Ltd.",
+    "Cao Bang Garment Industries Co., Ltd.",
+    "Vinhang Garment Manufacturing Co., Ltd.",
+    "Vietnam Textile Industries Co., Ltd.",
+    "Dong Nai Apparel Manufacturing Co., Ltd.",
+    "Binh Duong Garment Industries Co., Ltd.",
+    "Vung Tau Textile & Garment Co., Ltd.",
+    "Long An Apparel Manufacturing Co., Ltd.",
+    "Tien Giang Garment Industries Co., Ltd.",
+    "Ben Tre Textile Manufacturing Co., Ltd.",
+    "An Giang Garment & Apparel Co., Ltd.",
+    "Dak Lak Textile Industries Co., Ltd.",
+    "Bac Lieu Garment Manufacturing Co., Ltd.",
+    "Ca Mau Apparel Industries Co., Ltd.",
+    "Hai Duong Textile & Garment Co., Ltd.",
+    "Thai Binh Garment Manufacturing Co., Ltd.",
+    "Bac Giang Textile Industries Co., Ltd.",
+    "Ha Nam Apparel Manufacturing Co., Ltd.",
+    "Quang Ninh Garment Industries Co., Ltd.",
+    "Ngai Dinh Textile & Garment Co., Ltd.",
+    "Thong Nguyen Apparel Manufacturing Co., Ltd.",
+    "Phu Tho Garment Industries Co., Ltd.",
+    "Rajshahi Textile Garment Manufacturing Co., Ltd.",
+    "Dhaka Apparel Industries Limited",
+    "Chittagong Textile Garment Manufacturing Co., Ltd.",
+    "Sylhet Apparel Industries Limited",
+    "Barisal Textile Garment Manufacturing Co., Ltd.",
+    "Kushtia Textile Industries Limited",
+    "Narayanganj Garment Manufacturing Co., Ltd.",
+    "Comilla Textile Garment Industries Limited",
+    "Bogra Apparel Manufacturing Co., Ltd.",
+    "Munshiganj Textile Industries Limited",
+    "Jamalpur Garment Manufacturing Co., Ltd.",
+    "Madaripur Textile Garment Industries Limited",
+    "Rangpur Apparel Manufacturing Co., Ltd.",
+    "Feni Textile Garment Industries Limited",
+    "Pabna Garment Manufacturing Co., Ltd.",
+    "Shariatpur Textile Industries Limited",
+    "Manikganj Apparel Garment Manufacturing Co., Ltd.",
+    "Sherpur Textile Garment Industries Limited",
+    "Kishoreganj Apparel Manufacturing Co., Ltd.",
+    "Nawabganj Textile Garment Industries Limited",
+    "Haji Roshan Textile Mills (Pvt) Ltd",
+    "Shibpur Haldia Garment Exporters Co Ltd",
+    "Ranin Garment & Exporters Co Ltd",
+    "Sajek Textiles & Garments (Pvt) Ltd",
+    "Tazim Garment & Textile Mills (Pvt) Ltd",
+    "Dhaka Textile Manufacturing & Garments (Pvt) Ltd",
+    "Lumumba Garment Industries (Pvt) Ltd",
+    "Punab Garment & Textile Mills (Pvt) Ltd",
+    "Raijpur Textile & Garment Manufacturing (Pvt) Ltd",
+    "Rahim Textile & Garment Mills (Pvt) Ltd",
+    "Sujon Garment & Textile Industries (Pvt) Ltd",
+    "Gazipur Textile & Garment Manufacturing (Pvt) Ltd",
+    "Saidnagar Garment & Textile Mills (Pvt) Ltd",
+    "Shapla Textile & Garment Industries (Pvt) Ltd",
+    "Jashore Garment & Textile Manufacturing (Pvt) Ltd",
+    "Kazipara Textile & Garment Mills (Pvt) Ltd",
+    "Nandigram Garment & Textile Industries (Pvt) Ltd",
+    "Saidpur Textile & Garment Manufacturing (Pvt) Ltd",
+    "Tangail Garment & Textile Mills (Pvt) Ltd",
+    "Uttarpara Textile & Garment Industries (Pvt) Ltd",
+    "TPOC Garment Manufacturing Co., Ltd.",
+    "TTC Group Textile Industries Ltd.",
+    "H&G Apparel Garments & Industries",
+    "Koh Kong Apparel Manufacturing Co., Ltd.",
+    "Tatara Garment Manufacturing Industries",
+    "TPT Group Textile & Apparel Co., Ltd.",
+    "TTC Garment Manufacturing Industries Ltd.",
+    "BAMTEX Textile Manufacturing Co., Ltd.",
+    "TTP Garment Industries & Apparel",
+    "TTG Textile & Garment Manufacturing",
+    "TBC Garment Manufacturing Industries Co., Ltd.",
+    "TAT Textile & Apparel Industries Ltd.",
+    "TSG Garment Manufacturing Industries",
+    "TAP Textile & Apparel Co., Ltd.",
+    "TBC Garment Industries & Apparel",
+    "TTM Garment Manufacturing Industries",
+    "TGT Textile & Garment Co., Ltd.",
+    "TAP Garment Industries & Manufacturing",
+    "TBT Textile & Apparel Industries Ltd.",
+    "TAG Garment Manufacturing Industries Co., Ltd.",
+    "Palm Green Garment & Textile Manufacturing Co., Ltd.",
+    "Lien Vei Apparel Industries Co., Ltd.",
+    "Kam Rusey Textile & Garment Manufacturing Co., Ltd.",
+    "Cotex Garment and Textile Industries Co., Ltd.",
+    "Sovaphone Garment & Apparel Manufacturing Co., Ltd.",
+    "Dali Textile & Garment Co., Ltd.",
+    "Cotex Garment and Textile Co., Ltd.",
+    "Sovaphone Apparel & Garment Industries Co., Ltd.",
+    "Lien Vei Textile Manufacturing Co., Ltd.",
+    "Kam Rusey Apparel & Garment Industries Co., Ltd.",
+    "Shanghai Garment Industries Co., Ltd.",
+    "Guangzhou Textile Manufacturing Group",
+    "Suzhou Apparel Production Co., Ltd.",
+    "Hangzhou Fabric Industries Corporation",
+    "Ningbo Garment Manufacturing Co., Ltd.",
+    "Wenzhou Textile Industries Co., Ltd.",
+    "Chengdu Apparel Manufacturing Group",
+    "Changsha Garment Industries Co., Ltd.",
+    "Xi'an Textile Manufacturing Corporation",
+    "Tianjin Apparel Industries Co., Ltd.",
+    "Shenzhen Garment Manufacturing Group",
+    "Dalian Textile Industries Co., Ltd.",
+    "Qinhuangdao Garment Manufacturing Corporation",
+    "Yantai Apparel Industries Co., Ltd.",
+    "Hefei Textile Manufacturing Group",
+    "Wuhan Garment Industries Co., Ltd.",
+    "Zhengzhou Apparel Manufacturing Corporation",
+    "Nanchang Textile Industries Co., Ltd.",
+    "Jinan Garment Manufacturing Group",
+    "Kunming Apparel Industries Co., Ltd.",
+    "Ranbun Garment Manufacturing Co., Ltd.",
+    "Shree Ganesh Textile Industries",
+    "Ganga Jhansi Apparel Manufacturing Ltd.",
+    "Bengal Textile & Garment Co.",
+    "Savitri Garment & Loom Industries",
+    "Tirupati Textile Manufacturing Ltd.",
+    "Gujarat Silk & Garment Industries",
+    "Bharat Textile & Apparel Co., Ltd.",
+    "Anand Garment Manufacturing Units",
+    "Uttar Pradesh Textile Industries Ltd.",
+    "Kanchipuram Silk Garment & Textile Co.",
+    "Madras Garment & Loom Industries",
+    "Chennai Textile Manufacturing & Apparel Ltd.",
+    "Ahmedabad Silk Garment & Textile Co.",
+    "Vidarbha Garment Manufacturing Industries",
+    "Nizamabad Textile & Garment Co., Ltd.",
+    "Kolkata Apparel & Loom Industries",
+    "Hyderabad Textile Manufacturing Ltd.",
+    "Indore Garment & Textile Industries",
+    "Jaipur Silk Garment & Apparel Co.",
+    "PT Batik Nusantara Garment Industries",
+    "Garment & Textile Co. Ltd. Indo",
+    "PT Merpati Apparel Manufacturing",
+    "PT Sarinah Textile Industries",
+    "PT Wijaya Garment Industries",
+    "PT Khasana Garment Industries",
+    "Garment & Textile Co., Ltd. Garuda",
+    "PT Sinar Jaya Manufacturing",
+    "PT Bhakti Garment Industries",
+    "PT Sentosa Apparel Co., Ltd.",
+    "PT Maju Jaya Garment Industries",
+    "Garment & Textile Co., Ltd. Garuda Indonesia",
+    "PT Nusantara Garment Manufacturing",
+    "PT Surya Textile Industries",
+    "PT Bhakti Utama Garment Industries",
+    "Garment & Textile Co., Ltd. Nusantara",
+    "PT Jaya Garment Industries",
+    "PT Sentosa Textile Industries",
+    "PT Maju Jaya Apparel Manufacturing",
+    "PT Khasana Garment Industries",
+    "PT. Garment Nusantara Jaya",
+    "Siam Textile Manufacturing Co., Ltd.",
+    "Myanmar Apparel Industries Ltd.",
+    "Ethiopian Silk Weaving & Manufacturing",
+    "Sri Lanka Spinnery & Garment Works",
+    "Pakistan Textile Hub Industries",
+    "Philippine Garment Manufacturing Co.",
+    "PT. Batik & Garment Nusantara",
+    "Siam Silk Textile Industries",
+    "Myanmar Cotton Manufacturing Ltd."
+  ],
+  "workerFirstNames": [
+    "Emma",
+    "Olivia",
+    "Charlotte",
+    "Amelia",
+    "Sophia",
+    "Evelyn",
+    "Isabella",
+    "Camila",
+    "Mia",
+    "Eleanor",
+    "Aria",
+    "Harper",
+    "Avery",
+    "Ella",
+    "Scarlett",
+    "Luna",
+    "Penelope",
+    "Nora",
+    "Kinsley",
+    "Riley",
+    "Layla",
+    "Natalie",
+    "Bella",
+    "Hazel",
+    "Violet",
+    "Stella",
+    "Aurora",
+    "Piper",
+    "Savannah",
+    "Lucy",
+    "Quinn",
+    "Hannah",
+    "Lily",
+    "Ellie",
+    "Zoe",
+    "Nova",
+    "Sloane",
+    "Paisley",
+    "Ivy",
+    "Willow",
+    "Rory",
+    "Juno",
+    "Clara",
+    "Ruby",
+    "Meadow",
+    "Emilia",
+    "Briar",
+    "Isla",
+    "Willa",
+    "Faye",
+    "Rowan",
+    "Abigail",
+    "Emily",
+    "Elizabeth",
+    "Sophie",
+    "Ava",
+    "Mila",
+    "Ariana",
+    "Grace",
+    "Chloe",
+    "Madison",
+    "Maya",
+    "Katherine",
+    "Victoria",
+    "Madeline",
+    "Iris",
+    "Parker",
+    "Elena",
+    "Cora",
+    "Jasmine",
+    "Fiona",
+    "Elijah",
+    "Alexander",
+    "Noah",
+    "Theodore",
+    "Logan",
+    "Jackson",
+    "Sebastian",
+    "Lucas",
+    "Daniel",
+    "Samuel",
+    "Michael",
+    "Joseph",
+    "William",
+    "James",
+    "Benjamin",
+    "Henry",
+    "David",
+    "Matthew",
+    "Jack",
+    "Ethan",
+    "Owen",
+    "Isaac",
+    "Aidan",
+    "Leo",
+    "Julian",
+    "Gabriel",
+    "Arthur",
+    "Felix",
+    "Camilla",
+    "Sofia",
+    "Knox",
+    "Mason",
+    "Oliver",
+    "Mateo",
+    "Levi",
+    "Camille",
+    "Claire",
+    "Edward",
+    "Gideon",
+    "Aspen",
+    "Cade",
+    "Harrison",
+    "Sylvia",
+    "Beatrice",
+    "Doris",
+    "Mildred",
+    "Celia",
+    "Lila",
+    "Genevieve",
+    "Helen",
+    "Arabella",
+    "Liam",
+    "Miles",
+    "Caleb",
+    "Luke"
+  ],
+  "workerLastNames": [
+    "Adams",
+    "Anderson",
+    "Bailey",
+    "Clark",
+    "Davis",
+    "Edwards",
+    "Evans",
+    "Hall",
+    "Ivanov",
+    "Jackson",
+    "Johnson",
+    "Kim",
+    "Lee",
+    "Martin",
+    "Miller",
+    "Nakamura",
+    "Olson",
+    "Perez",
+    "Robinson",
+    "Santos",
+    "Thompson",
+    "White",
+    "Wong",
+    "Yamamoto",
+    "Zhang",
+    "Smith",
+    "Taylor",
+    "Garcia",
+    "Brown",
+    "Wilson",
+    "Martinez",
+    "Hernandez",
+    "Lopez",
+    "Hill",
+    "Scott",
+    "Green",
+    "King",
+    "Baker",
+    "Harris",
+    "Sanchez",
+    "Nelson",
+    "Carter",
+    "Mitchell",
+    "Roberts",
+    "Turner",
+    "Phillips",
+    "Campbell",
+    "Parker",
+    "Collins",
+    "Stewart",
+    "Morris",
+    "Murphy",
+    "Cook",
+    "Rogers",
+    "Morgan",
+    "Reed",
+    "Barnes",
+    "Foster",
+    "Gould",
+    "Howell",
+    "Webb",
+    "Holt",
+    "Ramirez",
+    "James",
+    "Watson",
+    "Brooks",
+    "Kelly",
+    "Sanders",
+    "Price",
+    "Bennett",
+    "Wood",
+    "Barnett",
+    "Ross",
+    "Hughes",
+    "Flores",
+    "Weber",
+    "Rice",
+    "Sullivan",
+    "Payne",
+    "Coleman",
+    "Jenkins",
+    "Perry",
+    "Powell"
+  ],
+  "grievanceMessages": {
+    "Harassment": [
+      "I feel completely afraid to walk down the hallway because I've seen managers grabbing women by their hair and dragging them out of the room. No one else speaks up, so I just try to hide behind my sewing machine every day, terrified that one slip-up could cost me my family's livelihood.",
+      "Yesterday, a supervisor started shouting abuse at me in front of the whole line just because I took five seconds to finish my stitch. It was humiliating to watch my younger sister cry while trying to sew, and I can't even look anyone in the eye since then.",
+      "They say here that 'the boss knows everything,' but I've heard too many stories about men forcing women into rooms and threatening to cut off their food if they don't obey. Everyone here is too scared to report it, so I just count my blessings that I have a job.",
+      "My cousin got fired last week after a manager screamed at her and slapped her hand. I tried to ask the factory director about it, but he just laughed and told me to leave it alone. How can anyone work when they know they are treated like animals?",
+      "I wake up every morning praying that today will be different because the last time I walked past the locker room, I saw two foremen harassing the same woman for hours. They were loud and mocking, and I couldn't stop myself from crying in the break room.",
+      "They say women have to be 'submissive' to get promoted, but I don't want to be a doormat. When the manager touched my leg to make me smile, I wanted to run away, but I stayed because I needed the money to pay for my daughter's school fees.",
+      "It started with a few rude words, but soon it turned into public humiliation where they made me dance for them while yelling insults. My dignity feels completely broken, and I hate myself for staying in a place where I am constantly attacked.",
+      "My husband works in the factory too, and he tells me that the men there are monsters who steal women's privacy. Last night, I had a nightmare about being grabbed and thrown around, so I can't sleep even when I get home.",
+      "We are told to keep our hands to ourselves, yet the managers constantly cross the line and claim it is 'just for fun.' It is sickening to watch the women here beg for respect, but the fear of losing our jobs keeps us silent.",
+      "I don't want to be anyone's victim, but the environment here feels like a cage where men are allowed to bully and abuse without consequence. Every time I see them look at me with such hatred, I feel like I will never be able to trust anyone again.",
+      "আমার শরীরে ধাক্কা মারতে শুরু করেছেন এবং আমার ব্যক্তিগত আত্মপ্রতিপত্তি নিরসন করছেন।",
+      "মাসিক চাকরি চাইলেন, আমি মাইনিং করলাম।",
+      "আমার গৃহস্থলীতে ঢুকের পরে আমার সর্বোচ্চ স্বত্বাবলি মারতে শুরু করেছেন।",
+      "আমি এখানে সার্বজনীন সৃষ্টিতে ছিলাম, কিন্তু এখন আমার সর্বোচ্চ স্বত্বাবলি নিরসন করছে।"
+    ],
+    "Wage Theft": [
+      "They paid me only half of what the contract said, and now they are just telling me to keep quiet and get back to sewing.",
+      "I tried to ask for my overtime pay yesterday, but the foreman told me my family is waiting for me and I should be grateful for the little bit they gave me.",
+      "We were forced to work late because the machine wasn't finished, and no one has mentioned paying us for those extra hours.",
+      "My hands are bleeding from the needle, but they don't want to give me any medicine or pay me for my injury, so I am just suffering here.",
+      "Every time I try to complain about the unpaid wages, someone comes and threatens me, but they say I am supposed to stay silent.",
+      "They told me that I cannot go home until I finish all the orders, even though I am exhausted and hungry, and I am afraid to ask for my wages.",
+      "The manager says that the government will pay us later, but it has been months and I am still waiting for money that is not coming.",
+      "I am scared to leave the factory because they told me that if I go, they will not let me find another job in the city.",
+      "They take all my food and water and say I am lucky to have a roof over my head, but I am not lucky enough to get paid fairly.",
+      "My sister asked me to stop working because I am sick, but the boss just tells me to work harder and says I should be thankful for the small amount they give me.",
+      "我们工作十几个小时，工资却迟迟不发，这完全是工资盗窃。",
+      "老板总是以各种借口克扣我们的加班费，这根本不公平。",
+      "明明约定了固定薪资，但月底时他们总是找理由少给一部分。",
+      "我们辛苦干活，却得不到应有的报酬，这种做法简直是对劳动的践踏。",
+      "公司拒绝支付约定的加班津贴，这是赤裸裸的侵权行为。"
+    ],
+    "Safety Violation": [
+      "I tried to stop the machine because I saw smoke, but the supervisor kicked me out of the room and told me it's my own fault if the factory burns down.",
+      "They cut my work time by an hour every single day just to squeeze in more sewing, and now my back hurts so much I can barely stand.",
+      "The air in this place is so thick with dust that I can't breathe without my mask, yet no one gave me a respirator even though the rules say we must wear one.",
+      "Yesterday I slipped on a puddle of oil near the sewing line, but instead of fixing the floor, the manager laughed at me and sent me home with a broken ankle.",
+      "Every time I point out that the fire alarm is stuck and the exits are blocked by piles of fabric, they tell me to focus on my quota rather than my safety.",
+      "My supervisor locked the factory gates after sunset so we cannot leave until 2 AM, but the emergency lights are burnt out and the path to the gate is dark and dangerous.",
+      "I was trying to report a broken elevator that drops people three stories, but they just told me to fix it with duct tape and told me to forget it.",
+      "The water fountain in the kitchen is full of rust and smells terrible, yet the boss says it is fine because we are too busy to complain.",
+      "I saw a colleague faint from heat exhaustion because the fans were broken all morning, but when I asked them to fix it, they told me to work harder instead.",
+      "They forced us to remove all our personal items and lock the bathroom during shift changes, and I was terrified when I realized the only door leading out was broken.",
+      "Tôi xin báo cáo rằng nhà thầu đang bắt tôi phải làm việc trong môi trường không có hệ thống hút bụi, gây nguy cơ hít phải hơi độc nghiêm trọng cho sức khỏe của tôi.",
+      "Khu vực đang thi công bị bỏ quên hoàn toàn các thiết bị phòng cháy chữa cháy, điều này vi phạm quy định an toàn lao động mà công ty đã công bố trước đó.",
+      "Đầu năm nay tôi đã nhiều lần phản ánh về tình trạng cột điện bị hở và dây dẫn lỏng lẻo, nhưng đội ngũ giám sát chưa đưa ra bất kỳ biện pháp khắc phục nào đáng kể.",
+      "Tôi không thể tiếp tục làm việc nếu nhà cấp điện không cấp lại hệ thống đèn chiếu sáng an toàn cho khu vực hầm thấp, vì ánh sáng yếu khiến tôi dễ bị va đập.",
+      "Việc yêu cầu tôi mang đầy đủ quần áo bảo hộ lao động và sử dụng mũ bảo hiểm vẫn chưa được thực hiện đầy đủ, gây ra nguy cơ thương tích cao cho tôi."
+    ],
+    "Forced Labor": [
+      "They say this is just hard work for a living wage, but I am not signing my freedom away for paper scraps on my wrist. They lock the gate before sunrise and after sunset, and my hands are broken working until I can barely stand.",
+      "My mother sends all the money I earn, yet they take away my food and sleep just to pay for the machines that make my clothes. It feels like my entire life belongs to the factory, and I never get to see the sun without the foreman's permission.",
+      "They call it 'mandatory overtime' but it is slavery; I cannot walk away, my passport is held in their office, and if I complain, my family goes home empty-handed. I am terrified to speak up because the next time I might not be seen as a worker at all.",
+      "They told me my wages would increase if I worked harder, but they only took the money they promised and put it in a box where only they can see it. I am working my life away while my savings vanish, and I wonder if I will ever leave this place.",
+      "My children are crying in the hallway when I come home, hungry because they had to work through lunch to make my paycheck. I am a father and a mother, but in this factory, I am just a tool to be used until my strength fails.",
+      "The supervisor yells at us for taking five minutes to eat, telling us our sweat is worth more than our hunger. I cannot eat while they threaten to send me away, and I wonder if the hunger is a punishment for wanting to be free.",
+      "They say I must sign the contract or I lose my job, but the contract is written in a language I do not fully understand, and it binds me to work until my bones break. I feel like I am signing away my soul for a piece of metal.",
+      "I tried to quit yesterday, but they put me in a room without food or water for hours until I begged them to let me go. They treat us like animals in a cage, and the only thing they care about is how fast we can sew their cheap shirts.",
+      "My hands are bleeding from the sharp needles, yet they force me to keep sewing without breaks, saying my family needs this income. I love my family, but I hate how they make me choose between starving them or starving myself.",
+      "They take our ID cards at the door and keep them for weeks, saying we must be responsible for them, but they use us as property to sell clothes for pennies. I dream of a world where I can walk away from this factory, but the lock on the gate is too heavy to break.",
+      "ខ្ញុំមិនអាចគេចខ្លួនចេញពីរោងចក្របានទេ ព្រោះមន្ត្រីបានប្រើប្រាស់ហ្វឹកហាត់ដើម្បីឈានដល់ការបង្ក្រាស់ និងខ្សែទង្គ្រីបដោយភាពស្មុគស្មាញ។",
+      "គ្រាន់តែប្រឆាំងនឹងការសង្ខេបផ្សេងពីរបស់គេ ខ្ញុំនឹងត្រូវបានដាក់កុំឱ្យគេចក្រឡាដូចម្តេច បើមិនថាពួកគេមិនឱ្យឡើងទីក្រុមហ៊ុនដើម្បីឧបត្ថម្ភ។",
+      "ពួកគេប្រាប់ខ្ញុំថា ប្រសិនបើខ្ញុំចង់លុះទៅក្រុមគ្រួសារ ខ្ញុំត្រូវចូលហៅជាមុនសម្រាប់ពេលខ្លះដើម្បីទទួលបានការប្រយុទ្ធដារមួយ។",
+      "ខ្ញុំមិនមានសេរីភាពក្នុងការជ្រើសរើសការងារទេ ព្រោះប្រធានផ្តល់ទឹកដល់ខ្ញុំជារាល់ការងារដោយគ្មានប្រយោជនៈទាំងសង្កត់ឱ្យធ្វើការប្រកបបដិវត្តន៍សម្រាប់ខ្លួនឯង។",
+      "ខ្មែរស្ម័គ្រចិត្តក្នុងការងាររបស់ខ្ញុំ ប៉ុន្តែការកំណត់គោលដៅដោយមិនបញ្ចូលគ្នានិងសម្រេចខ្លួនរបស់ខ្ញុំធ្វើឱ្យខ្ញុំមានភាពរំខានមួយ។"
+    ],
+    "Child Labor": [
+      "The manager told us yesterday that hiring minors under the age of 15 was 'for future training,' but I saw a 12-year-old girl working the textile line today without any guardrails. How can anyone be responsible for training someone who doesn't even know how to read? They just expect us to let them work until they drop.",
+      "I tried to tell my sister to go to school, but she said her friends at the factory were asking for her to help with the sewing. They say it's a temporary situation until they finish the big order, but it's already been two months and she's too tired to sit still.",
+      "The factory owner is a man with a heart of stone. He calls them 'helpers' instead of children, and he laughs when I try to explain the law. They say the payment is fair for their 'help,' which means they don't care that we are actually stealing our childhood for their profits.",
+      "One day, the foreman caught me hiding a notebook in the wall and screamed at me. If I had been a grown adult, he would have fired me, but he made me do three extra shifts of stitching instead because I tried to learn to read.",
+      "My little cousin is working the night shift because the family says we need the money to buy food. They call it 'helping out,' but he is crying in his sleep and asks if he should go back to his village. They say no, he is too important to the factory.",
+      "The conditions are terrible for kids who should be playing outside. The machines are loud and the heat is unbearable. They tell us we are making a good living, but I wonder if anyone else knows that my hands are bleeding and my eyes are burning.",
+      "We are not allowed to ask for leave or go to the bathroom without permission. My mother is sick, and I want to take her to the doctor, but the manager says if I leave, I will be fired and they will find another kid to replace me.",
+      "They say the pay is better than staying home, but it costs me my future. I cannot read or learn because I am forced to sit at the machine all day. When the factory closes, I will have no skills and no life.",
+      "The manager says we are 'part of the family' and that we will earn a fortune one day. But right now, we are just children working in a dark room while he sleeps in the luxury office across the street.",
+      "Please, if you are a person who cares, know that my friend is sleeping on the factory floor because he cannot afford his own bed. They say it is 'part of the deal,' but it is not. We are selling our safety and our health for a pittance.",
+      "मुझे याद है कि छोटे बच्चों को काम के लिए बस दिया जाता था, और मैंने भी एक छोटा बच्चा देखा जो बहुत बीमार हो रहा था।",
+      "शांत में हमारे घर में जबरदस्ती के बहस के कारण हमारे बच्चे को काम के लिए दे दिया गया और उसने बहुत बड़ा दर्द महसूस किया।",
+      "अनुमति के बिना हमारे बच्चे को काम के लिए दे दिया गया, और यह बात कितनी घृणाजनक और दुखी है।",
+      "हमारे बच्चे को मजदूरी करने के लिए दे दिया गया, और यह बात कितनी गलत और बुरी है।",
+      "हमारे बच्चे को बहस के कारण काम के लिए दे दिया गया, और यह बात कितनी घृणाजनक और दुखी है।"
+    ],
+    "Discrimination": [
+      "I was unfairly told my shift rate was cut because I speak English at home, but I know the machines better than anyone who only speaks the local dialect. It feels like my accent is being used as an excuse to steal my hard-earned money.",
+      "The supervisor started calling me 'lazy' the moment I tried to correct their mistake on the safety checklist, which feels completely wrong. We all work together, and I should be rewarded for keeping everyone safe, not punished for speaking up.",
+      "They hired someone specifically for this position yesterday because they didn't have the right background or experience, which is ridiculous when we've been here for years. It feels like a clear case of bias against older workers who understand the factory floor better than the new hires.",
+      "I was told I couldn't take a necessary medical break because I wasn't 'strictly following the dress code,' even though my doctor prescribed me rest. It feels like a petty attack on my well-being just because I'm a woman with a health issue.",
+      "The manager laughed when I asked about the overtime pay discrepancy, which made me feel completely devalued and unheard. How can anyone respect me when they treat my questions like jokes?",
+      "I saw the new supervisor skip a step in the safety procedure while I was working to prevent a potential accident, which felt like ignoring my training and putting me in danger. It feels like the hierarchy is built on who speaks loudly, not who knows the best.",
+      "Being asked to clean up after the break while the rest of the team worked on production made me feel like a disposable tool rather than a valued employee. It feels deeply unfair that my labor is treated as optional, yet my presence is expected constantly.",
+      "I was told my promotion was on hold because I didn't meet the exact years required, even though I proved my worth every single day. It feels like the rules are just another way to keep people like me from advancing.",
+      "The manager seemed to approve of the other supervisor's harsh treatment of my coworkers, which made me feel completely powerless to protect anyone. It feels like standing by while people are mistreated is the only option when the chain of command is corrupt.",
+      "I was told my language skills were a 'personal problem' when I needed translation for my child's school event, which made me feel completely unheard and dismissed. It feels like my personal struggles are being treated as something I should just deal with in private.",
+      "আমাদের শ্রমিকদের পদমর্যাদা এবং বেতন দেওয়ার বিষয়ে ব্যবস্থাপকদের অস্বীকারযোগ্য প্রতিপালন করছেন।",
+      "সরাসরি আমাদের শ্রমিকদের বিরুদ্ধে বিশেষভাবে নির্যাতন করা হচ্ছে।",
+      "চাকরি করতে আসা শ্রমিকদের মধ্যে বিরুদ্ধে আলাদা ব্যবহার করা হচ্ছে।",
+      "আমাদের শ্রমিকদের প্রতিপালন করণে ব্যবস্থাপকদের অস্বীকারযোগ্য ভুল।",
+      "আমাদের শ্রমিকদের প্রতিপালন করণে ব্যবস্থাপকদের অস্বীকারযোগ্য ভুল।"
+    ],
+    "Working Hours Violation": [
+      "Since I started my shift yesterday, the clock has been running continuously without a single break, which makes no sense when there are only 11 hours in a day. The factory management keeps saying we need to 'stretch the shift' to meet production quotas, but they never mention overtime pay. I am completely exhausted and feel sick every time the machine hum stops, but no one seems to listen when I voice my concerns about this non-stop schedule.",
+      "I was hired with the expectation of a standard eight-hour day, yet my supervisor insists that working ten hours is now the new normal here. The manager claims the increased output justifies the extra two hours, but it feels like they are only interested in our labor costs, not our well-being. I have asked HR twice about changing the roster, but they just pointed me back to my floor supervisor who repeats the same excuse.",
+      "There is no end in sight; we just work until the production line stops moving, often past 10 PM. My body aches so badly from standing and stitching for these extended periods that I can barely think straight. We are all tired, yet the boss laughs and says, 'You know we have to keep up with the orders,' ignoring the fact that we are overworking ourselves.",
+      "They say the overtime is 'incentive' for meeting the high volume targets, but there is no extra money for these extra hours. Instead, we get less paid time off, which makes us even more tired and stressed out. I tried to speak up during the morning meeting about the excessive hours, but my voice was cut off by the noise of the machines.",
+      "My hands are sore and my eyes are burning after sitting at this machine for over ten hours in a row. The factory director claims that the new 'urgent order' requires us to stay late every single day without rest. We are just working like slaves in a factory, and no one cares about our health or personal lives anymore.",
+      "The factory's production schedule is completely unrealistic, forcing us to work double shifts just to catch up. My family is struggling because I cannot come home in time, and the stress from these long hours is taking a toll on my mental health. I feel trapped and powerless to change the way we are treated or the hours we are forced to work.",
+      "They say the overtime is necessary to meet the deadlines, but there is no real deadline, just an endless loop of work. We are being pushed to our limits, and the factory does not seem to care about our physical exhaustion. I am terrified of getting sick, but I have no choice but to keep working these grueling shifts.",
+      "The factory manager keeps changing the shift times without notice, and now we are stuck in these long hours again. He says that the new system will ensure we finish all the work on time, but it only makes us feel like cogs in a machine. I don't want to be treated like disposable labor, and I am tired of this constant overworking.",
+      "Every day I arrive, the factory has already started, and the end is never in sight. The production team is expected to work overtime regularly, and they say it is the only way to get paid properly. But honestly, the overtime pay is so small that it barely covers the extra hours we are forced to work.",
+      "We are all fed up with the idea that the factory expects us to work beyond our normal hours without any compensation. The management treats the workers like machines, ignoring our needs for sleep and rest. I am ready to speak out if there is anyone who can help us stop this exploitation.",
+      "我的工位在下午两点被强制要求加班，但公司并未批准任何加班申请，这完全违反了劳动法规中关于工作时间的规定。",
+      "作为一线员工，我已经多次向管理层反映超时工作的问题，但依然无法按时下班，这种持续性的时间压榨让我无法接受。",
+      "公司声称这是'紧急项目'，却没有任何书面证明，这种口头指令明显构成了对标准工时制度的侵犯。",
+      "由于长期熬夜加班，我的健康状况已出现明显下降，我要求立即停止违规排班并恢复正常的八小时工作制。",
+      "我们团队数十人都面临同样的困境，这种系统性的超时工作安排不仅不合法，也严重违背了企业应有的社会责任。"
+    ],
+    "Environmental Violation": [
+      "The factory manager told us to pour chemicals straight into the river instead of waiting for the treatment plant. It's disgusting and makes me sick every time I drink from the tap, yet he says it's just 'operational practice' that no one can change.",
+      "I watched two colleagues get fired yesterday because they refused to hide the smoke from the dye factory's chimneys. They said if they didn't lie to the inspectors, they wouldn't have jobs for their families, but I think we are all becoming criminals just to keep our families alive.",
+      "My sister works at the nearby hospital treating children with asthma because the factory's exhaust fumes have turned the air here into poison. The owner laughs at their suffering and claims the emissions are 'within legal limits' while ignoring the toxic sludge leaking into our well.",
+      "We spent hours yesterday scrubbing the oil off our skin and clothes, but the supervisor kept telling us to rush through the washing process. The smell of the chemical runoff is so strong now that even our children cannot play outside without coughing.",
+      "They promised us a new filtration system that would clean the water before it leaves the factory grounds, but they never showed up. Instead, they increased the production speed, causing more waste to flow directly into the local pond.",
+      "My elderly father fell ill last week with strange breathing problems, and the doctors suspect the factory's air pollution, but they won't give me compensation. The management just says they can't afford to pay for sickness when the whole neighborhood is sick.",
+      "It feels like a cruel joke that we are allowed to work here but not allowed to live here with dignity. The river used to be clear enough for swimming, now it smells like rotting meat, and yet the factory profits from dumping its waste.",
+      "I tried to organize a meeting to report the violation to the local council, but the foreman threatened to lock me out of the dormitory. We are afraid to speak up because if we complain, our shifts will be cut, and we will starve.",
+      "The noise from the machinery combined with the fumes makes it impossible to sleep at night. I often wake up feeling like I'm drowning in chemical vapor, and the factory owners seem completely indifferent to our pain.",
+      "We are slowly losing our identity as a community because the water and air are poisoned beyond recognition. It's not enough to just be workers here; we are becoming victims of our own livelihood, and the law does not protect us from this violation.",
+      "Quản lý công ty đã bắt tôi làm việc quá giờ mà không trả thêm lương, vi phạm nghiêm trọng quy định về quyền lao động. Tôi làm việc rất chăm chỉ nhưng họ lại áp đặt những quy tắc bất hợp pháp chỉ để cắt giảm chi phí.",
+      "Lối vào khu vực sản xuất không được trang bị đủ phương tiện bảo hộ lao động như khẩu trang và găng tay chống độc hại. Điều này khiến tôi phải hít phải khói bụi độc hại hàng ngày, gây hại trực tiếp đến sức khỏe của tôi và gia đình.",
+      "Đội ngũ an toàn đã repeatedly cảnh báo về rò rỉ hóa chất nhưng ban lãnh đạo lại tiếp tục cho phép hoạt động sản xuất để hoàn thành mục tiêu kinh doanh.",
+      "Tôi đã cố gắng phản ánh về việc xả thải trực tiếp ra sông mà không qua xử lý, nhưng công ty đã đe dọa sa thải và bắt tôi ký giấy tờ bỏ rơi quyền khiếu nại.",
+      "Việc làm việc trong điều kiện nhiệt độ quá cao mà không có đủ hệ thống làm mát là hành vi vi phạm quy định an toàn lao động, và tôi không được trả thưởng hay phúc lợi gì cho công việc này."
+    ]
+  },
+  "surveyQuestionTitles": [
+    "How would you rate the availability and condition of personal protective equipment (PPE) provided during your shift?",
+    "Do you feel your supervisors adequately train you on proper safety protocols and emergency procedures?",
+    "Are the fire extinguishers, first aid kits, and safety signage clearly visible and maintained in your work area?",
+    "How would you describe the frequency of safety inspections conducted by factory management?",
+    "Do you have clear communication channels to report safety hazards or accidents without fear of retaliation?",
+    "Is your pay consistent with the hourly rate stated in your employment contract?",
+    "How would you rate the timeliness and accuracy of your salary deposits?",
+    "Do you receive regular updates regarding company-wide compensation adjustments or bonus structures?",
+    "Would you like to see more transparent discussions about future pay raises based on performance or tenure?",
+    "Is the current working temperature in the garment production area suitable for maintaining health and comfort?",
+    "Do you have access to adequate lighting and ventilation in your assigned workstations?",
+    "How would you describe the cleanliness and organization of the floors and machinery in your department?",
+    "Are there sufficient rest breaks provided during your shifts, or do you feel rushed to complete tasks?",
+    "Is the noise level in the factory controlled to a safe level that does not cause hearing fatigue?",
+    "Do you have a private and comfortable space available for using the restroom during breaks?",
+    "Are your uniforms provided in good condition, and do they fit properly to allow for safe movement?",
+    "How would you rate the variety and nutritional value of the meals provided in the factory cafeteria?",
+    "Is the water cooler stocked with fresh, clean drinking water throughout your shift?",
+    "Do you understand the terms of your health insurance plan, including coverage for workers' compensation?",
+    "Would you like to see more options for additional retirement savings or long-term benefit plans?",
+    "Is there a structured program to teach new sewing machines, cutting tools, or quality control standards?",
+    "How would you rate the opportunities for learning new skills or upgrading your certification within the factory?",
+    "Are supervisors willing to explain specific tasks or correct mistakes constructively rather than publicly?",
+    "How would you rate the factory's response time when resolving employee complaints or concerns?",
+    "Do you feel your opinions are considered when planning shift schedules or work assignments?",
+    "Is there a designated, anonymous feedback box available for expressing suggestions about factory improvements?",
+    "How safe do you feel working in your current garment factory?",
+    "Do you receive clear instructions and adequate training from your supervisors?",
+    "Is your pay consistent with the work you do and the industry standards?",
+    "Do you feel your management listens to your concerns and ideas?",
+    "How would you rate the cleanliness and organization of your workspace?",
+    "Are you provided with all necessary personal protective equipment (PPE) properly?",
+    "Do you take sufficient breaks during shifts to avoid fatigue?",
+    "Would you consider working for a different factory with better treatment?",
+    "Is your overtime pay calculated accurately according to company policy?",
+    "How comfortable are you with the tools and machinery provided?",
+    "Do you receive fair bonuses or performance-based incentives?",
+    "Would you recommend this factory to a friend or family member?",
+    "Are you treated with dignity and respect by all colleagues?",
+    "How often do you receive constructive feedback on your performance?",
+    "Do you have opportunities for career advancement or promotion within the factory?",
+    "Is the break room clean, stocked, and a comfortable place to relax?",
+    "Do you have a safe and private space to store your personal belongings?",
+    "How would you describe the fairness of the disciplinary processes?",
+    "Are your work hours predictable and free from arbitrary last-minute changes?",
+    "Do you feel supported when dealing with health or safety issues?",
+    "Is your job description clear and does it match the tasks you perform?",
+    "Would you prefer to work in a different industry if the pay and conditions were the same?",
+    "Are you given enough time to complete your assigned tasks without excessive rush?",
+    "How satisfied are you with the communication from factory leadership?"
+  ],
+  "surveyScoreOptionSets": [
+    {
+      "options": [
+        {
+          "label": "Very Satisfied",
+          "weight": 100
+        },
+        {
+          "label": "Satisfied",
+          "weight": 75
+        },
+        {
+          "label": "Neutral",
+          "weight": 50
+        },
+        {
+          "label": "Not Satisfied",
+          "weight": 25
+        }
+      ]
+    },
+    {
+      "options": [
+        {
+          "label": "Strongly Agree",
+          "weight": 100
+        },
+        {
+          "label": "Agree",
+          "weight": 80
+        },
+        {
+          "label": "Undecided",
+          "weight": 60
+        },
+        {
+          "label": "Disagree",
+          "weight": 40
+        },
+        {
+          "label": "Strongly Disagree",
+          "weight": 20
+        }
+      ]
+    },
+    {
+      "options": [
+        {
+          "label": "Always",
+          "weight": 100
+        },
+        {
+          "label": "Most of the time",
+          "weight": 75
+        },
+        {
+          "label": "Sometimes",
+          "weight": 50
+        },
+        {
+          "label": "Never",
+          "weight": 25
+        }
+      ]
+    },
+    {
+      "options": [
+        {
+          "label": "Excellent",
+          "weight": 100
+        },
+        {
+          "label": "Good",
+          "weight": 75
+        },
+        {
+          "label": "Average",
+          "weight": 50
+        },
+        {
+          "label": "Poor",
+          "weight": 25
+        }
+      ]
+    },
+    {
+      "options": [
+        {
+          "label": "Very Likely",
+          "weight": 100
+        },
+        {
+          "label": "Likely",
+          "weight": 75
+        },
+        {
+          "label": "Unlikely",
+          "weight": 50
+        },
+        {
+          "label": "Very Unlikely",
+          "weight": 25
+        }
+      ]
+    },
+    {
+      "options": [
+        {
+          "label": "Extremely Confident",
+          "weight": 100
+        },
+        {
+          "label": "Very Confident",
+          "weight": 80
+        },
+        {
+          "label": "Moderately Confident",
+          "weight": 60
+        },
+        {
+          "label": "Slightly Confident",
+          "weight": 40
+        },
+        {
+          "label": "Not Confident",
+          "weight": 20
+        }
+      ]
+    },
+    {
+      "options": [
+        {
+          "label": "Safe",
+          "weight": 100
+        },
+        {
+          "label": "Somewhat Safe",
+          "weight": 75
+        },
+        {
+          "label": "Uncertain",
+          "weight": 50
+        },
+        {
+          "label": "Unsafe",
+          "weight": 25
+        }
+      ]
+    },
+    {
+      "options": [
+        {
+          "label": "Highly Effective",
+          "weight": 100
+        },
+        {
+          "label": "Effective",
+          "weight": 80
+        },
+        {
+          "label": "Moderately Effective",
+          "weight": 60
+        },
+        {
+          "label": "Ineffective",
+          "weight": 40
+        },
+        {
+          "label": "Very Ineffective",
+          "weight": 20
+        }
+      ]
+    },
+    {
+      "options": [
+        {
+          "label": "Very Dissatisfied",
+          "weight": 100
+        },
+        {
+          "label": "Dissatisfied",
+          "weight": 75
+        },
+        {
+          "label": "Neutral",
+          "weight": 50
+        },
+        {
+          "label": "Satisfied",
+          "weight": 25
+        }
+      ]
+    },
+    {
+      "options": [
+        {
+          "label": "Strongly Agree",
+          "weight": 100
+        },
+        {
+          "label": "Agree",
+          "weight": 80
+        },
+        {
+          "label": "Undecided",
+          "weight": 60
+        },
+        {
+          "label": "Disagree",
+          "weight": 40
+        },
+        {
+          "label": "Strongly Disagree",
+          "weight": 20
+        }
+      ]
+    }
+  ],
+  "surveyFreeTextResponses": [
+    "The machines are constantly running, and I haven't seen a single minute of rest in two weeks.",
+    "My supervisor yelled at me for taking a water break, but I couldn't keep up the pace.",
+    "The pay is lower than the contract promised, and they are deducting fees for uniforms and meals.",
+    "The ventilation in the sewing hall is terrible, making it hard to breathe during shifts.",
+    "Management promised new safety gloves but has yet to arrive them despite repeated requests.",
+    "There is a constant fear of being caught on the camera, so we are afraid to report injuries.",
+    "I saved enough from my monthly wage to buy food for my small family at the store.",
+    "The manager never answers the phone, leaving us to deal with work problems alone.",
+    "The lighting in the night shift is so dim that many of us have to squint to see the thread.",
+    "I hope the factory closes because the conditions are simply too dangerous for my health.",
+    "They say overtime is optional, but there is no other way to earn money for our bills.",
+    "The breakroom only has one cold drink dispenser and no refrigeration for hot food.",
+    "Workers are told not to complain, or they might be sent back to the country.",
+    "My back hurts constantly after standing for ten hours straight, cutting and sewing.",
+    "The new machines are supposed to help, but they are broken more than they are useful.",
+    "We are often working past midnight without any pay for those extra hours.",
+    "The factory promised to fix the roof, but it has been leaking for months now.",
+    "I feel like I am just a number to them, not a human being with rights.",
+    "The fabric quality is getting worse, and the workers are blamed for the mistakes.",
+    "There are no clear rules on how to handle conflicts between different teams.",
+    "My daughter was sick, but I had to work through it to pay the hospital bill.",
+    "The noise level from the sewing machines is loud enough to cause hearing damage over time.",
+    "Management changes frequently, making it hard to trust anyone's new promises.",
+    "We are allowed to go home after three shifts, but the manager keeps us there longer.",
+    "The uniform sizes are inconsistent, and many workers wear ill-fitting clothes.",
+    "There is no one to talk to when things go wrong in the production line.",
+    "The air conditioning broke down in July, and the heat made us dizzy.",
+    "I would give my last dollar if I could have a proper rest day tomorrow.",
+    "The factory promised training, but nobody ever showed up to teach us.",
+    "Safety protocols exist on paper, but they are completely ignored in practice.",
+    "We are forced to work during holidays because there is no other income source.",
+    "The quality control is so strict that workers are afraid to make even small errors.",
+    "My skin is breaking out from the chemicals used in the dyeing process.",
+    "The manager threatened to fire everyone if we did not produce more today.",
+    "There are no provisions for emergency medical assistance if something goes wrong.",
+    "The schedule is unpredictable, making it impossible to plan our daily lives.",
+    "I feel exhausted not just from the work, but from the constant fear of punishment.",
+    "The workers' union is banned, so we have no way to organize or speak up.",
+    "The factory is expanding rapidly, but the infrastructure is not ready to support it.",
+    "We are told to ignore injuries, but the pain is real and it gets worse.",
+    "The pay is not enough to cover the rising cost of living in our city.",
+    "There is no one to help when the machines jam or stop unexpectedly.",
+    "The factory promised to buy a new bus, but no money has been allocated yet.",
+    "Workers are expected to work weekends, but the extra pay is minimal.",
+    "The management refuses to discuss contracts or negotiate better terms with us.",
+    "I worry that the factory will shut down and we will lose our jobs completely.",
+    "The safety equipment provided is outdated and does not offer real protection.",
+    "There is no food served during meals, so we buy it ourselves at higher prices.",
+    "The factory has increased production targets, but not the number of workers.",
+    "We are afraid to speak up because we do not know if our complaints will be heard.",
+    "The working hours are so long that we cannot spend time with our families.",
+    "Management ignores requests for better air quality, leaving us in poor health.",
+    "The factory is demanding more output without offering any additional resources.",
+    "There is no support for workers who have had accidents or health issues.",
+    "I hope someone takes notice of our suffering and makes a real change soon.",
+    "The factory has increased the workload, but not the pay or the rest.",
+    "We are told that overtime is mandatory, but there is no written proof of it.",
+    "The manager never takes our feedback seriously or acts on our suggestions.",
+    "There is a lack of privacy in the break areas, making it uncomfortable.",
+    "The factory has not updated the safety rules in years, despite changing hazards.",
+    "We are afraid to report unsafe conditions for fear of retaliation from management.",
+    "The factory has increased the pressure to meet targets, making the work intense.",
+    "I hope the government investigates these conditions and protects the workers.",
+    "The factory has promised to improve, but the changes have never been implemented.",
+    "We are told that we cannot leave before the shift ends, no matter what.",
+    "The management refuses to listen to our concerns about the working environment.",
+    "There is no clear path for promotion or better wages within the factory.",
+    "We are working harder but earning the same as before, which feels unfair.",
+    "The factory has not provided proper protective gear, risking our health.",
+    "I hope that the workers' rights are respected and we can work with dignity.",
+    "The management has not acknowledged our demands for better pay or conditions.",
+    "There is no one to blame when accidents happen, so we just take it.",
+    "The factory has increased the speed requirements, making the work physically demanding.",
+    "We are afraid to question the rules or ask for help from supervisors.",
+    "The factory has not provided adequate rest breaks, leaving us fatigued.",
+    "I hope that someone listens to our voices and makes a real change soon.",
+    "The factory has promised to improve, but the changes have never been implemented.",
+    "The management refuses to listen to our concerns about the working environment.",
+    "There is no one to blame when accidents happen, so we just take it.",
+    "The machines are constantly making loud noises that hurt my ears even when I wear protection.",
+    "We were paid in cash without receipts so it is hard to keep track of our actual earnings.",
+    "Management never came to inspect our safety gear during the night shift.",
+    "I had to walk three hundred feet through muddy ground to reach the break room in the rain.",
+    "The factory owner promised we would get overtime pay but I never saw that money.",
+    "There was no fire extinguisher visible near the dyeing station during my shift.",
+    "My supervisor yelled at me for taking a ten-minute water break which made me feel guilty.",
+    "The air smells terrible with chemicals and I cannot breathe properly.",
+    "We received our wages on the fifteenth of every month without any delay.",
+    "The supervisor threatened to fire me if I complained about the heat in the warehouse.",
+    "There are no handrails on the stairs so workers keep falling down.",
+    "I work twelve hours a day and I am barely able to sleep at night.",
+    "The factory provides very few safety tools for handling heavy machinery.",
+    "Management is very rude and never listens to our concerns about working conditions.",
+    "I have a cough and think it is caused by the dust in the textile room.",
+    "We are not allowed to leave the building after 9 PM regardless of the weather.",
+    "The wage is very low for the amount of work we put in each day.",
+    "There are no break rooms with refrigerators for the staff to eat in.",
+    "The lighting in the sewing area is too dim and causes eye strain for everyone.",
+    "Management does not care if we are sick or if we have flu symptoms.",
+    "We were told to speed up the production line even when we could not keep up.",
+    "There is no proper ventilation in the room where the glue is applied.",
+    "I feel unsafe because I heard about workers injured in other factories nearby.",
+    "The boss promised better conditions but it has not happened yet.",
+    "There are no safety guards on the cutting machines to protect us from injuries.",
+    "We are exhausted because we sleep only four hours during the day.",
+    "The food provided in the mess hall is very salty and makes me nauseous.",
+    "Management is strict and punishes us for small mistakes we make.",
+    "I cannot see clearly because of the constant dust particles floating around.",
+    "The workers are paid less than the minimum wage for the hours worked.",
+    "There are no clear instructions on how to use the heavy industrial machines.",
+    "The factory manager does not respond to our emails about safety hazards.",
+    "I have been working in these conditions for ten years and my hands are damaged.",
+    "We were told to ignore the smoke alarm when the heating system failed.",
+    "The wages do not cover the cost of medical care or daily necessities.",
+    "Management never takes breaks to discuss worker welfare or health concerns.",
+    "The stairs in the old building are broken and very difficult to climb safely.",
+    "There are no protective masks provided for the workers in the dyeing room.",
+    "I am afraid to speak up because I might lose my job immediately.",
+    "The factory owner claims the work is dangerous but he never pays for safety gear.",
+    "We are constantly asked to work faster than our physical limits allow.",
+    "The temperature in the workshop is unbearable and there is no way to cool down.",
+    "I feel like my health is deteriorating every day due to the toxic fumes.",
+    "Management is completely unaware of the physical risks involved in our tasks.",
+    "The wages are not sufficient to support my family or afford proper clothing.",
+    "We are not given enough time to rest between the extremely long shifts.",
+    "There is no proper training given to workers about emergency evacuation procedures.",
+    "The factory floor is dirty and slippery, causing many slips and falls.",
+    "Management is very arrogant and never acknowledges the hard work of the staff.",
+    "I cannot afford to go to the doctor but the working conditions make me sick.",
+    "We are treated like machines and our human needs are completely ignored.",
+    "The safety protocols are either not followed or never properly explained to us.",
+    "I feel hopeless about ever seeing an improvement in the factory's safety standards.",
+    "The wage is just barely enough to survive but leaves no room for savings.",
+    "Công việc nặng nhọc, máy móc chạy liên tục khiến tôi kiệt sức mỗi khi ra về.",
+    "Ngôn ngữ Bengali và tiếng Việt của tôi rất ít được người quản lý sử dụng để giao tiếp.",
+    "Wages (Lương) không bao giờ tăng dù thời tiết nóng bức và ô nhiễm không khí vẫn tiếp tục.",
+    "Sự an toàn là thứ quan trọng nhất, nhưng các thiết bị bảo hộ thường bị thiếu hoặc hỏng.",
+    "Quản lý chúng tôi bằng thái độ khắt khe, hiếm khi lắng nghe ý kiến của công nhân.",
+    "Tôi thường xuyên thấy các chất thải độc hại được xả ra gần khu vực làm việc mà không có cảnh báo.",
+    "Khu vực sinh hoạt của chúng tôi quá chật chội và thiếu ánh sáng tự nhiên.",
+    "Sự an toàn của chúng tôi phụ thuộc vào may mắn hơn là các quy định rõ ràng.",
+    "Lương của tôi không đủ để trang trải các chi phí sinh hoạt cơ bản tại nhà.",
+    "Chúng tôi mong muốn có một môi trường làm việc lành mạnh hơn và tôn trọng.",
+    "Thời gian nghỉ ngơi thường bị cắt giảm để đạt được mục tiêu sản xuất.",
+    "Tôi lo lắng về sức khỏe lâu dài do tiếp xúc với hóa chất hàng ngày.",
+    "Các quy định về an toàn lao động trong nhà máy thường bị bỏ qua.",
+    "Quản lý luôn nhấn mạnh vào hiệu quả sản xuất hơn là điều kiện làm việc.",
+    "Tôi không hiểu rõ các khẩu lệnh bằng tiếng Anh mà người quản lý phát ra.",
+    "Wages (Lương) phải trả đúng vào ngày nhưng thường bị trì hoãn vào cuối tháng.",
+    "Không gian làm việc quá nóng, quạt điện không đủ sức làm mát.",
+    "Tôi mong công ty đầu tư thêm vào hệ thống thông gió và bảo hộ.",
+    "Sự an toàn cá nhân thường bị hy sinh để kịp thời gian hoàn thành đơn hàng.",
+    "Tôi cảm thấy không có tiếng nói trong các cuộc họp liên quan đến quyền lợi của mình.",
+    "Ô nhiễm không khí và tiếng ồn từ máy móc ảnh hưởng lớn đến sức khỏe.",
+    "Quản lý thường xuyên kỷ luật không hợp lý mà không có lý do.",
+    "Lương thực tế không đủ để mua thực phẩm sạch và thuốc men.",
+    "Tôi hy vọng trong tương lai điều kiện làm việc sẽ được cải thiện đáng kể.",
+    "Các quy trình làm việc được tổ chức kém, gây ra sự thất thoát thời gian.",
+    "Tôi lo lắng về rủi ro xảy ra tai nạn lao động nhưng không được trang bị đầy đủ.",
+    "Wages (Lương) không được điều chỉnh theo giá trị gia tăng của công việc nặng.",
+    "Không có bữa trưa được cung cấp, chúng tôi phải ăn tiền.",
+    "Sự an toàn của chúng tôi là mối quan tâm chính của chúng tôi, nhưng nó bị đánh đổi.",
+    "Tôi mong đợi một văn hóa doanh nghiệp nơi sự tôn trọng là ưu tiên hàng đầu.",
+    "Quản lý thường phát hành thông báo bằng tiếng Anh khiến công nhân khó hiểu.",
+    "Tôi không có quyền từ chối các công việc nguy hiểm nếu không được bảo vệ.",
+    "Môi trường làm việc đầy các chất độc hại gây ra nhiều lo ngại về sức khỏe.",
+    "Wages (Lương) quá thấp so với nỗ lực và độ khó của công việc.",
+    "Chúng tôi cần thêm thời gian nghỉ ngơi để phục hồi sức khỏe.",
+    "Các thiết bị bảo hộ cá nhân (PPE) thường bị thiếu hoặc không đạt chuẩn.",
+    "Tôi hy vọng ban lãnh đạo sẽ lắng nghe các khiếu nại của công nhân.",
+    "Quản lý thường xuyên thay đổi ca làm việc mà không có thông báo trước.",
+    "Sự an toàn trong nhà máy đang bị đe dọa bởi việc chạy máy quá tải.",
+    "Tôi cảm thấy thiếu động lực khi không thấy sự tiến bộ trong điều kiện làm việc.",
+    "Wages (Lương) không được thanh toán kịp thời dẫn đến các vấn đề tài chính.",
+    "Tôi mong muốn có thêm các lớp đào tạo về an toàn lao động và kỹ năng.",
+    "Quản lý thường áp đặt các quy trình không cần thiết làm giảm hiệu quả.",
+    "Tôi lo lắng về tương lai sức khỏe sau khi kết thúc hợp đồng lao động.",
+    "Sự an toàn là quyền cơ bản nhưng thường bị coi nhẹ trong nhà máy này.",
+    "Tôi hy vọng công ty sẽ cải thiện hệ thống thông báo bằng nhiều ngôn ngữ.",
+    "Wages (Lương) không bao gồm chi phí cho các buổi tập thể dục hoặc sức khỏe.",
+    "Không gian làm việc quá chật chội khiến tôi cảm thấy không thoải mái.",
+    "Quản lý thường sử dụng phương pháp làm việc áp đảo hơn là tham vấn.",
+    "Tôi mong muốn có một môi trường làm việc an toàn và tôn trọng hơn.",
+    "Sự an toàn của chúng tôi phụ thuộc vào ý thức cá nhân hơn là quy định.",
+    "Wages (Lương) cần được điều chỉnh theo giá cả thị trường hiện tại.",
+    "Tôi hy vọng trong tương lai sẽ có cải thiện rõ rệt về điều kiện làm việc.",
+    "Quản lý thường xuyên kỷ luật không hợp lý gây ra căng thẳng không cần thiết.",
+    "Tôi lo lắng về các rủi ro sức khỏe do tiếp xúc với môi trường độc hại.",
+    "Sự an toàn của chúng tôi là mối quan tâm hàng đầu, nhưng nó bị đánh đổi.",
+    "Tôi mong đợi văn hóa doanh nghiệp nơi sự tôn trọng là ưu tiên hàng đầu.",
+    "Wages (Lương) không đủ để trang trải các chi phí sinh hoạt cơ bản.",
+    "Chúng tôi cần thêm thời gian nghỉ ngơi để phục hồi sức khỏe.",
+    "Các thiết bị bảo hộ cá nhân (PPE) thường bị thiếu hoặc không đạt chuẩn.",
+    "Tôi hy vọng ban lãnh đạo sẽ lắng nghe các khiếu nại của công nhân.",
+    "Quản lý thường thay đổi ca làm việc mà không có thông báo trước.",
+    "Sự an toàn trong nhà máy đang bị đe dọa bởi việc chạy máy quá tải.",
+    "Tôi cảm thấy thiếu động lực khi không thấy sự tiến bộ trong điều kiện làm việc.",
+    "Wages (Lương) cần được điều chỉnh theo giá trị gia tăng của công việc nặng.",
+    "Tôi mong muốn có thêm các lớp đào tạo về an toàn lao động và kỹ năng.",
+    "Quản lý thường áp đặt các quy trình không cần thiết làm giảm hiệu quả.",
+    "Tôi lo lắng về tương lai sức khỏe sau khi kết thúc hợp đồng lao động.",
+    "នយកម៉ាស៊ីនមិនទាន់ល្អ ធ្វើឱ្យយើងត្រូវបើកបិទទ្វារច្រើនដង។",
+    "ម្ចាស់ហាត់ប្រាណខ្លាំងពេក មិនផ្តល់សម្ភារពិសាឡាទេ។",
+    "មន្រ្តីគ្រប់គ្រងមកមិនដោះស្រាយបញ្ហាធូរទាបឡើយ។",
+    "ពិន្ទុខ្ពស់ប៉ុន្តែសងខ្លាំង មិនសមស្របនឹងការងារយើងទេ។",
+    "ខ្លួនមានតែប្រាក់បាយម្សៅ ត្រូវប្រាប់ជាបន្តបន្ទាប់។",
+    "កន្លែងដើរមិនទាន់ស្អាត មានក្រោកខ្យល់ក្តៅ។",
+    "ការបណ្តុះបណ្តាលខ្លះពុំចេះប្រើប្រាស់ទេ។",
+    "ប្រាក់ខែមិនទាន់ដើរតាមផែនការគ្រប់គ្រងនោះឡើយ។",
+    "មានគេបិទបំពង់ខ្លាំងពេក ធ្វើឱ្យក្តៅគ្មានទេ។",
+    "គ្មានមន្រ្តីបង្កើត គ្រាន់តែនិយាយគេបំពេញ។",
+    "គេស្នើមកូនប្រាក់មួយខែ ឬគេត្រូវសម្រេចចិត្ត។",
+    "គ្រប់គ្រងមិនប្រាកដ ឱ្យខ្លួនត្រូវប្រយ័ត្ត។",
+    "មានក្តីប្រតិកម្មខ្លះ ប៉ុន្តែមិនទាន់ដូចគ្នាឡើយ។",
+    "ការងាររាល់ថ្ងៃ គេមិនល្អឡើយ។",
+    "ម្ចាស់ហាត់ប្រាណខ្លាំង ប៉ុន្តែមិនផ្តល់ពិន្ទុឱ្យឱ្យបាន។",
+    "សម្ភារពិសាឡាខូចទ្រាង មិនបានគ្រប់គ្រាន់ទេ។",
+    "គេមិនឱ្យយើងដឹងពីការសន្យាទេ។",
+    "ការងារមិនមានច្បាប់ គ្រាន់តែគេចង់អំពើ។",
+    "មានមន្រ្តីមកដោះស្រាយ ប៉ុន្តែគ្រាន់តែប្រាប់គេចុះ។",
+    "ប្រាក់ខែមិនដើរតាមផែនការ គ្រាន់តែប្រកាន់គេ។",
+    "ខ្លួនមានតែប្រាក់បាយម្សៅ មិនទាន់បានទាំងអស់។",
+    "កន្លែងដើរមិនទាន់ស្អាត មានក្រោកខ្យល់ក្តៅ។",
+    "ការបណ្តុះបណ្តាលខ្លះពុំចេះប្រើប្រាស់ទេ។",
+    "ប្រាក់ខែមិនទាន់ដើរតាមផែនការគ្រប់គ្រងនោះឡើយ។",
+    "មានគេបិទបំពង់ខ្លាំងពេក ធ្វើឱ្យក្តៅគ្មានទេ។",
+    "គ្មានមន្រ្តីបង្កើត គ្រាន់តែនិយាយគេបំពេញ។",
+    "គេស្នើមកូនប្រាក់មួយខែ ឬគេត្រូវសម្រេចចិត្ត។",
+    "គ្រប់គ្រងមិនប្រាកដ ឱ្យខ្លួនត្រូវប្រយ័ត្ត។",
+    "មានក្តីប្រតិកម្មខ្លះ ប៉ុន្តែមិនទាន់ដូចគ្នាឡើយ។",
+    "ការងាររាល់ថ្ងៃ គេមិនល្អឡើយ។",
+    "ម្ចាស់ហាត់ប្រាណខ្លាំង ប៉ុន្តែមិនផ្តល់ពិន្ទុឱ្យឱ្យបាន។",
+    "សម្ភារពិសាឡាខូចទ្រាង មិនបានគ្រប់គ្រាន់ទេ។",
+    "គេមិនឱ្យយើងដឹងពីការសន្យាទេ។",
+    "ការងារមិនមានច្បាប់ គ្រាន់តែគេចង់អំពើ។",
+    "មានមន្រ្តីមកដោះស្រាយ ប៉ុន្តែគ្រាន់តែប្រាប់គេចុះ។",
+    "ប្រាក់ខែមិនដើរតាមផែនការ គ្រាន់តែប្រកាន់គេ។",
+    "ខ្លួនមានតែប្រាក់បាយម្សៅ មិនទាន់បានទាំងអស់។",
+    "កន្លែងដើរមិនទាន់ស្អាត មានក្រោកខ្យល់ក្តៅ។",
+    "ការបណ្តុះបណ្តាលខ្លះពុំចេះប្រើប្រាស់ទេ។",
+    "ប្រាក់ខែមិនទាន់ដើរតាមផែនការគ្រប់គ្រងនោះឡើយ។",
+    "មានគេបិទបំពង់ខ្លាំងពេក ធ្វើឱ្យក្តៅគ្មានទេ។",
+    "គ្មានមន្រ្តីបង្កើត គ្រាន់តែនិយាយគេបំពេញ។",
+    "គេស្នើមកូនប្រាក់មួយខែ ឬគេត្រូវសម្រេចចិត្ត។",
+    "គ្រប់គ្រងមិនប្រាកដ ឱ្យខ្លួនត្រូវប្រយ័ត្ត។",
+    "មានក្តីប្រតិកម្មខ្លះ ប៉ុន្តែមិនទាន់ដូចគ្នាឡើយ។",
+    "ការងាររាល់ថ្ងៃ គេមិនល្អឡើយ។",
+    "ម្ចាស់ហាត់ប្រាណខ្លាំង ប៉ុន្តែមិនផ្តល់ពិន្ទុឱ្យឱ្យបាន។"
+  ],
+  "coursesByCategory": {
+    "Workplace Safety": [
+      {
+        "name": "Fundamentals of Occupational Health and Safety",
+        "summary": "This introductory module covers the core principles of workplace safety, including hazard identification, risk assessment methodologies, and the legal frameworks governing employee protection in garment manufacturing."
+      },
+      {
+        "name": "Preventive Maintenance and Hazardous Material Handling",
+        "summary": "Learn essential protocols for maintaining industrial machinery safely and proper procedures for storing and disposing of chemicals, flammables, and hazardous waste commonly found in textile production."
+      },
+      {
+        "name": "Fire Safety, Emergency Evacuation, and First Aid",
+        "summary": "A critical course dedicated to mastering fire suppression systems, executing structured evacuation drills, and providing immediate first aid in high-density factory environments."
+      },
+      {
+        "name": "Ergonomics and Musculoskeletal Disorder Prevention",
+        "summary": "Designed to address physical safety in repetitive motion jobs, this training focuses on proper lifting techniques, workstation adjustments, and strategies to prevent long-term back and joint injuries."
+      },
+      {
+        "name": "Safe Electrical Practices and Lockout/Tagout Procedures",
+        "summary": "This specialized training ensures compliance with electrical safety standards, detailing the correct protocols for lockout/tagout during maintenance to prevent accidental energization of equipment."
+      }
+    ],
+    "Labor Rights": [
+      {
+        "name": "Industrial Labor Law and Contract Compliance",
+        "summary": "This foundational course covers essential labor rights, including minimum wage standards, working hour limits, and contract negotiation strategies specifically tailored to the garment manufacturing industry."
+      },
+      {
+        "name": "Health, Safety, and Ergonomics in Textile Production",
+        "summary": "Participants will learn to identify common workplace hazards in garment factories, implement proper safety protocols, and apply ergonomic solutions to prevent repetitive strain injuries among production staff."
+      },
+      {
+        "name": "Collective Bargaining and Union Relations",
+        "summary": "This advanced module guides managers on conducting transparent meetings, understanding collective bargaining processes, and maintaining positive relationships with union representatives while ensuring fair treatment for all employees."
+      },
+      {
+        "name": "Discipline, Grievance Handling, and Due Process",
+        "summary": "Learn the legal and ethical procedures for addressing employee grievances, conducting fair disciplinary investigations, and resolving conflicts in compliance with local labor regulations."
+      },
+      {
+        "name": "Gender Equity and Anti-Harassment Policies",
+        "summary": "An interactive session focused on preventing sexual harassment, promoting workplace diversity, and establishing clear reporting mechanisms to protect the dignity and rights of all workers in the factory environment."
+      }
+    ],
+    "Health & Hygiene": [
+      {
+        "name": "Industrial Hygiene and Hazard Identification",
+        "summary": "This course provides comprehensive training on recognizing chemical, physical, and biological hazards specific to garment manufacturing. Participants will learn the proper application of the Hierarchy of Controls to eliminate or mitigate risks in production environments."
+      },
+      {
+        "name": "OSHA-Compliant Respiratory Protection and Fume Exhaust Systems",
+        "summary": "Designed for workers in dyeing and finishing units, this module covers the safe use of respirators, understanding ventilation mechanics, and recognizing signs of airborne exposure. It emphasizes compliance with occupational safety standards to prevent long-term health issues."
+      },
+      {
+        "name": "Ergonomics and Musculoskeletal Disorder Prevention",
+        "summary": "This interactive session addresses common physical strain associated with repetitive stitching and manual handling tasks. Workers will gain skills in adjusting workstations, using proper lifting techniques, and implementing micro-break strategies to reduce injury rates."
+      },
+      {
+        "name": "Sustainable Cleaning Protocols and Chemical Safety",
+        "summary": "Focusing on eco-friendly cleaning practices, this course trains staff on the correct dilution and handling of industrial detergents. It includes practical demonstrations on safety data sheet (SDS) interpretation and the safe disposal of wastewater to protect both workers and the facility."
+      },
+      {
+        "name": "Advanced Hand Sanitation and Cross-Contamination Control",
+        "summary": "This module is tailored for food-grade packaging and direct-contact garment lines, detailing high-touch surface sanitation and personal hygiene standards. Participants will learn the critical role of hygiene in preventing the spread of pathogens during production."
+      }
+    ],
+    "Environmental Compliance": [
+      {
+        "name": "Introduction to Environmental Regulations and Standards",
+        "summary": "This foundational course provides an overview of key international and local environmental laws applicable to garment manufacturing, including waste management and emissions standards."
+      },
+      {
+        "name": "Water Conservation and Effluent Treatment Systems",
+        "summary": "Learn practical strategies for reducing water usage in dyeing and finishing processes, plus a deep dive into operating and monitoring on-site effluent treatment plants."
+      },
+      {
+        "name": "Chemical Safety and Hazardous Waste Management",
+        "summary": "This module covers the safe handling, storage, and disposal of hazardous chemicals used in textile production, ensuring full compliance with chemical safety protocols."
+      },
+      {
+        "name": "Energy Efficiency and Sustainable Manufacturing Practices",
+        "summary": "Explore methods to optimize energy consumption in sewing lines and machinery, alongside initiatives that reduce the factory's overall carbon footprint."
+      },
+      {
+        "name": "Internal Auditing and Continuous Compliance Improvement",
+        "summary": "Develop skills to conduct internal environmental audits, identify non-conformities, and implement corrective actions to maintain and enhance regulatory compliance."
+      }
+    ],
+    "Anti-Harassment": [
+      {
+        "name": "Foundations of Workplace Respect",
+        "summary": "This introductory module defines the boundaries of acceptable behavior and explores the impact of harassment on workplace culture and employee well-being."
+      },
+      {
+        "name": "Recognizing and Reporting Harassment",
+        "summary": "Participants learn to identify subtle and overt signs of harassment, understand the reporting procedures, and know how to document incidents effectively."
+      },
+      {
+        "name": "Bystander Intervention Strategies",
+        "summary": "An interactive session empowering staff to safely intervene when witnessing misconduct, providing techniques to de-escalate situations without escalating tension."
+      },
+      {
+        "name": "Inclusive Leadership for Management",
+        "summary": "Designed for supervisors, this course focuses on preventing team harassment, modeling inclusive behavior, and managing employees who engage in inappropriate conduct."
+      },
+      {
+        "name": "Protecting Vulnerable Populations",
+        "summary": "A specialized track addressing unique challenges faced by women, LGBTQ+ individuals, and marginalized groups within the garment manufacturing environment."
+      }
+    ],
+    "Fire Safety": [
+      {
+        "name": "Fundamentals of Fire Prevention in Manufacturing",
+        "summary": "This comprehensive introductory course covers the basics of fire safety protocols specific to garment factories, including hazard identification, evacuation procedures, and the importance of maintaining clear egress paths."
+      },
+      {
+        "name": "Operational Fire Extinguisher and Appliance Use",
+        "summary": "Employees will gain hands-on training in the correct operation of fire extinguishers and emergency suppression systems, with a focus on selecting the appropriate equipment for different types of ignition sources found in textile workshops."
+      },
+      {
+        "name": "High-Risk Material Handling and Combustible Storage",
+        "summary": "This module addresses the unique risks associated with storing and handling flammable materials such as synthetic fibers, dyes, and solvents, emphasizing proper labeling, storage density limits, and segregation techniques."
+      },
+      {
+        "name": "Emergency Response and Evacuation Drills",
+        "summary": "Participants learn the critical skills needed to lead and follow during a fire emergency, including assembly point management, headcounts, and communication protocols to ensure the safety of all personnel on the factory floor."
+      },
+      {
+        "name": "Fire Alarm System Operation and Reporting",
+        "summary": "This course trains staff on how to interact with the factory's fire detection and alarm systems, covering sound signal recognition, initial incident reporting, and the proper coordination with external fire services during an active emergency."
+      }
+    ],
+    "Chemical Handling": [
+      {
+        "name": "Introduction to Chemical Safety and Classification",
+        "summary": "This foundational course covers the fundamental principles of hazardous chemical identification, including understanding GHS labels, hazard statements, and pictograms to ensure immediate safety awareness."
+      },
+      {
+        "name": "Respiratory Protection and Ventilation Systems",
+        "summary": "Learners will gain practical skills on selecting appropriate respiratory equipment, conducting fit tests, and maintaining industrial ventilation systems specifically designed for textile processing environments."
+      },
+      {
+        "name": "Spill Response and Containment Procedures",
+        "summary": "This hands-on training instructs employees on the correct use of spill kits, neutralization agents, and containment barriers to effectively manage accidental chemical releases in production areas."
+      },
+      {
+        "name": "Chemical Storage and Inventory Management",
+        "summary": "Participants learn best practices for organizing storage cabinets, maintaining segregation protocols for incompatible substances, and performing accurate inventory audits to prevent cross-contamination."
+      },
+      {
+        "name": "Waste Disposal Compliance and Environmental Protocols",
+        "summary": "The course details the regulatory requirements for sorting, labeling, and disposing of chemical waste in alignment with local environmental laws and corporate sustainability goals."
+      }
+    ],
+    "Worker Welfare": [
+      {
+        "name": "Occupational Health and Safety Fundamentals",
+        "summary": "Participants will learn to identify common hazards in garment production, understand OSHA compliance standards, and master emergency evacuation procedures to ensure a safe work environment."
+      },
+      {
+        "name": "Ergonomics and Injury Prevention Strategies",
+        "summary": "This course covers proper lifting techniques, workstation setup optimization, and strategies to reduce musculoskeletal disorders among long-term sewing line employees."
+      },
+      {
+        "name": "Thermal Comfort and Heat Stress Management",
+        "summary": "Learn to recognize symptoms of heat-related illness, utilize cooling break protocols effectively, and implement hydration schedules to maintain productivity in high-temperature zones."
+      },
+      {
+        "name": "Chemical Safety and Hazardous Material Handling",
+        "summary": "Employees will gain expertise in reading Safety Data Sheets (SDS), using personal protective equipment (PPE) correctly, and responding to spills involving detergents, solvents, and flammables."
+      },
+      {
+        "name": "Workplace Violence Prevention and De-escalation",
+        "summary": "This training focuses on recognizing warning signs of aggression, establishing zero-tolerance policies, and applying non-violent communication techniques to resolve interpersonal conflicts peacefully."
+      }
+    ],
+    "Quality Assurance": [
+      {
+        "name": "Fundamentals of Garment Quality Control",
+        "summary": "This foundational course introduces the essential terminology, inspection standards, and quality hierarchy specific to the garment manufacturing industry, providing a clear understanding of how defects impact product reputation."
+      },
+      {
+        "name": "Advanced Defect Identification and Root Cause Analysis",
+        "summary": "Participants will learn to systematically identify complex weaving and sewing defects while applying the '5 Whys' method and Fishbone diagrams to analyze process failures, enabling proactive prevention rather than reactive correction."
+      },
+      {
+        "name": "Statistical Process Control for Textile Production",
+        "summary": "This technical module teaches QA professionals how to utilize Control Charts and SPC tools to monitor thread tension, stitch density, and fabric consistency, ensuring production remains within statistically defined limits to maintain high quality output."
+      },
+      {
+        "name": "Supplier Quality Management and Incoming Material Inspection",
+        "summary": "Focuses on establishing rigorous criteria for evaluating fabric, trims, and accessories, covering techniques for sample inspection, acceptance testing, and managing supplier non-conformance reports to minimize material-related defects."
+      },
+      {
+        "name": "ISO 9001 Implementation for Garment Factories",
+        "summary": "A comprehensive program guiding teams through the documentation, audit preparation, and continuous improvement cycles required for ISO 9001 certification, ensuring the factory meets international standards for quality management systems."
+      }
+    ],
+    "Management Training": [
+      {
+        "name": "Foundations of Garment Operations",
+        "summary": "This comprehensive module introduces new hires to the fundamental processes of garment manufacturing, from fabric handling to final assembly. Participants learn to identify key quality standards and understand the workflow efficiency critical for factory performance."
+      },
+      {
+        "name": "Lean Manufacturing and Waste Reduction",
+        "summary": "Learn to apply Lean Six Sigma principles to eliminate bottlenecks and reduce material waste in the cutting and sewing sections. This course focuses on practical techniques for improving production flow and maximizing machine uptime."
+      },
+      {
+        "name": "Quality Control and Compliance Auditing",
+        "summary": "Equip managers and supervisors with the skills to conduct effective internal audits aligned with ISO standards and international retail requirements. You will master the use of checklists for defect identification and correct immediate corrective actions."
+      },
+      {
+        "name": "Sustainable Textile Practices and Safety",
+        "summary": "Explore the latest protocols for chemical safety, fire prevention, and eco-friendly dyeing processes in a high-volume environment. This training ensures adherence to OSHA regulations while promoting a culture of workplace sustainability."
+      },
+      {
+        "name": "Inventory Management and Supply Chain Logistics",
+        "summary": "Master the art of just-in-time (JIT) inventory control to prevent stockouts or overstocking in a fast-paced factory setting. Participants will learn to utilize ERP systems for real-time tracking of raw materials and finished goods."
+      }
+    ]
+  }
+}
