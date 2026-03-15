@@ -91,8 +91,21 @@ export async function GET(request: NextRequest) {
       params,
     );
 
+    interface CaseRow {
+      Id: number;
+      Title: string;
+      Created: string | null;
+      Modified: string | null;
+      Priority: number;
+      CompanyName: string | null;
+      CompanyId: number;
+      StatusName: string | null;
+      TypeName: string | null;
+      FirstMessage: string | null;
+    }
+
     // Batch-fetch cached AI summaries & guidance from Drizzle
-    const caseIds = result.recordset.map((row: any) => String(row.Id));
+    const caseIds = result.recordset.map((row: CaseRow) => String(row.Id));
     const cacheMap = new Map<
       string,
       { aiSummary: string | null; aiGuidance: unknown }
@@ -114,7 +127,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const cases: Case[] = result.recordset.map((row: any) => {
+    const cases: Case[] = result.recordset.map((row: CaseRow) => {
       const cached = cacheMap.get(String(row.Id));
       const fallbackSummary = row.FirstMessage
         ? row.FirstMessage.substring(0, 150) + "..."
@@ -127,7 +140,7 @@ export async function GET(request: NextRequest) {
         topic: extractEnglishFromMlang(row.TypeName || "General"),
         severity:
           row.Priority === 1 ? "high" : row.Priority === 2 ? "medium" : "low",
-        status: mapStatus(row.StatusName),
+        status: mapStatus(row.StatusName || ""),
         aiSummary: cached?.aiSummary || fallbackSummary,
         fullContent: extractEnglishFromMlang(row.FirstMessage || row.Title || "No content."),
         createdAt: row.Created
@@ -163,7 +176,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-function mapStatus(status: string): any {
+function mapStatus(status: string): Case["status"] {
   switch (status?.toLowerCase()) {
     case "open":
       return "new";

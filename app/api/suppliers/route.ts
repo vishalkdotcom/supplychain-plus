@@ -3,7 +3,7 @@ import { query } from "@/lib/db/postgres";
 import { wcGlobalQuery } from "@/lib/db/postgres-wc-global";
 import { db } from "@/lib/db/drizzle";
 import { supplierRiskScores as supplierRiskScoresSchema } from "@/lib/db/schema";
-import { Supplier, PaginatedResponse } from "@/types";
+import { Supplier, PaginatedResponse, RiskReason } from "@/types";
 import { extractEnglishFromMlang } from "@/lib/mlang";
 import { inArray } from "drizzle-orm";
 
@@ -61,7 +61,8 @@ export async function GET(request: NextRequest) {
 
     // Fetch risk scores from wovo_ai via Drizzle
     const clientKeysForRisk = rows.map((r) => String(r.client_key));
-    const riskScoresMap: Record<string, any> = {};
+    type RiskScoreRow = typeof supplierRiskScoresSchema.$inferSelect;
+    const riskScoresMap: Record<string, RiskScoreRow> = {};
     
     if (clientKeysForRisk.length > 0) {
       const riskData = await db.select().from(supplierRiskScoresSchema).where(inArray(supplierRiskScoresSchema.supplierId, clientKeysForRisk));
@@ -76,7 +77,7 @@ export async function GET(request: NextRequest) {
       survey_score: number;
       training_score: number;
       engagement_score: number;
-      reasons: any[];
+      reasons: RiskReason[];
       cached_region: string | null;
       latitude: number | null;
       longitude: number | null;

@@ -10,7 +10,6 @@ import {
 } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchSuppliers } from "@/lib/api";
-import { Supplier } from "@/types";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {

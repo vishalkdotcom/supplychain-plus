@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
 
     // Build dynamic WHERE clauses
     const conditions: string[] = ["c.id > 1"];
-    const params: any[] = [];
+    const params: (string | number)[] = [];
 
     if (search) {
       conditions.push(`(c.fullname LIKE ? OR c.shortname LIKE ?)`);

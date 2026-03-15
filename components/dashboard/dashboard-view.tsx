@@ -52,7 +52,7 @@ export function DashboardView() {
   const EMPTY_SUPPLIERS: Supplier[] = [];
   const suppliers = suppliersRes?.data || EMPTY_SUPPLIERS;
 
-  const { data: recommendations, isLoading: isRecommendationsLoading } =
+  const { isLoading: isRecommendationsLoading } =
     useQuery<AIRecommendation[]>({
       queryKey: ["recommendations"],
       queryFn: () => fetchRecommendations(),
@@ -62,9 +62,6 @@ export function DashboardView() {
     suppliers
       ?.filter((s: Supplier) => s.riskLevel === "high")
       .sort((a: Supplier, b: Supplier) => b.riskScore - a.riskScore) || [];
-  const topRecommendations = (recommendations || [])
-    .filter((r: AIRecommendation) => r.urgency === "immediate")
-    .slice(0, 3);
 
   if (
     isMetricsLoading ||
