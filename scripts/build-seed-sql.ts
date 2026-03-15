@@ -38,8 +38,6 @@ const WORKER_COUNT = 50000;
 const SURVEY_COUNT = 500;
 const QUESTIONS_PER_SURVEY = 10;
 const CASE_COUNT = 5000;
-const MESSAGES_PER_CASE_AVG = 3;
-const COURSE_COUNT = 50;
 const ENROLLMENT_COUNT = 20000;
 
 const COUNTRIES = [
@@ -80,11 +78,6 @@ function randInt(min: number, max: number): number {
 function pick<T>(arr: T[]): T {
   return arr[Math.floor(seededRandom() * arr.length)];
 }
-function pickN<T>(arr: T[], n: number): T[] {
-  const shuffled = [...arr].sort(() => seededRandom() - 0.5);
-  return shuffled.slice(0, n);
-}
-
 function esc(s: string): string {
   return s.replace(/'/g, "''");
 }

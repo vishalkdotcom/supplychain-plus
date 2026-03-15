@@ -79,6 +79,17 @@ const PIPELINE_STEPS: { key: PipelineStatus; label: string }[] = [
   { key: "ready", label: "Ready" },
 ];
 
+const LANGUAGES: Record<string, string> = {
+  vi: "Vietnamese",
+  bn: "Bengali",
+  zh: "Chinese",
+  km: "Khmer",
+  id: "Indonesian",
+  th: "Thai",
+  hi: "Hindi",
+  es: "Spanish",
+};
+
 function CoursePreviewContent({ course }: { course: CourseData }) {
   return (
     <>
@@ -149,17 +160,6 @@ export default function EducatePage() {
   const [translations, setTranslations] = useState<Record<string, CourseData>>({});
   const [translatingLang, setTranslatingLang] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("en");
-
-  const LANGUAGES: Record<string, string> = {
-    vi: "Vietnamese",
-    bn: "Bengali",
-    zh: "Chinese",
-    km: "Khmer",
-    id: "Indonesian",
-    th: "Thai",
-    hi: "Hindi",
-    es: "Spanish",
-  };
 
   const handleTranslate = useCallback(async (lang: string, course: CourseData) => {
     setTranslatingLang(lang);

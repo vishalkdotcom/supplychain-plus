@@ -76,7 +76,6 @@ export function SupplyChainNetwork({ suppliers }: SupplyChainNetworkProps) {
     let nodeX = 0;
     const PARENT_Y = 150;
     const CHILD_Y = 290;
-    const PARENT_SPACING = 280;
     const CHILD_SPACING = 160;
 
     // Render known parent companies with their children

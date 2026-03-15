@@ -80,7 +80,9 @@ export async function GET() {
     // Strip internal _rawDate before returning
     const cleaned: ActivityItem[] = activities
       .slice(0, 10)
-      .map(({ _rawDate: _, ...rest }) => rest);
+      .map<ActivityItem>(({ id, action, details, time, module, supplierId, supplierName, linkedId, linkedType }) => ({
+        id, action, details, time, module, supplierId, supplierName, linkedId, linkedType,
+      }));
     return NextResponse.json(cleaned);
   } catch (error) {
     console.error("Error fetching activities:", error);

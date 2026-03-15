@@ -10,8 +10,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
-  LineChart,
-  Line,
   XAxis,
   YAxis,
   CartesianGrid,

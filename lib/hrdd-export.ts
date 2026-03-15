@@ -1,7 +1,13 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { Supplier, EvidenceLink } from "@/types";
+
+/** jspdf-autotable adds `lastAutoTable` to the jsPDF instance but doesn't ship type augmentations.
+ *  `getNumberOfPages` exists at runtime but isn't in the public type for `internal`. */
+interface JsPDFWithAutoTable extends jsPDF {
+  lastAutoTable: { finalY: number };
+  internal: jsPDF["internal"] & { getNumberOfPages(): number };
+}
 
 interface HRDDReportData {
   supplier: Supplier;
@@ -73,7 +79,7 @@ export const generateHRDDReport = (data: HRDDReportData) => {
   });
 
   // Risk Analysis
-  const riskY = (doc as any).lastAutoTable.finalY + 15;
+  const riskY = (doc as JsPDFWithAutoTable).lastAutoTable.finalY + 15;
   doc.setFontSize(14);
   doc.text("Risk Analysis", 14, riskY);
 
@@ -94,7 +100,7 @@ export const generateHRDDReport = (data: HRDDReportData) => {
 
   // Contributing Factors
   if (supplier.riskBreakdown.reasons.length > 0) {
-    const reasonY = (doc as any).lastAutoTable.finalY + 15;
+    const reasonY = (doc as JsPDFWithAutoTable).lastAutoTable.finalY + 15;
     doc.setFontSize(12);
     doc.text("Contributing Factors", 14, reasonY);
 
@@ -116,7 +122,7 @@ export const generateHRDDReport = (data: HRDDReportData) => {
 
   // Supporting Evidence
   if (evidence && evidence.length > 0) {
-    const evidenceY = (doc as any).lastAutoTable.finalY + 15;
+    const evidenceY = (doc as JsPDFWithAutoTable).lastAutoTable.finalY + 15;
     doc.setFontSize(14);
     doc.setTextColor(0);
     doc.text("Supporting Evidence", 14, evidenceY);
@@ -146,7 +152,7 @@ export const generateHRDDReport = (data: HRDDReportData) => {
   }
 
   // Footer
-  const pageCount = (doc as any).internal.getNumberOfPages();
+  const pageCount = (doc as JsPDFWithAutoTable).internal.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
     doc.setFontSize(8);

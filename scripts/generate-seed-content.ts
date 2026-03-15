@@ -61,7 +61,7 @@ const NATIVE_LANGUAGES = ["Vietnamese", "Bengali", "Khmer", "Mandarin Chinese", 
 
 // ─── Ollama Helper ─────────────────────────────────────────
 
-async function ollamaJSON(prompt: string, retries = 3): Promise<any> {
+async function ollamaJSON(prompt: string, retries = 3): Promise<Record<string, unknown>> {
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
       const res = await fetch(OLLAMA_URL, {
@@ -78,39 +78,42 @@ async function ollamaJSON(prompt: string, retries = 3): Promise<any> {
       });
       if (!res.ok) throw new Error(`Ollama HTTP ${res.status}`);
       const data = await res.json();
-      let text = data.message?.content || "";
+      let text = (data.message?.content as string) || "";
       // Strip markdown fences if present
       text = text.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
-      return JSON.parse(text);
+      return JSON.parse(text) as Record<string, unknown>;
     } catch (err) {
       if (attempt === retries) throw err;
       console.warn(`  Retry ${attempt + 1}...`);
       await new Promise((r) => setTimeout(r, 1000));
     }
   }
+  throw new Error("ollamaJSON: all retries exhausted");
 }
 
 /** Extract first array of strings from a JSON object regardless of key name */
-function extractStrings(obj: any): string[] {
-  if (Array.isArray(obj)) return obj.filter((x: any) => typeof x === "string");
+function extractStrings(obj: Record<string, unknown>): string[] {
+  if (Array.isArray(obj)) return obj.filter((x: unknown) => typeof x === "string") as string[];
   for (const key of Object.keys(obj)) {
     const val = obj[key];
     if (Array.isArray(val)) {
-      if (val.length > 0 && typeof val[0] === "string") return val;
+      if (val.length > 0 && typeof val[0] === "string") return val as string[];
       // Array of objects - try to extract name/text property
       if (val.length > 0 && typeof val[0] === "object") {
-        const extracted = val.map((item: any) =>
-          typeof item === "string" ? item : (item.name || item.text || item.title || item.value || JSON.stringify(item))
-        );
-        if (extracted.every((x: any) => typeof x === "string")) return extracted;
+        const extracted = val.map((item: unknown) => {
+          if (typeof item === "string") return item;
+          const record = item as Record<string, unknown>;
+          return (record.name || record.text || record.title || record.value || JSON.stringify(item)) as string;
+        });
+        if (extracted.every((x: unknown) => typeof x === "string")) return extracted;
       }
     }
   }
   // Concatenate all string arrays
   const all: string[] = [];
   for (const val of Object.values(obj)) {
-    if (Array.isArray(val)) all.push(...(val as any[]).filter((x) => typeof x === "string"));
-    else if (typeof val === "string") all.push(val as string);
+    if (Array.isArray(val)) all.push(...val.filter((x): x is string => typeof x === "string"));
+    else if (typeof val === "string") all.push(val);
   }
   return all;
 }
@@ -243,16 +246,22 @@ Mix 5 sets of 4-options and 5 sets of 5-options. Each set has different wording:
   const raw = result.sets || Object.values(result)[0];
   if (!Array.isArray(raw) || raw.length === 0) return getDefaultOptionSets();
 
-  const parsed = raw.map((s: any) => {
-    const opts = s.options || Object.values(s)[0];
+  type OptionSet = { options: Array<{ label: string; weight: number }> };
+
+  const parsed = raw.map((s: unknown): OptionSet | null => {
+    const set = s as Record<string, unknown>;
+    const opts = set.options || Object.values(set)[0];
     if (!Array.isArray(opts)) return null;
     return {
-      options: opts.map((o: any) => ({
-        label: o.label || o.text || String(o),
-        weight: typeof o.weight === "number" ? o.weight : (o.score || o.value || 50),
-      })),
+      options: opts.map((o: unknown) => {
+        const opt = o as Record<string, unknown>;
+        return {
+          label: (opt.label || opt.text || String(o)) as string,
+          weight: typeof opt.weight === "number" ? opt.weight : ((opt.score || opt.value || 50) as number),
+        };
+      }),
     };
-  }).filter(Boolean);
+  }).filter((x): x is OptionSet => x !== null);
 
   return parsed.length >= 5 ? parsed : getDefaultOptionSets();
 }
@@ -303,10 +312,14 @@ async function generateCourses(): Promise<Record<string, Array<{ name: string; s
 
     const raw = result.courses || Object.values(result)[0];
     if (Array.isArray(raw)) {
-      courses[category] = raw.slice(0, 5).map((c: any) => ({
-        name: typeof c === "string" ? c : (c.name || c.title || `${category} Training`),
-        summary: typeof c === "string" ? "" : (c.summary || c.description || ""),
-      }));
+      courses[category] = raw.slice(0, 5).map((c: unknown) => {
+        if (typeof c === "string") return { name: c, summary: "" };
+        const course = c as Record<string, unknown>;
+        return {
+          name: ((course.name || course.title || `${category} Training`) as string),
+          summary: ((course.summary || course.description || "") as string),
+        };
+      });
     } else {
       courses[category] = Array.from({ length: 5 }, (_, i) => ({
         name: `${category} Module ${i + 1}`,

@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // External Claude skill templates (not application code)
+    ".agent/**",
+    ".agents/**",
   ]),
 ]);
 

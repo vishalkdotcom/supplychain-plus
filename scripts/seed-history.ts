@@ -1,6 +1,5 @@
 import { db } from "../lib/db/drizzle";
 import { supplierRiskHistory } from "../lib/db/schema";
-import { eq, and } from "drizzle-orm";
 
 async function seedHistory() {
   const supplierId = "137089";
