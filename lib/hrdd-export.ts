@@ -2,11 +2,9 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { Supplier, EvidenceLink } from "@/types";
 
-/** jspdf-autotable adds `lastAutoTable` to the jsPDF instance but doesn't ship type augmentations.
- *  `getNumberOfPages` exists at runtime but isn't in the public type for `internal`. */
+/** jspdf-autotable adds `lastAutoTable` to the jsPDF instance at runtime but doesn't ship type augmentations (v5.0.7) */
 interface JsPDFWithAutoTable extends jsPDF {
   lastAutoTable: { finalY: number };
-  internal: jsPDF["internal"] & { getNumberOfPages(): number };
 }
 
 interface HRDDReportData {
@@ -152,7 +150,7 @@ export const generateHRDDReport = (data: HRDDReportData) => {
   }
 
   // Footer
-  const pageCount = (doc as JsPDFWithAutoTable).internal.getNumberOfPages();
+  const pageCount = doc.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
     doc.setFontSize(8);
