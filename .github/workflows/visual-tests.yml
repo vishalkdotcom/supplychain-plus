@@ -1,0 +1,36 @@
+name: Visual Regression Tests
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  visual-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Install Playwright Chromium
+        run: bunx playwright install --with-deps chromium
+
+      - name: Run visual regression tests
+        run: bun run test:visual
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: visual-test-results
+          path: |
+            e2e/screenshots/
+            test-results/
+          retention-days: 30
