@@ -7,8 +7,9 @@ import {
 } from "@/lib/db/schema";
 import type { RiskReason } from "@/lib/db/schema";
 import { query as pgQuery } from "@/lib/db/postgres";
-import { query as mssqlQuery } from "@/lib/db/sql-server";
+import { query as mssqlQuery, paramQuery as mssqlParamQuery } from "@/lib/db/sql-server";
 import { query as mysqlQuery } from "@/lib/db/mysql";
+import mssql from "mssql";
 
 interface SupplierRow {
   id: number;
@@ -35,12 +36,14 @@ export async function POST(request: Request) {
       FROM clients_clientinfo 
       WHERE is_deleted = false AND client_key IS NOT NULL
     `;
+    const supplierParams: unknown[] = [];
     if (targetSupplierId) {
-      supplierQuery += ` AND client_key = '${parseInt(targetSupplierId)}'`;
+      supplierParams.push(parseInt(targetSupplierId));
+      supplierQuery += ` AND client_key = $${supplierParams.length}`;
     }
     supplierQuery += ` LIMIT 500`;
 
-    const suppliersResult = await pgQuery(supplierQuery);
+    const suppliersResult = await pgQuery(supplierQuery, supplierParams);
     const suppliers: SupplierRow[] = suppliersResult.rows;
 
     // Fetch geo/hierarchy data from SQL Server (batch query for all suppliers)
@@ -74,15 +77,16 @@ export async function POST(request: Request) {
       // --- Case Score (from SQL Server) ---
       let caseScore = 0;
       try {
-        const caseResult = await mssqlQuery(`
-          SELECT 
+        const caseResult = await mssqlParamQuery(
+          `SELECT
             COUNT(*) as total,
             SUM(CASE WHEN Priority = 1 THEN 1 ELSE 0 END) as high_priority,
             SUM(CASE WHEN c.CaseStatusId IN (SELECT Id FROM CaseStatus WHERE Name = 'Open') THEN 1 ELSE 0 END) as open_cases
           FROM [Case] c
           JOIN Company co ON c.CompanyId = co.Id
-          WHERE c.Deleted = 0 AND co.Id = ${supplier.id}
-        `);
+          WHERE c.Deleted = 0 AND co.Id = @companyId`,
+          { companyId: { type: mssql.Int, value: supplier.id } },
+        );
         const row = caseResult.recordset[0];
         const total = row?.total || 0;
         const highPriority = row?.high_priority || 0;

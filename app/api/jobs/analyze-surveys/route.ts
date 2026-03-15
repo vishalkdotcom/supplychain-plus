@@ -38,12 +38,14 @@ export async function POST(request: Request) {
       LEFT JOIN survey_mdlsurveyquestionresponses r ON r.survey_question_id = q.id AND r.survey_id = s.id
       LEFT JOIN survey_mdlsurveyquestionoptions opt ON opt.id = r.question_option_id
     `;
+    const params: unknown[] = [];
     if (targetSurveyId) {
-      surveyQuery += ` WHERE s.id = '${targetSurveyId}'`;
+      params.push(targetSurveyId);
+      surveyQuery += ` WHERE s.id = $${params.length}`;
     }
     surveyQuery += ` ORDER BY s.id, q.id LIMIT 500`;
 
-    const result = await pgQuery(surveyQuery);
+    const result = await pgQuery(surveyQuery, params);
 
     // Group responses by survey
     const surveyResponses = new Map<

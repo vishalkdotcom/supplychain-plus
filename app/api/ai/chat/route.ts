@@ -16,9 +16,14 @@ import { aiChatHistory } from "@/lib/db/schema";
 
 export const maxDuration = 30;
 
+const SESSION_ID_PATTERN = /^[a-zA-Z0-9_-]{1,128}$/;
+
 export async function POST(req: Request) {
-  const { messages, sessionId }: { messages: UIMessage[]; sessionId?: string } =
+  const { messages, sessionId: rawSessionId }: { messages: UIMessage[]; sessionId?: string } =
     await req.json();
+
+  // Validate sessionId format to prevent injection and session hijacking
+  const sessionId = rawSessionId && SESSION_ID_PATTERN.test(rawSessionId) ? rawSessionId : undefined;
 
   // Save the latest user message
   const latestUserMessage = messages[messages.length - 1];
