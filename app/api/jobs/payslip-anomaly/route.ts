@@ -5,6 +5,7 @@ import { query as mssqlQuery } from "@/lib/db/sql-server";
 import { db } from "@/lib/db/drizzle";
 import { payslipAnomalies, alerts } from "@/lib/db/schema";
 import { z } from "zod";
+import { logger } from "@/lib/logger";
 
 export const maxDuration = 300;
 
@@ -232,10 +233,7 @@ Workers affected: ${anomaly.details.employeeCount}`,
 
         savedCount++;
       } catch (e) {
-        console.error(
-          `Payslip interpretation failed for ${anomaly.supplierName}:`,
-          e,
-        );
+        logger.error("jobs/payslip-anomaly", `Payslip interpretation failed for ${anomaly.supplierName}`, e);
         // Still save without AI interpretation
         await db.insert(payslipAnomalies).values({
           supplierId: anomaly.supplierId,
@@ -257,7 +255,7 @@ Workers affected: ${anomaly.details.employeeCount}`,
       anomaliesSaved: savedCount,
     });
   } catch (error) {
-    console.error("Payslip anomaly detection failed:", error);
+    logger.error("jobs/payslip-anomaly", "Payslip anomaly detection failed", error);
     return NextResponse.json(
       { error: "Payslip anomaly detection failed" },
       { status: 500 },

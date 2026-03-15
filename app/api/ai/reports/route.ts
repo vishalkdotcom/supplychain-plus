@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { generateText } from "ai";
 import { model } from "@/lib/ai/provider";
 import type { RiskReason } from "@/lib/db/schema";
+import { logger } from "@/lib/logger";
 
 export const maxDuration = 30;
 
@@ -58,7 +59,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ narrative: result.text });
   } catch (error) {
-    console.error("Narrative generation failed:", error);
+    logger.error("ai/reports", "Narrative generation failed", error);
     return NextResponse.json(
       { error: "Failed to generate narrative" },
       { status: 500 },

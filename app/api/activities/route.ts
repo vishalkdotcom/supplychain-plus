@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { query as pgQuery } from "@/lib/db/postgres";
 import { query as sqlQuery } from "@/lib/db/sql-server";
 import { ActivityItem } from "@/types";
+import { logger } from "@/lib/logger";
 
 interface InternalActivity extends ActivityItem {
   _rawDate: Date;
@@ -85,7 +86,7 @@ export async function GET() {
       }));
     return NextResponse.json(cleaned);
   } catch (error) {
-    console.error("Error fetching activities:", error);
+    logger.error("api/activities", "Failed to fetch activities", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },

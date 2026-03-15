@@ -5,6 +5,7 @@ import { surveyAnalysis } from "@/lib/db/schema";
 import { inArray } from "drizzle-orm";
 import { Survey, PaginatedResponse } from "@/types";
 import { extractEnglishFromMlang } from "@/lib/mlang";
+import { logger } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
   try {
@@ -135,7 +136,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(response);
   } catch (error) {
-    console.error("Error fetching surveys:", error);
+    logger.error("api/surveys", "Failed to fetch surveys", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },
@@ -175,7 +176,7 @@ export async function POST(request: NextRequest) {
       { status: 200 },
     );
   } catch (error) {
-    console.error("Error saving survey draft:", error);
+    logger.error("api/surveys", "Failed to save survey draft", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },

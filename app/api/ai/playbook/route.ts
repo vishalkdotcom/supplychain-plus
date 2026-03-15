@@ -6,6 +6,7 @@ import { paramQuery as mssqlParamQuery } from "@/lib/db/sql-server";
 import mssql from "mssql";
 import { getModelFromRequest } from "@/lib/ai/provider";
 import { and, eq } from "drizzle-orm";
+import { logger } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
   try {
@@ -107,8 +108,8 @@ export async function GET(request: NextRequest) {
         caseNotes = (notesResult.recordset || [])
           .map((n: { Notes: string }) => n.Notes)
           .filter(Boolean);
-      } catch {
-        // CaseNote may not have data
+      } catch (e) {
+        logger.warn("ai/playbook", "Case notes unavailable", e);
       }
     }
 
@@ -149,7 +150,8 @@ Best practices should be specific, actionable steps that case managers can follo
         bestPractices = parsed.bestPractices || [];
         aiSummary = parsed.summary || aiSummary;
       }
-    } catch {
+    } catch (e) {
+      logger.warn("ai/playbook", "AI insight generation failed", e);
       bestPractices = [
         `Average resolution time is ${Math.round(avgResolutionDays)} days`,
         `Best performers resolve in ${bestResolutionDays} days`,
@@ -182,7 +184,7 @@ Best practices should be specific, actionable steps that case managers can follo
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error("Error generating playbook:", error);
+    logger.error("ai/playbook", "Playbook generation failed", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },

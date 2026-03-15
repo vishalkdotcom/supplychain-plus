@@ -5,6 +5,7 @@ import { query as mysqlQuery } from "@/lib/db/mysql";
 import { db } from "@/lib/db/drizzle";
 import { sql } from "drizzle-orm";
 import { DashboardMetrics } from "@/types";
+import { logger } from "@/lib/logger";
 
 export async function GET() {
   try {
@@ -21,8 +22,8 @@ export async function GET() {
         sql`SELECT COUNT(*) as count FROM supplier_risk_scores WHERE risk_score > 70`,
       );
       highRiskSuppliers = parseInt(String(riskRes[0]?.count ?? 0));
-    } catch {
-      // Table may not be populated yet
+    } catch (e) {
+      logger.warn("api/metrics", "Risk scores table not populated", e);
     }
 
     // 3. Get active cases count from SQL Server
@@ -49,8 +50,8 @@ export async function GET() {
       const completed = trainingRes[0]?.total_completed || 0;
       trainingCompletion =
         enrolled > 0 ? Math.round((completed / enrolled) * 100) : 0;
-    } catch {
-      // MySQL may be unavailable
+    } catch (e) {
+      logger.warn("api/metrics", "MySQL unavailable for training data", e);
     }
 
     // 6. Get risk trends from Drizzle (wovo_ai)
@@ -77,8 +78,8 @@ export async function GET() {
       `);
       trendsImproving = parseInt(String(trendRes[0]?.improving ?? 0));
       trendsWorsening = parseInt(String(trendRes[0]?.worsening ?? 0));
-    } catch {
-      // History may not be populated yet
+    } catch (e) {
+      logger.warn("api/metrics", "Risk history not populated", e);
     }
 
     const metrics: DashboardMetrics = {
@@ -93,7 +94,7 @@ export async function GET() {
 
     return NextResponse.json(metrics);
   } catch (error) {
-    console.error("Error fetching metrics:", error);
+    logger.error("api/metrics", "Failed to fetch metrics", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },

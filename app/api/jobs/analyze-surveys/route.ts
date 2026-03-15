@@ -6,6 +6,7 @@ import { surveyAnalysis } from "@/lib/db/schema";
 import { query as pgQuery } from "@/lib/db/postgres";
 
 import { z } from "zod";
+import { logger } from "@/lib/logger";
 
 const surveyAnalysisSchema = z.object({
   sentimentPositive: z.number(),
@@ -130,10 +131,7 @@ ${responseText}`,
 
         processedCount++;
       } else {
-        console.warn(
-          `Schema validation failed for survey ${surveyId}:`,
-          parsed.error.issues,
-        );
+        logger.warn("jobs/analyze-surveys", `Schema validation failed for survey ${surveyId}`, parsed.error.issues);
       }
     }
 
@@ -143,7 +141,7 @@ ${responseText}`,
       message: `Analyzed ${processedCount} surveys`,
     });
   } catch (error) {
-    console.error("Error analyzing surveys:", error);
+    logger.error("jobs/analyze-surveys", "Survey analysis failed", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },

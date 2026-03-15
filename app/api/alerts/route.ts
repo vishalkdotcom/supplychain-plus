@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db/drizzle";
 import { alerts } from "@/lib/db/schema";
 import { desc, eq, and } from "drizzle-orm";
+import { logger } from "@/lib/logger";
 
 export async function GET(request: Request) {
   try {
@@ -20,7 +21,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json(results);
   } catch (error) {
-    console.error("Error fetching alerts:", error);
+    logger.error("api/alerts", "Failed to fetch alerts", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },
@@ -46,7 +47,7 @@ export async function PATCH(request: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error updating alert:", error);
+    logger.error("api/alerts", "Failed to update alert", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },

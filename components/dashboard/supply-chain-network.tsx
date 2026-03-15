@@ -23,6 +23,7 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { Badge } from "@/components/ui/badge";
+import { getScoreBadgeClasses } from "@/lib/risk-utils";
 
 interface SupplyChainNetworkProps {
   suppliers: Supplier[];
@@ -327,13 +328,7 @@ function SupplierNode({ data }: { data: SupplierNodeData }) {
         </div>
         <Badge
           variant="outline"
-          className={`mt-1 text-[10px] px-1 py-0 ${
-            data.risk > 70
-              ? "bg-red-50 text-red-600 border-red-200"
-              : data.risk > 30
-                ? "bg-orange-50 text-orange-600 border-orange-200"
-                : "bg-green-50 text-green-600 border-green-200"
-          }`}
+          className={`mt-1 text-[10px] px-1 py-0 ${getScoreBadgeClasses(data.risk)}`}
         >
           Risk: {data.risk}
         </Badge>
@@ -372,13 +367,7 @@ function ParentNode({ data }: { data: ParentNodeData }) {
         </div>
         <Badge
           variant="outline"
-          className={`mt-1 text-[10px] px-1.5 py-0 ${
-            data.risk > 70
-              ? "bg-red-50 text-red-600 border-red-200"
-              : data.risk > 30
-                ? "bg-orange-50 text-orange-600 border-orange-200"
-                : "bg-green-50 text-green-600 border-green-200"
-          }`}
+          className={`mt-1 text-[10px] px-1.5 py-0 ${getScoreBadgeClasses(data.risk)}`}
         >
           Avg Risk: {data.risk}
         </Badge>

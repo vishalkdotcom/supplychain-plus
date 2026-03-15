@@ -13,6 +13,7 @@ import {
 } from "@/lib/ai/tools";
 import { db } from "@/lib/db/drizzle";
 import { aiChatHistory } from "@/lib/db/schema";
+import { logger } from "@/lib/logger";
 
 export const maxDuration = 30;
 
@@ -40,7 +41,7 @@ export async function POST(req: Request) {
           content: textContent,
         });
       } catch (e) {
-        console.error("Failed to save user message:", e);
+        logger.error("ai/chat", "Failed to save user message", e);
       }
     }
   }
@@ -70,7 +71,7 @@ export async function POST(req: Request) {
             content: text,
           });
         } catch (e) {
-          console.error("Failed to save assistant message:", e);
+          logger.error("ai/chat", "Failed to save assistant message", e);
         }
       }
     },

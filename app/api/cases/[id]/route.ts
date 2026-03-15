@@ -4,6 +4,7 @@ import { Case } from "@/types";
 import { db } from "@/lib/db/drizzle";
 import { caseSummaryCache } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { logger } from "@/lib/logger";
 
 export async function GET(
   request: Request,
@@ -52,8 +53,8 @@ export async function GET(
         cachedSummary = cached[0].aiSummary || null;
         cachedGuidance = cached[0].aiGuidance || null;
       }
-    } catch {
-      // Cache lookup failure is non-fatal — fall back to default
+    } catch (e) {
+      logger.warn("api/cases/[id]", "Cache lookup failed", e);
     }
 
     const caseData: Case = {
@@ -85,7 +86,7 @@ export async function GET(
 
     return NextResponse.json(caseData);
   } catch (error) {
-    console.error("Error fetching case detail:", error);
+    logger.error("api/cases/[id]", "Failed to fetch case detail", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },

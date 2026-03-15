@@ -10,6 +10,7 @@ import { db } from "@/lib/db/drizzle";
 import { caseEmbeddings, caseClusters } from "@/lib/db/schema";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
+import { logger } from "@/lib/logger";
 
 export const maxDuration = 600; // 10 min — heavy batch
 
@@ -106,7 +107,7 @@ export async function POST() {
 
         embeddedCount++;
       } catch (e) {
-        console.error(`Embedding failed for message ${msg.MessageId}:`, e);
+        logger.error("jobs/case-clustering", `Embedding failed for message ${msg.MessageId}`, e);
       }
     }
 
@@ -196,7 +197,7 @@ export async function POST() {
           clustersCreated++;
         }
       } catch (e) {
-        console.error("Cluster labeling failed:", e);
+        logger.error("jobs/case-clustering", "Cluster labeling failed", e);
       }
     }
 
@@ -208,7 +209,7 @@ export async function POST() {
       clustersLabeled: clustersCreated,
     });
   } catch (error) {
-    console.error("Case clustering failed:", error);
+    logger.error("jobs/case-clustering", "Case clustering failed", error);
     return NextResponse.json(
       { error: "Case clustering failed" },
       { status: 500 },

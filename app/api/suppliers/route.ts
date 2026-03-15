@@ -6,6 +6,7 @@ import { supplierRiskScores as supplierRiskScoresSchema } from "@/lib/db/schema"
 import { Supplier, PaginatedResponse, RiskReason } from "@/types";
 import { extractEnglishFromMlang } from "@/lib/mlang";
 import { inArray } from "drizzle-orm";
+import { logger } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
   try {
@@ -137,7 +138,7 @@ export async function GET(request: NextRequest) {
           workerCountMap[row.client_id] = parseInt(row.count);
         }
       } catch (err) {
-        console.error("Error fetching worker counts from wc_global:", err);
+        logger.error("api/suppliers", "Failed to fetch worker counts from wc_global", err);
       }
     }
 
@@ -183,7 +184,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(response);
   } catch (error) {
-    console.error("Error fetching suppliers:", error);
+    logger.error("api/suppliers", "Failed to fetch suppliers", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },

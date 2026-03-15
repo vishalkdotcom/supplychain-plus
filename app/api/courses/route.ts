@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db/mysql";
 import { Course, PaginatedResponse } from "@/types";
 import { extractEnglishFromMlang } from "@/lib/mlang";
+import { logger } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
   try {
@@ -92,7 +93,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(response);
   } catch (error) {
-    console.error("Error fetching courses:", error);
+    logger.error("api/courses", "Failed to fetch courses", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },

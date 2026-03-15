@@ -3,6 +3,7 @@ import { generateText, Output } from "ai";
 import { model } from "@/lib/ai/provider";
 import { z } from "zod";
 import { PDFParse } from "pdf-parse";
+import { logger } from "@/lib/logger";
 
 // Force node runtime to support pdf-parse
 export const runtime = "nodejs";
@@ -71,7 +72,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, course: result.output });
 
   } catch (error) {
-    console.error("Course generation failed:", error);
+    logger.error("ai/educate", "Course generation failed", error);
     return NextResponse.json({ error: "Failed to generate course" }, { status: 500 });
   }
 }

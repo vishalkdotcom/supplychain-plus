@@ -6,6 +6,7 @@ import { CASE_GUIDANCE_PROMPT } from "@/lib/ai/prompts";
 import { db } from "@/lib/db/drizzle";
 import { caseSummaryCache } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { logger } from "@/lib/logger";
 
 export async function POST(request: Request) {
   try {
@@ -67,7 +68,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(guidance);
   } catch (error) {
-    console.error("API Error in guidance generation:", error);
+    logger.error("ai/guidance", "Guidance generation failed", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 },

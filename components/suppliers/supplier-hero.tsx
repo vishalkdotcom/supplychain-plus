@@ -10,25 +10,13 @@ import {
   IconUser,
   IconCalendar,
 } from "@tabler/icons-react";
+import { getRiskBadgeVariant } from "@/lib/risk-utils";
 
 interface SupplierHeroProps {
   supplier: Supplier;
 }
 
 export function SupplierHero({ supplier }: SupplierHeroProps) {
-  const getRiskBadgeVariant = (level: string) => {
-    switch (level) {
-      case "high":
-        return "destructive" as const;
-      case "medium":
-        return "default" as const;
-      case "low":
-        return "secondary" as const;
-      default:
-        return "outline" as const;
-    }
-  };
-
   return (
     <Card>
       <CardContent className="pt-6">

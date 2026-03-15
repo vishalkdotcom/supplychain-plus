@@ -16,6 +16,7 @@ import {
   Tooltip,
   Cell,
 } from "recharts";
+import { getScoreHex } from "@/lib/risk-utils";
 
 interface HeatmapItem {
   id: number;
@@ -25,12 +26,6 @@ interface HeatmapItem {
 }
 
 export function RiskHeatmap({ data }: { data: readonly HeatmapItem[] }) {
-  const getColor = (score: number) => {
-    if (score > 80) return "#ef4444"; // red-500
-    if (score > 50) return "#f97316"; // orange-500
-    return "#22c55e"; // green-500
-  };
-
   return (
     <Card className="col-span-4">
       <CardHeader>
@@ -62,7 +57,7 @@ export function RiskHeatmap({ data }: { data: readonly HeatmapItem[] }) {
             />
             <Bar dataKey="score" radius={[4, 4, 0, 0]}>
               {[...data].map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={getColor(entry.score)} />
+                <Cell key={`cell-${index}`} fill={getScoreHex(entry.score)} />
               ))}
             </Bar>
           </BarChart>
