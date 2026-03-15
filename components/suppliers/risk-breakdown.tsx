@@ -12,6 +12,7 @@ import {
   IconTrendingDown,
   IconMinus,
 } from "@tabler/icons-react";
+import { getScoreColor, getImpactClasses } from "@/lib/risk-utils";
 
 interface RiskBreakdownProps {
   supplier: Supplier;
@@ -19,12 +20,6 @@ interface RiskBreakdownProps {
 
 export function RiskBreakdown({ supplier }: RiskBreakdownProps) {
   const { riskBreakdown, riskScore, riskLevel } = supplier;
-
-  const getRiskColor = (score: number) => {
-    if (score > 70) return "bg-red-500";
-    if (score > 40) return "bg-orange-500";
-    return "bg-green-500";
-  };
 
   const getModuleIcon = (module: string) => {
     switch (module) {
@@ -36,17 +31,6 @@ export function RiskBreakdown({ supplier }: RiskBreakdownProps) {
         return <IconSchool className="h-3.5 w-3.5" />;
       default:
         return <IconActivity className="h-3.5 w-3.5" />;
-    }
-  };
-
-  const getImpactColor = (impact: string) => {
-    switch (impact) {
-      case "high":
-        return "text-red-600 bg-red-50 border-red-200";
-      case "medium":
-        return "text-orange-600 bg-orange-50 border-orange-200";
-      default:
-        return "text-yellow-600 bg-yellow-50 border-yellow-200";
     }
   };
 
@@ -130,7 +114,7 @@ export function RiskBreakdown({ supplier }: RiskBreakdownProps) {
               </div>
               <div className="relative h-1.5 rounded-full bg-secondary overflow-hidden">
                 <div
-                  className={`absolute left-0 top-0 h-full rounded-full transition-all ${getRiskColor(
+                  className={`absolute left-0 top-0 h-full rounded-full transition-all ${getScoreColor(
                     score.value,
                   )}`}
                   style={{ width: `${score.value}%` }}
@@ -150,7 +134,7 @@ export function RiskBreakdown({ supplier }: RiskBreakdownProps) {
               {riskBreakdown.reasons.map((reason, idx) => (
                 <div
                   key={idx}
-                  className={`flex items-start gap-2 p-2 rounded-md border ${getImpactColor(
+                  className={`flex items-start gap-2 p-2 rounded-md border ${getImpactClasses(
                     reason.impact,
                   )}`}
                 >

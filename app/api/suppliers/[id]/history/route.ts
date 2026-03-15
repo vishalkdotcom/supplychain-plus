@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db/drizzle";
 import { supplierRiskHistory } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
+import { logger } from "@/lib/logger";
 
 export async function GET(
   request: Request,
@@ -20,7 +21,7 @@ export async function GET(
     // Sort chronologically for the chart
     return NextResponse.json(history.reverse());
   } catch (error) {
-    console.error("Error fetching supplier history:", error);
+    logger.error("api/suppliers/[id]/history", "Failed to fetch supplier history", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 }

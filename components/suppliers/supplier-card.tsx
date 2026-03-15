@@ -14,38 +14,13 @@ import {
   IconMapPin,
   IconAlertTriangle,
 } from "@tabler/icons-react";
+import { getRiskColor, getRiskBadgeVariant, getImpactClasses } from "@/lib/risk-utils";
 
 interface SupplierCardProps {
   supplier: Supplier;
 }
 
 export function SupplierCard({ supplier }: SupplierCardProps) {
-  const getRiskColor = (level: string) => {
-    switch (level) {
-      case "high":
-        return "bg-red-500";
-      case "medium":
-        return "bg-orange-500";
-      case "low":
-        return "bg-green-500";
-      default:
-        return "bg-gray-500";
-    }
-  };
-
-  const getRiskBadgeVariant = (level: string) => {
-    switch (level) {
-      case "high":
-        return "destructive" as const;
-      case "medium":
-        return "default" as const;
-      case "low":
-        return "secondary" as const;
-      default:
-        return "outline" as const;
-    }
-  };
-
   const topReason = supplier.riskBreakdown.reasons[0];
 
   return (

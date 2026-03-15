@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { generateText } from "ai";
 import { getModelFromRequest } from "@/lib/ai/provider";
+import { logger } from "@/lib/logger";
 
 export const maxDuration = 30;
 
@@ -41,7 +42,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ draftResponse: text.trim() });
   } catch (error) {
-    console.error("API Error in draft response generation:", error);
+    logger.error("ai/draft-response", "Draft response generation failed", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 },

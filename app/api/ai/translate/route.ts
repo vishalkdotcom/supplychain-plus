@@ -5,6 +5,7 @@ import { db } from "@/lib/db/drizzle";
 import { courseTranslations } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
+import { logger } from "@/lib/logger";
 
 export const maxDuration = 60;
 
@@ -84,8 +85,8 @@ export async function POST(request: Request) {
             fromCache: true,
           });
         }
-      } catch {
-        // Cache miss is fine
+      } catch (e) {
+        logger.warn("ai/translate", "Translation cache miss", e);
       }
     }
 
@@ -115,8 +116,8 @@ export async function POST(request: Request) {
               translatedAt: new Date(),
             },
           });
-      } catch {
-        // Cache write failure is non-fatal
+      } catch (e) {
+        logger.warn("ai/translate", "Translation cache write failed", e);
       }
     }
 
@@ -127,7 +128,7 @@ export async function POST(request: Request) {
       fromCache: false,
     });
   } catch (error) {
-    console.error("Translation failed:", error);
+    logger.error("ai/translate", "Translation failed", error);
     return NextResponse.json(
       { error: "Failed to translate course" },
       { status: 500 },

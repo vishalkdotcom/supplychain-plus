@@ -1,9 +1,18 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { AlertsCenter } from "@/components/dashboard/alerts-center";
-import { GeographicRiskMap } from "@/components/dashboard/geographic-risk-map";
-import { SupplyChainNetwork } from "@/components/dashboard/supply-chain-network";
+
+const GeographicRiskMap = dynamic(
+  () => import("@/components/dashboard/geographic-risk-map").then(m => ({ default: m.GeographicRiskMap })),
+  { ssr: false, loading: () => <div className="h-[400px] w-full rounded-lg bg-muted animate-pulse" /> },
+);
+const SupplyChainNetwork = dynamic(
+  () => import("@/components/dashboard/supply-chain-network").then(m => ({ default: m.SupplyChainNetwork })),
+  { ssr: false, loading: () => <div className="h-[400px] w-full rounded-lg bg-muted animate-pulse" /> },
+);
+
 import {
   Card,
   CardContent,
@@ -32,6 +41,7 @@ import {
   fetchRecommendations,
 } from "@/lib/api";
 import { AIRecommendation, Supplier } from "@/types";
+import { getModuleColors } from "@/lib/risk-utils";
 
 export function DashboardView() {
   const { data: metrics, isLoading: isMetricsLoading } = useQuery({
@@ -256,15 +266,7 @@ export function DashboardView() {
                 className="flex items-start gap-3 group"
               >
                 <div
-                  className={`p-2 rounded-full shrink-0 ${
-                    activity.module === "connect"
-                      ? "bg-blue-100 text-blue-600"
-                      : activity.module === "engage"
-                        ? "bg-purple-100 text-purple-600"
-                        : activity.module === "educate"
-                          ? "bg-green-100 text-green-600"
-                          : "bg-indigo-100 text-indigo-600"
-                  }`}
+                  className={`p-2 rounded-full shrink-0 ${getModuleColors(activity.module)}`}
                 >
                   {activity.module === "connect" ? (
                     <IconMessage className="h-3 w-3" />

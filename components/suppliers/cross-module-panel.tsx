@@ -19,6 +19,7 @@ import {
   IconRobot,
   IconSparkles,
 } from "@tabler/icons-react";
+import { getSeverityVariant, getScoreColor } from "@/lib/risk-utils";
 
 interface CrossModulePanelProps {
   cases: Case[];
@@ -39,17 +40,6 @@ export function CrossModulePanel({
   surveys,
   training,
 }: CrossModulePanelProps) {
-  const getSeverityVariant = (severity: string) => {
-    switch (severity) {
-      case "high":
-        return "destructive" as const;
-      case "medium":
-        return "default" as const;
-      default:
-        return "secondary" as const;
-    }
-  };
-
   return (
     <Card>
       <CardHeader>

@@ -3,6 +3,7 @@ import { generateText, Output } from "ai";
 import { model } from "@/lib/ai/provider";
 import { surveyQuestionSchema } from "@/lib/ai/schemas";
 import { SURVEY_GENERATION_PROMPT } from "@/lib/ai/prompts";
+import { logger } from "@/lib/logger";
 
 export const maxDuration = 60;
 
@@ -26,7 +27,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ questions: output || [] });
   } catch (error) {
-    console.error("API Error in survey generation:", error);
+    logger.error("ai/survey", "Survey generation failed", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 },

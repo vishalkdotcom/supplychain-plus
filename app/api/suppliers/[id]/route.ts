@@ -5,6 +5,7 @@ import { db } from "@/lib/db/drizzle";
 import { supplierRiskScores as supplierRiskScoresSchema } from "@/lib/db/schema";
 import { Supplier } from "@/types";
 import { eq } from "drizzle-orm";
+import { logger } from "@/lib/logger";
 
 export async function GET(
   request: Request,
@@ -37,7 +38,7 @@ export async function GET(
       );
       workerCount = parseInt(workerRes.rows[0]?.count || "0");
     } catch (err) {
-      console.error("Error fetching worker count from wc_global:", err);
+      logger.error("api/suppliers/[id]", "Failed to fetch worker count from wc_global", err);
     }
 
     const row = supplierRes.rows[0];
@@ -78,7 +79,7 @@ export async function GET(
 
     return NextResponse.json(supplier);
   } catch (error) {
-    console.error("Error fetching supplier detail:", error);
+    logger.error("api/suppliers/[id]", "Failed to fetch supplier detail", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },

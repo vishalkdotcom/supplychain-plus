@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db/drizzle";
 import { aiChatHistory } from "@/lib/db/schema";
 import { asc } from "drizzle-orm";
+import { logger } from "@/lib/logger";
 
 export async function GET() {
   try {
@@ -50,7 +51,7 @@ export async function GET() {
 
     return NextResponse.json({ sessions });
   } catch (error) {
-    console.error("Failed to fetch chat sessions:", error);
+    logger.error("ai/chat/sessions", "Failed to fetch chat sessions", error);
     return NextResponse.json({ sessions: [] }, { status: 500 });
   }
 }

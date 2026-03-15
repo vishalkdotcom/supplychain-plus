@@ -6,6 +6,7 @@ import { sql } from "drizzle-orm";
 import { Case, AIGuidance, PaginatedResponse } from "@/types";
 import mssql from "mssql";
 import { extractEnglishFromMlang } from "@/lib/mlang";
+import { logger } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
   try {
@@ -122,8 +123,8 @@ export async function GET(request: NextRequest) {
             aiGuidance: c.aiGuidance,
           });
         }
-      } catch {
-        // Cache DB may be unavailable — fall back to defaults
+      } catch (e) {
+        logger.warn("api/cases", "Cache DB unavailable", e);
       }
     }
 
@@ -168,7 +169,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(response);
   } catch (error) {
-    console.error("Error fetching cases:", error);
+    logger.error("api/cases", "Failed to fetch cases", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },

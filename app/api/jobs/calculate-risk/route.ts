@@ -9,6 +9,7 @@ import type { RiskReason } from "@/lib/db/schema";
 import { query as pgQuery } from "@/lib/db/postgres";
 import { query as mssqlQuery } from "@/lib/db/sql-server";
 import { query as mysqlQuery } from "@/lib/db/mysql";
+import { logger } from "@/lib/logger";
 
 interface SupplierRow {
   id: number;
@@ -35,12 +36,14 @@ export async function POST(request: Request) {
       FROM clients_clientinfo 
       WHERE is_deleted = false AND client_key IS NOT NULL
     `;
+    const supplierParams: unknown[] = [];
     if (targetSupplierId) {
-      supplierQuery += ` AND client_key = '${parseInt(targetSupplierId)}'`;
+      supplierParams.push(parseInt(targetSupplierId));
+      supplierQuery += ` AND client_key = $${supplierParams.length}`;
     }
     supplierQuery += ` LIMIT 500`;
 
-    const suppliersResult = await pgQuery(supplierQuery);
+    const suppliersResult = await pgQuery(supplierQuery, supplierParams);
     const suppliers: SupplierRow[] = suppliersResult.rows;
 
     // Fetch geo/hierarchy data from SQL Server (batch query for all suppliers)
@@ -61,8 +64,77 @@ export async function POST(request: Request) {
       for (const row of geoResult.recordset) {
         companyGeoMap.set(row.Id, row);
       }
-    } catch {
-      // SQL Server may be unreachable; proceed without geo data
+    } catch (e) {
+      logger.warn("jobs/calculate-risk", "Geo data unavailable from SQL Server", e);
+    }
+
+    // --- Batch: Case stats from SQL Server (avoid N+1) ---
+    interface CaseStats { CompanyId: number; total: number; high_priority: number; open_cases: number }
+    const caseStatsMap = new Map<number, CaseStats>();
+    try {
+      const allCaseStats = await mssqlQuery(`
+        SELECT co.Id as CompanyId,
+          COUNT(*) as total,
+          SUM(CASE WHEN c.Priority = 1 THEN 1 ELSE 0 END) as high_priority,
+          SUM(CASE WHEN c.CaseStatusId IN (SELECT Id FROM CaseStatus WHERE Name = 'Open') THEN 1 ELSE 0 END) as open_cases
+        FROM [Case] c
+        JOIN Company co ON c.CompanyId = co.Id
+        WHERE c.Deleted = 0
+        GROUP BY co.Id
+      `);
+      for (const row of allCaseStats.recordset) {
+        caseStatsMap.set(row.CompanyId, row);
+      }
+    } catch (e) {
+      logger.warn("jobs/calculate-risk", "SQL Server case stats batch query failed", e);
+    }
+
+    // --- Batch: Survey stats from PostgreSQL (avoid N+1) ---
+    interface SurveyStats { client_id: number; total: string; active: string }
+    const surveyStatsMap = new Map<number, SurveyStats>();
+    try {
+      const allSurveyStats = await pgQuery(`
+        SELECT client_id,
+          COUNT(*) as total,
+          SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END) as active
+        FROM survey_mdlsurvey
+        GROUP BY client_id
+      `);
+      for (const row of allSurveyStats.rows) {
+        surveyStatsMap.set(row.client_id, row);
+      }
+    } catch (e) {
+      logger.warn("jobs/calculate-risk", "PostgreSQL survey stats batch query failed", e);
+    }
+
+    // --- Batch: Training stats from MySQL (global, not per-supplier) ---
+    let globalTrainingScore = 0;
+    let globalCompletionRate = 0;
+    let hasTrainingData = false;
+    try {
+      const trainingResult = (await mysqlQuery(`
+        SELECT
+          (SELECT COUNT(*) FROM mdl_user_enrolments ue
+           JOIN mdl_enrol e ON ue.enrolid = e.id
+           JOIN mdl_course c ON e.courseid = c.id
+           WHERE c.id > 1) as total_enrolled,
+          (SELECT COUNT(*) FROM mdl_course_completions cc
+           WHERE cc.timecompleted IS NOT NULL) as total_completed
+      `)) as Array<{ total_enrolled: number; total_completed: number }>;
+
+      const tRow = trainingResult[0];
+      const enrolled = tRow?.total_enrolled || 0;
+      const completed = tRow?.total_completed || 0;
+
+      if (enrolled > 0) {
+        globalCompletionRate = (completed / enrolled) * 100;
+        globalTrainingScore = Math.max(0, Math.round(100 - globalCompletionRate));
+        hasTrainingData = true;
+      } else {
+        globalTrainingScore = 70;
+      }
+    } catch (e) {
+      logger.warn("jobs/calculate-risk", "MySQL training stats query failed", e);
     }
 
     let processedCount = 0;
@@ -71,22 +143,13 @@ export async function POST(request: Request) {
       const supplierId = String(supplier.client_key);
       const reasons: RiskReason[] = [];
 
-      // --- Case Score (from SQL Server) ---
+      // --- Case Score (from batched SQL Server data) ---
       let caseScore = 0;
-      try {
-        const caseResult = await mssqlQuery(`
-          SELECT 
-            COUNT(*) as total,
-            SUM(CASE WHEN Priority = 1 THEN 1 ELSE 0 END) as high_priority,
-            SUM(CASE WHEN c.CaseStatusId IN (SELECT Id FROM CaseStatus WHERE Name = 'Open') THEN 1 ELSE 0 END) as open_cases
-          FROM [Case] c
-          JOIN Company co ON c.CompanyId = co.Id
-          WHERE c.Deleted = 0 AND co.Id = ${supplier.id}
-        `);
-        const row = caseResult.recordset[0];
-        const total = row?.total || 0;
-        const highPriority = row?.high_priority || 0;
-        const openCases = row?.open_cases || 0;
+      const caseRow = caseStatsMap.get(supplier.id);
+      if (caseRow) {
+        const total = caseRow.total || 0;
+        const highPriority = caseRow.high_priority || 0;
+        const openCases = caseRow.open_cases || 0;
 
         if (total > 0) {
           caseScore = Math.min(
@@ -110,26 +173,24 @@ export async function POST(request: Request) {
             module: "connect",
           });
         }
-      } catch {
-        // SQL Server may be unreachable
       }
 
-      // --- Survey Score (from PostgreSQL) ---
+      // --- Survey Score (from batched PostgreSQL data) ---
       let surveyScore = 0;
-      try {
-        const surveyResult = await pgQuery(
-          `SELECT COUNT(*) as total,
-                  SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END) as active
-           FROM survey_mdlsurvey
-           WHERE client_id = $1`,
-          [supplier.id],
-        );
-        const sRow = surveyResult.rows[0];
-        const totalSurveys = parseInt(sRow?.total) || 0;
-        const activeSurveys = parseInt(sRow?.active) || 0;
-
+      const surveyRow = surveyStatsMap.get(supplier.id);
+      if (!surveyRow) {
+        surveyScore = 60; // No engagement = moderate risk
+        reasons.push({
+          factor: "No surveys conducted",
+          impact: "medium",
+          description: "No worker sentiment data available for this supplier",
+          module: "engage",
+        });
+      } else {
+        const totalSurveys = parseInt(surveyRow.total) || 0;
+        const activeSurveys = parseInt(surveyRow.active) || 0;
         if (totalSurveys === 0) {
-          surveyScore = 60; // No engagement = moderate risk
+          surveyScore = 60;
           reasons.push({
             factor: "No surveys conducted",
             impact: "medium",
@@ -139,43 +200,17 @@ export async function POST(request: Request) {
         } else {
           surveyScore = Math.max(0, 50 - activeSurveys * 10);
         }
-      } catch {
-        // PostgreSQL issue
       }
 
-      // --- Training Score (from MySQL) ---
-      let trainingScore = 0;
-      try {
-        const trainingResult = (await mysqlQuery(`
-          SELECT 
-            (SELECT COUNT(*) FROM mdl_user_enrolments ue
-             JOIN mdl_enrol e ON ue.enrolid = e.id
-             JOIN mdl_course c ON e.courseid = c.id
-             WHERE c.id > 1) as total_enrolled,
-            (SELECT COUNT(*) FROM mdl_course_completions cc
-             WHERE cc.timecompleted IS NOT NULL) as total_completed
-        `)) as Array<{ total_enrolled: number; total_completed: number }>;
-
-        const tRow = trainingResult[0];
-        const enrolled = tRow?.total_enrolled || 0;
-        const completed = tRow?.total_completed || 0;
-
-        if (enrolled > 0) {
-          const completionRate = (completed / enrolled) * 100;
-          trainingScore = Math.max(0, Math.round(100 - completionRate));
-          if (completionRate < 50) {
-            reasons.push({
-              factor: `Low training completion (${Math.round(completionRate)}%)`,
-              impact: completionRate < 25 ? "high" : "medium",
-              description: `Only ${Math.round(completionRate)}% of enrolled workers completed training`,
-              module: "educate",
-            });
-          }
-        } else {
-          trainingScore = 70;
-        }
-      } catch {
-        // MySQL issue
+      // --- Training Score (from batched MySQL data — global, same for all) ---
+      const trainingScore = globalTrainingScore;
+      if (hasTrainingData && globalCompletionRate < 50) {
+        reasons.push({
+          factor: `Low training completion (${Math.round(globalCompletionRate)}%)`,
+          impact: globalCompletionRate < 25 ? "high" : "medium",
+          description: `Only ${Math.round(globalCompletionRate)}% of enrolled workers completed training`,
+          module: "educate",
+        });
       }
 
       // --- Engagement Score ---
@@ -307,7 +342,7 @@ export async function POST(request: Request) {
       message: `Risk scores calculated for ${processedCount} suppliers`,
     });
   } catch (error) {
-    console.error("Error calculating risk scores:", error);
+    logger.error("jobs/calculate-risk", "Risk score calculation failed", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },

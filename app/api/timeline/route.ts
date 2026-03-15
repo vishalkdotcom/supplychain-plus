@@ -5,6 +5,7 @@ import { query as mysqlQuery } from "@/lib/db/mysql";
 import { TimelineEvent } from "@/types";
 import mssql from "mssql";
 import { extractEnglishFromMlang } from "@/lib/mlang";
+import { logger } from "@/lib/logger";
 
 
 export async function GET(request: Request) {
@@ -56,8 +57,8 @@ export async function GET(request: Request) {
           description: extractEnglishFromMlang(`${row.TypeName || "Case"} - ${row.StatusName || "Open"} (${row.Priority === 1 ? "High" : row.Priority === 2 ? "Medium" : "Low"} priority)`),
         });
       }
-    } catch {
-      // SQL Server may be unavailable
+    } catch (e) {
+      logger.warn("api/timeline", "SQL Server unavailable", e);
     }
 
     // 2. Survey events from PostgreSQL
@@ -100,8 +101,8 @@ export async function GET(request: Request) {
           description: extractEnglishFromMlang(`Survey ${statusLabel} - ${row.client_name || "Unknown supplier"}`),
         });
       }
-    } catch {
-      // PostgreSQL may be unavailable
+    } catch (e) {
+      logger.warn("api/timeline", "PostgreSQL unavailable", e);
     }
 
     // 3. Training events from MySQL
@@ -133,8 +134,8 @@ export async function GET(request: Request) {
           description: extractEnglishFromMlang(`Course deployed with ${row.enrolled || 0} enrollments`),
         });
       }
-    } catch {
-      // MySQL may be unavailable
+    } catch (e) {
+      logger.warn("api/timeline", "MySQL unavailable", e);
     }
 
     // Filter by supplier if needed
@@ -152,7 +153,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json(filteredEvents.slice(0, 30));
   } catch (error) {
-    console.error("Error fetching timeline:", error);
+    logger.error("api/timeline", "Failed to fetch timeline", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },

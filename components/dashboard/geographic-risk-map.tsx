@@ -19,6 +19,7 @@ import {
 import { IconMap, IconMinus, IconPlus, IconRefresh, IconMaximize, IconMinimize } from "@tabler/icons-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { getScoreHex } from "@/lib/risk-utils";
 
 // Use local world atlas TopoJSON file
 const geoUrl = "/world-110m.json";
@@ -116,10 +117,7 @@ export function GeographicRiskMap({ suppliers }: GeographicRiskMapProps) {
           }
         }
 
-        // Determine color based on risk score
-        let color = "#10b981"; // green (low)
-        if (s.riskScore > 70) color = "#ef4444"; // red (high)
-        else if (s.riskScore > 30) color = "#f59e0b"; // orange (medium)
+        const color = getScoreHex(s.riskScore);
 
         return {
           ...s,

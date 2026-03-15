@@ -3,6 +3,7 @@ import { generateText, Output } from "ai";
 import { model } from "@/lib/ai/provider";
 import { z } from "zod";
 import { PDFParse } from "pdf-parse";
+import { logger } from "@/lib/logger";
 
 // Force node runtime to support pdf-parse
 export const runtime = "nodejs";
@@ -26,14 +27,31 @@ export async function POST(request: Request) {
   try {
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
-    
+
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
+    }
+
+    // Validate file type
+    const allowedTypes = ["application/pdf"];
+    if (!allowedTypes.includes(file.type)) {
+      return NextResponse.json({ error: "Only PDF files are accepted" }, { status: 400 });
+    }
+
+    // Validate file size (max 10 MB)
+    const MAX_FILE_SIZE = 10 * 1024 * 1024;
+    if (file.size > MAX_FILE_SIZE) {
+      return NextResponse.json({ error: "File size exceeds 10 MB limit" }, { status: 400 });
     }
 
     // Convert file to Buffer for pdf-parse
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
+
+    // Verify PDF magic bytes
+    if (buffer.length < 4 || buffer.toString("ascii", 0, 4) !== "%PDF") {
+      return NextResponse.json({ error: "Invalid PDF file" }, { status: 400 });
+    }
     
     // Parse PDF
     const parser = new PDFParse({ data: buffer });
@@ -54,7 +72,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, course: result.output });
 
   } catch (error) {
-    console.error("Course generation failed:", error);
+    logger.error("ai/educate", "Course generation failed", error);
     return NextResponse.json({ error: "Failed to generate course" }, { status: 500 });
   }
 }

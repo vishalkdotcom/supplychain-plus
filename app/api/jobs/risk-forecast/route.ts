@@ -9,6 +9,7 @@ import {
 } from "@/lib/db/schema";
 import { desc, eq } from "drizzle-orm";
 import { z } from "zod";
+import { logger } from "@/lib/logger";
 
 export const maxDuration = 300;
 
@@ -147,10 +148,7 @@ Data points available: ${history.length} days of history`,
           processed++;
         }
       } catch (e) {
-        console.error(
-          `Forecast failed for supplier ${supplier.supplierId}:`,
-          e,
-        );
+        logger.error("jobs/risk-forecast", `Forecast failed for supplier ${supplier.supplierId}`, e);
       }
     }
 
@@ -161,7 +159,7 @@ Data points available: ${history.length} days of history`,
       forecastDate: forecastDateStr,
     });
   } catch (error) {
-    console.error("Risk forecasting failed:", error);
+    logger.error("jobs/risk-forecast", "Risk forecasting failed", error);
     return NextResponse.json(
       { error: "Risk forecasting failed" },
       { status: 500 },

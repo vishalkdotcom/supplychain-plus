@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db/drizzle";
 import { aiChatHistory } from "@/lib/db/schema";
 import { eq, asc } from "drizzle-orm";
+import { logger } from "@/lib/logger";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -20,7 +21,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ messages: history });
   } catch (error) {
-    console.error("Failed to fetch chat history:", error);
+    logger.error("ai/chat/history", "Failed to fetch chat history", error);
     return NextResponse.json({ messages: [] });
   }
 }

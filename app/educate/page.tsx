@@ -174,7 +174,8 @@ export default function EducatePage() {
       setTranslations((prev) => ({ ...prev, [lang]: data.translated }));
       setActiveTab(lang);
       toast.success(`Translated to ${LANGUAGES[lang]}`);
-    } catch {
+    } catch (e) {
+      console.warn("Translation failed:", e);
       toast.error(`Failed to translate to ${LANGUAGES[lang]}`);
     } finally {
       setTranslatingLang(null);

@@ -6,6 +6,7 @@ import { db } from "@/lib/db/drizzle";
 import { caseSummaryCache } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { stripThinkingTags } from "@/lib/ai/utils";
+import { logger } from "@/lib/logger";
 
 export async function POST(request: Request) {
   try {
@@ -62,7 +63,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ summary: text });
   } catch (error) {
-    console.error("API Error in summarization:", error);
+    logger.error("ai/summarize", "Summarization failed", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 },

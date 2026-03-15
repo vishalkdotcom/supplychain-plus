@@ -3,6 +3,7 @@ import { db } from "@/lib/db/drizzle";
 import { supplierRiskScores } from "@/lib/db/schema";
 import { desc, eq } from "drizzle-orm";
 import { AIRecommendation } from "@/types";
+import { logger } from "@/lib/logger";
 
 interface RiskReason {
   factor: string;
@@ -114,7 +115,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json(supplierId ? recommendations : recommendations.slice(0, 10));
   } catch (error) {
-    console.error("Error generating recommendations:", error);
+    logger.error("api/recommendations", "Failed to generate recommendations", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },

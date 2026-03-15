@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { query as mysqlQuery } from "@/lib/db/mysql";
 import { SupplierTraining } from "@/types";
+import { logger } from "@/lib/logger";
 
 export async function GET(
   request: Request,
@@ -78,7 +79,7 @@ export async function GET(
 
     return NextResponse.json(trainingData);
   } catch (error) {
-    console.error("Error fetching training data:", error);
+    logger.error("api/suppliers/[id]/training", "Failed to fetch training data", error);
     // Return empty array instead of error to not break the UI if MySQL is down/empty
     return NextResponse.json([]);
   }

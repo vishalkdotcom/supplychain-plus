@@ -1,4 +1,5 @@
 import mssql from "mssql";
+import { logger } from "@/lib/logger";
 
 const config: mssql.config = {
   user: process.env.SQLSERVER_USER,
@@ -25,11 +26,11 @@ const poolPromiseValue =
   new mssql.ConnectionPool(config)
     .connect()
     .then((pool) => {
-      console.log("Connected to SQL Server");
+      logger.info("db/sql-server", "Connected to SQL Server");
       return pool;
     })
     .catch((err) => {
-      console.error("Database Connection Failed! Bad Config: ", err);
+      logger.error("db/sql-server", "Database connection failed", err);
       throw err;
     });
 
@@ -45,12 +46,12 @@ export const getPool = () => {
   poolPromise = new mssql.ConnectionPool(config)
     .connect()
     .then((pool) => {
-      console.log("Connected to SQL Server");
+      logger.info("db/sql-server", "Connected to SQL Server");
       return pool;
     })
     .catch((err) => {
       poolPromise = null;
-      console.error("Database Connection Failed! Bad Config: ", err);
+      logger.error("db/sql-server", "Database connection failed", err);
       throw err;
     });
 

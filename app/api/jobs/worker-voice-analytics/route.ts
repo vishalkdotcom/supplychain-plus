@@ -6,6 +6,7 @@ import { db } from "@/lib/db/drizzle";
 import { workerVoiceTrends } from "@/lib/db/schema";
 import { z } from "zod";
 import type { VoiceTopic } from "@/lib/db/schema";
+import { logger } from "@/lib/logger";
 
 export const maxDuration = 300; // 5 min for batch processing
 
@@ -101,7 +102,7 @@ export async function POST() {
             allTopics.push(...result.output.topics);
           }
         } catch (e) {
-          console.error(`Worker voice batch failed for supplier ${supplierId}:`, e);
+          logger.error("jobs/worker-voice-analytics", `Worker voice batch failed for supplier ${supplierId}`, e);
         }
       }
 
@@ -197,7 +198,7 @@ export async function POST() {
           });
       }
     } catch (e) {
-      console.error("Global voice analysis failed:", e);
+      logger.error("jobs/worker-voice-analytics", "Global voice analysis failed", e);
     }
 
     return NextResponse.json({
@@ -207,7 +208,7 @@ export async function POST() {
       month: currentMonth,
     });
   } catch (error) {
-    console.error("Worker voice analytics failed:", error);
+    logger.error("jobs/worker-voice-analytics", "Worker voice analytics failed", error);
     return NextResponse.json(
       { error: "Worker voice analytics failed" },
       { status: 500 },

@@ -6,8 +6,16 @@ import { RiskBreakdown } from "@/components/suppliers/risk-breakdown";
 import { CrossModulePanel } from "@/components/suppliers/cross-module-panel";
 import { SupplierTimeline } from "@/components/suppliers/supplier-timeline";
 import { AIRecommendations } from "@/components/suppliers/ai-recommendations";
-import { RiskTrendChart } from "@/components/suppliers/risk-trend-chart";
-import { EngagementHealthScore } from "@/components/suppliers/engagement-health-score";
+import dynamic from "next/dynamic";
+
+const RiskTrendChart = dynamic(
+  () => import("@/components/suppliers/risk-trend-chart").then(m => ({ default: m.RiskTrendChart })),
+  { ssr: false, loading: () => <div className="h-[400px] w-full rounded-lg bg-muted animate-pulse" /> },
+);
+const EngagementHealthScore = dynamic(
+  () => import("@/components/suppliers/engagement-health-score").then(m => ({ default: m.EngagementHealthScore })),
+  { ssr: false, loading: () => <div className="h-[400px] w-full rounded-lg bg-muted animate-pulse" /> },
+);
 import {
   Breadcrumb,
   BreadcrumbItem,

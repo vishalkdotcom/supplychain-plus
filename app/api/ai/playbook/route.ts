@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { generateText } from "ai";
 import { db } from "@/lib/db/drizzle";
 import { casePlaybookCache } from "@/lib/db/schema";
-import { query as mssqlQuery } from "@/lib/db/sql-server";
+import { paramQuery as mssqlParamQuery } from "@/lib/db/sql-server";
+import mssql from "mssql";
 import { getModelFromRequest } from "@/lib/ai/provider";
 import { and, eq } from "drizzle-orm";
+import { logger } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
   try {
@@ -40,8 +42,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Query resolved cases from SQL Server
-    const casesResult = await mssqlQuery(`
-      SELECT
+    const casesResult = await mssqlParamQuery(
+      `SELECT
         c.Id, c.Created, c.ResolvedDate,
         DATEDIFF(day, c.Created, c.ResolvedDate) as ResolutionDays,
         co.Name as CompanyName, co.MailingCountry,
@@ -52,9 +54,10 @@ export async function GET(request: NextRequest) {
         ON c.CaseTypeId = ctct.CaseTypeId AND ctct.CultureCodeId = 1
       WHERE c.Deleted = 0
         AND c.ResolvedDate IS NOT NULL
-        AND c.CaseTypeId = ${parseInt(caseTypeId)}
-      ORDER BY DATEDIFF(day, c.Created, c.ResolvedDate) ASC
-    `);
+        AND c.CaseTypeId = @caseTypeId
+      ORDER BY DATEDIFF(day, c.Created, c.ResolvedDate) ASC`,
+      { caseTypeId: { type: mssql.Int, value: parseInt(caseTypeId) } },
+    );
 
     const resolvedCases = casesResult.recordset || [];
 
@@ -89,18 +92,24 @@ export async function GET(request: NextRequest) {
     let caseNotes: string[] = [];
     if (fastestCaseIds.length > 0) {
       try {
-        const notesResult = await mssqlQuery(`
-          SELECT cn.Notes
+        const noteParams: Record<string, { type: mssql.ISqlType; value: unknown }> = {};
+        const placeholders = fastestCaseIds.map((id: number, i: number) => {
+          noteParams[`cid${i}`] = { type: mssql.Int, value: id };
+          return `@cid${i}`;
+        });
+        const notesResult = await mssqlParamQuery(
+          `SELECT cn.Notes
           FROM CaseNote cn
-          WHERE cn.CaseId IN (${fastestCaseIds.join(",")})
+          WHERE cn.CaseId IN (${placeholders.join(",")})
             AND cn.Deleted = 0
-          ORDER BY cn.Created ASC
-        `);
+          ORDER BY cn.Created ASC`,
+          noteParams,
+        );
         caseNotes = (notesResult.recordset || [])
           .map((n: { Notes: string }) => n.Notes)
           .filter(Boolean);
-      } catch {
-        // CaseNote may not have data
+      } catch (e) {
+        logger.warn("ai/playbook", "Case notes unavailable", e);
       }
     }
 
@@ -141,7 +150,8 @@ Best practices should be specific, actionable steps that case managers can follo
         bestPractices = parsed.bestPractices || [];
         aiSummary = parsed.summary || aiSummary;
       }
-    } catch {
+    } catch (e) {
+      logger.warn("ai/playbook", "AI insight generation failed", e);
       bestPractices = [
         `Average resolution time is ${Math.round(avgResolutionDays)} days`,
         `Best performers resolve in ${bestResolutionDays} days`,
@@ -174,7 +184,7 @@ Best practices should be specific, actionable steps that case managers can follo
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error("Error generating playbook:", error);
+    logger.error("ai/playbook", "Playbook generation failed", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },
