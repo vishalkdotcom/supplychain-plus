@@ -12,7 +12,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "db:seed": "bun run scripts/seed-risk-scores.ts",
-    "seed-all": "bun run scripts/seed-all.ts"
+    "seed-all": "bun run scripts/seed-all.ts",
+    "reseed": "bun run scripts/reseed-preserve-ml.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.54",

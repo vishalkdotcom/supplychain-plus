@@ -13,7 +13,9 @@
       "Bash(bun run:*)",
       "Bash(printf '\\\\\\\\connect wovo_new\\\\n')",
       "Bash(grep -v \"SET transaction_timeout\\\\|\\\\\\\\restrict \" schemas/postgres_schema.sql)",
-      "Bash(pwsh -File fix-sqlserver-schema.ps1)"
+      "Bash(pwsh -File fix-sqlserver-schema.ps1)",
+      "Bash(find:*)",
+      "Bash(bunx tsc:*)"
     ]
   }
 }
