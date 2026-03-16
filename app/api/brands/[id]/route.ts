@@ -13,15 +13,6 @@ export async function GET(
   try {
     const { id } = await params;
 
-    // Get brand aggregates from supplier_risk_scores for this parentCompanyId
-    const [aggregate] = await db
-      .select({
-        supplierCount: sql<number>`count(*)::int`,
-        avgRiskScore: sql<number>`round(avg(${supplierRiskScores.riskScore}))::int`,
-      })
-      .from(supplierRiskScores)
-      .where(eq(supplierRiskScores.parentCompanyId, id));
-
     // Fetch brand info from clients_clientinfo
     const brandInfoResult = await query(
       `SELECT client_key, name, country
@@ -32,11 +23,34 @@ export async function GET(
 
     const row = brandInfoResult.rows[0];
 
+    // Get risk aggregates if available
+    const [aggregate] = await db
+      .select({
+        supplierCount: sql<number>`count(*)::int`,
+        avgRiskScore: sql<number>`round(avg(${supplierRiskScores.riskScore}))::int`,
+      })
+      .from(supplierRiskScores)
+      .where(eq(supplierRiskScores.parentCompanyId, id));
+
+    // Fallback supplier count from relation mapping tables
+    let supplierCount = aggregate?.supplierCount || 0;
+    if (supplierCount === 0) {
+      const countResult = await query(
+        `SELECT COUNT(m.clientinfo_id)::int as supplier_count
+         FROM clients_clientrelation cr
+         JOIN clients_clientinfo ci ON ci.id = cr.relation_id
+         JOIN clients_clientinfotorelationmapping m ON m.clientrelation_id = cr.id
+         WHERE cr.relation_type = 0 AND ci.client_key = $1`,
+        [Number(id)],
+      );
+      supplierCount = countResult.rows[0]?.supplier_count || 0;
+    }
+
     const brand: Brand = {
       id,
       name: row?.name || `Brand #${id}`,
       country: row?.country || undefined,
-      supplierCount: aggregate?.supplierCount || 0,
+      supplierCount,
       avgRiskScore: aggregate?.avgRiskScore || 0,
     };
 

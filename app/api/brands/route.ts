@@ -11,8 +11,22 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const search = searchParams.get("search") || "";
 
-    // Get brand aggregates from supplier_risk_scores grouped by parentCompanyId
-    const brandAggregates = await db
+    // 1. Get all brands from the authoritative source: clients_clientrelation
+    //    relation_type=0 means PARENT (brand). relation_id points to the brand's clients_clientinfo.id
+    const brandsResult = await query(
+      `SELECT ci.client_key, ci.name, ci.country
+       FROM clients_clientrelation cr
+       JOIN clients_clientinfo ci ON ci.id = cr.relation_id
+       WHERE cr.relation_type = 0 AND ci.is_deleted = false`,
+      [],
+    );
+
+    if (brandsResult.rows.length === 0) {
+      return NextResponse.json([]);
+    }
+
+    // 2. Get risk aggregates from supplier_risk_scores grouped by parentCompanyId (if available)
+    const riskAggregates = await db
       .select({
         parentCompanyId: supplierRiskScores.parentCompanyId,
         supplierCount: sql<number>`count(*)::int`,
@@ -22,41 +36,56 @@ export async function GET(request: NextRequest) {
       .where(isNotNull(supplierRiskScores.parentCompanyId))
       .groupBy(supplierRiskScores.parentCompanyId);
 
-    if (brandAggregates.length === 0) {
-      return NextResponse.json([]);
+    const riskMap: Record<string, { supplierCount: number; avgRiskScore: number }> = {};
+    for (const agg of riskAggregates) {
+      if (agg.parentCompanyId) {
+        riskMap[agg.parentCompanyId] = {
+          supplierCount: agg.supplierCount,
+          avgRiskScore: agg.avgRiskScore,
+        };
+      }
     }
 
-    // Fetch brand names from clients_clientinfo in wovo_new
-    const brandClientKeys = brandAggregates.map((b: { parentCompanyId: string | null }) =>
-      Number(b.parentCompanyId),
-    );
-    const brandInfoResult = await query(
-      `SELECT client_key, name, country
-       FROM clients_clientinfo
-       WHERE client_key = ANY($1) AND is_deleted = false`,
-      [brandClientKeys],
+    // 3. Also count suppliers via the relation mapping tables (authoritative supplier count)
+    const supplierCountResult = await query(
+      `SELECT cr.id as relation_id, COUNT(m.clientinfo_id)::int as supplier_count
+       FROM clients_clientrelation cr
+       LEFT JOIN clients_clientinfotorelationmapping m ON m.clientrelation_id = cr.id
+       WHERE cr.relation_type = 0
+       GROUP BY cr.id`,
+      [],
     );
 
-    const brandInfoMap: Record<
-      number,
-      { name: string; country: string | null }
-    > = {};
-    for (const row of brandInfoResult.rows) {
-      brandInfoMap[row.client_key] = {
-        name: row.name,
-        country: row.country,
-      };
+    // Map relation_id -> supplier_count. We need to join this back to brands.
+    // clients_clientrelation.id is the relation_id, and relation_id (column) points to clientinfo.id
+    // We need a way to map relation table id -> client_key
+    const relationSupplierCountResult = await query(
+      `SELECT ci.client_key, COUNT(m.clientinfo_id)::int as supplier_count
+       FROM clients_clientrelation cr
+       JOIN clients_clientinfo ci ON ci.id = cr.relation_id
+       LEFT JOIN clients_clientinfotorelationmapping m ON m.clientrelation_id = cr.id
+       WHERE cr.relation_type = 0 AND ci.is_deleted = false
+       GROUP BY ci.client_key`,
+      [],
+    );
+
+    const relationCountMap: Record<number, number> = {};
+    for (const row of relationSupplierCountResult.rows) {
+      relationCountMap[row.client_key] = row.supplier_count;
     }
 
-    // Merge aggregates with brand info
-    let brands: Brand[] = brandAggregates.map((agg: { parentCompanyId: string | null; supplierCount: number; avgRiskScore: number }) => {
-      const info = brandInfoMap[Number(agg.parentCompanyId)];
+    // 4. Build brand list — use relation mapping for supplier count, risk scores as enrichment
+    let brands: Brand[] = brandsResult.rows.map((row: { client_key: number; name: string; country: string | null }) => {
+      const clientKey = String(row.client_key);
+      const riskData = riskMap[clientKey];
+      const relationCount = relationCountMap[row.client_key] || 0;
+
       return {
-        id: agg.parentCompanyId!,
-        name: info?.name || `Brand #${agg.parentCompanyId}`,
-        country: info?.country || undefined,
-        supplierCount: agg.supplierCount,
-        avgRiskScore: agg.avgRiskScore,
+        id: clientKey,
+        name: row.name,
+        country: row.country || undefined,
+        supplierCount: riskData?.supplierCount || relationCount,
+        avgRiskScore: riskData?.avgRiskScore || 0,
       };
     });
 
