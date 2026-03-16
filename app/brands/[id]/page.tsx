@@ -1,9 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { fetchBrands, fetchSuppliers, fetchMetrics } from "@/lib/api";
+import { fetchBrand, fetchSuppliers, fetchMetrics } from "@/lib/api";
 import {
   Card,
   CardContent,
@@ -12,6 +13,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   IconArrowLeft,
   IconArrowRight,
@@ -19,19 +21,21 @@ import {
   IconBuildingSkyscraper,
   IconMessage,
   IconSchool,
+  IconSearch,
+  IconAlertTriangle,
 } from "@tabler/icons-react";
-import { getScoreBadgeClasses } from "@/lib/risk-utils";
+import { getScoreBadgeClasses, getRiskBadgeVariant } from "@/lib/risk-utils";
 
 export default function BrandDetailPage() {
   const params = useParams();
   const brandId = params.id as string;
+  const [supplierSearch, setSupplierSearch] = useState("");
 
-  const { data: brands } = useQuery({
-    queryKey: ["brands"],
-    queryFn: () => fetchBrands(),
+  const { data: brand } = useQuery({
+    queryKey: ["brand", brandId],
+    queryFn: () => fetchBrand(brandId),
+    enabled: !!brandId,
   });
-
-  const brand = brands?.find((b: { id: string }) => b.id === brandId);
 
   const { data: metrics } = useQuery({
     queryKey: ["metrics", brandId],
@@ -46,6 +50,22 @@ export default function BrandDetailPage() {
   });
 
   const suppliers = suppliersRes?.data || [];
+
+  // Client-side filter for supplier search within the brand
+  const filteredSuppliers = supplierSearch
+    ? suppliers.filter(
+        (s) =>
+          s.name.toLowerCase().includes(supplierSearch.toLowerCase()) ||
+          s.country.toLowerCase().includes(supplierSearch.toLowerCase()),
+      )
+    : suppliers;
+
+  // Risk distribution
+  const highRiskCount = suppliers.filter((s) => s.riskScore > 70).length;
+  const mediumRiskCount = suppliers.filter(
+    (s) => s.riskScore > 30 && s.riskScore <= 70,
+  ).length;
+  const lowRiskCount = suppliers.filter((s) => s.riskScore <= 30).length;
 
   if (isLoading) {
     return (
@@ -129,13 +149,90 @@ export default function BrandDetailPage() {
         </div>
       )}
 
+      {/* Risk Distribution */}
+      {suppliers.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <IconAlertTriangle className="h-4 w-4" />
+              Risk Distribution
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-4">
+              <div className="flex items-center gap-2">
+                <Badge variant="destructive" className="text-xs">
+                  {highRiskCount}
+                </Badge>
+                <span className="text-sm text-muted-foreground">High Risk</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge variant="default" className="text-xs">
+                  {mediumRiskCount}
+                </Badge>
+                <span className="text-sm text-muted-foreground">Medium</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" className="text-xs">
+                  {lowRiskCount}
+                </Badge>
+                <span className="text-sm text-muted-foreground">Low Risk</span>
+              </div>
+            </div>
+            {/* Visual bar */}
+            {suppliers.length > 0 && (
+              <div className="flex h-2 rounded-full overflow-hidden mt-3">
+                {highRiskCount > 0 && (
+                  <div
+                    className="bg-red-500"
+                    style={{
+                      width: `${(highRiskCount / suppliers.length) * 100}%`,
+                    }}
+                  />
+                )}
+                {mediumRiskCount > 0 && (
+                  <div
+                    className="bg-orange-500"
+                    style={{
+                      width: `${(mediumRiskCount / suppliers.length) * 100}%`,
+                    }}
+                  />
+                )}
+                {lowRiskCount > 0 && (
+                  <div
+                    className="bg-green-500"
+                    style={{
+                      width: `${(lowRiskCount / suppliers.length) * 100}%`,
+                    }}
+                  />
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Supplier List */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Suppliers</CardTitle>
+          <div className="relative w-64">
+            <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Filter suppliers..."
+              value={supplierSearch}
+              onChange={(e) => setSupplierSearch(e.target.value)}
+              className="pl-10 h-9"
+            />
+          </div>
         </CardHeader>
         <CardContent className="space-y-3">
-          {suppliers.map((supplier) => (
+          <p className="text-xs text-muted-foreground">
+            Sorted by risk score (highest first)
+            {supplierSearch &&
+              ` · ${filteredSuppliers.length} of ${suppliers.length} shown`}
+          </p>
+          {filteredSuppliers.map((supplier) => (
             <Link
               key={supplier.id}
               href={`/suppliers/${supplier.id}`}
@@ -148,10 +245,10 @@ export default function BrandDetailPage() {
                     {supplier.name}
                   </span>
                   <Badge
-                    variant="outline"
-                    className={`text-xs ${getScoreBadgeClasses(supplier.riskScore)}`}
+                    variant={getRiskBadgeVariant(supplier.riskLevel)}
+                    className="text-xs"
                   >
-                    {supplier.riskScore}
+                    {supplier.riskLevel.toUpperCase()} {supplier.riskScore}
                   </Badge>
                 </div>
                 <p className="text-sm text-muted-foreground">
@@ -162,9 +259,11 @@ export default function BrandDetailPage() {
               <IconArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors shrink-0" />
             </Link>
           ))}
-          {suppliers.length === 0 && (
+          {filteredSuppliers.length === 0 && (
             <p className="text-center py-8 text-muted-foreground">
-              No suppliers found for this brand.
+              {supplierSearch
+                ? "No suppliers match your search."
+                : "No suppliers found for this brand."}
             </p>
           )}
         </CardContent>

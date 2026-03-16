@@ -64,6 +64,14 @@ export function DashboardView() {
     queryFn: () => fetchSuppliers({ parentCompanyId: parentCompanyId || undefined }),
   });
 
+  const { data: brands } = useQuery({
+    queryKey: ["brands"],
+    queryFn: () => fetchBrands(),
+    enabled: viewMode === "brand" && !!currentBrandId,
+  });
+
+  const currentBrandName = brands?.find((b) => b.id === currentBrandId)?.name;
+
   const EMPTY_SUPPLIERS: Supplier[] = [];
   const suppliers = suppliersRes?.data || EMPTY_SUPPLIERS;
 
@@ -103,7 +111,7 @@ export function DashboardView() {
           </h1>
           <p className="text-muted-foreground">
             {viewMode === "brand" && currentBrandId
-              ? `Filtered by brand — viewing brand suppliers`
+              ? `Viewing suppliers for ${currentBrandName || "selected brand"}`
               : "Cross-module intelligence across your supply chain"}
           </p>
         </div>

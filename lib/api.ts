@@ -154,6 +154,12 @@ export async function fetchBrands(search?: string): Promise<Brand[]> {
   return res.json();
 }
 
+export async function fetchBrand(id: string): Promise<Brand> {
+  const res = await fetch(`${API_BASE}/brands/${id}`);
+  if (!res.ok) throw new Error("Failed to fetch brand");
+  return res.json();
+}
+
 export async function fetchRecommendations(supplierId?: string): Promise<AIRecommendation[]> {
   const qs = supplierId ? `?supplierId=${supplierId}` : "";
   const res = await fetch(`${API_BASE}/recommendations${qs}`);
