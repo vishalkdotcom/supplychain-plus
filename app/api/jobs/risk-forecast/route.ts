@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { generateText, Output } from "ai";
-import { getOllamaModel, OLLAMA_NO_THINK } from "@/lib/ai/provider";
+import { getOllamaModel } from "@/lib/ai/provider";
 import { db } from "@/lib/db/drizzle";
 import {
   supplierRiskScores,
@@ -16,10 +16,10 @@ export const maxDuration = 300;
 const forecastSchema = z.object({
   predictedRiskScore: z
     .number()
-    .describe("Predicted risk score 60 days from now (0-100)"),
-  predictedCaseScore: z.number(),
-  predictedSurveyScore: z.number(),
-  predictedTrainingScore: z.number(),
+    .describe("Predicted risk score 60 days from now, integer 0-100"),
+  predictedCaseScore: z.number().describe("Predicted case score, integer 0-100"),
+  predictedSurveyScore: z.number().describe("Predicted survey score, integer 0-100"),
+  predictedTrainingScore: z.number().describe("Predicted training score, integer 0-100"),
   confidence: z
     .number()
     .describe("Confidence in prediction (0-1)"),
@@ -36,7 +36,7 @@ const forecastSchema = z.object({
  */
 export async function POST() {
   try {
-    const model = getOllamaModel("qwen3.5:4b");
+    const model = getOllamaModel("qwen3:4b");
 
     // Get all current suppliers
     const suppliers = await db
@@ -92,9 +92,9 @@ export async function POST() {
       try {
         const result = await generateText({
           model,
-          providerOptions: OLLAMA_NO_THINK,
+          maxRetries: 3,
           system:
-            "You are an expert supply chain risk analyst. Given historical risk score trends, predict the risk score 60 days from now. Be precise and data-driven.",
+            "You are an expert supply chain risk analyst. Given historical risk score trends, predict the risk score 60 days from now. Be precise and data-driven. You MUST respond with valid JSON only — no markdown, no explanation, no extra text.",
           prompt: `Predict risk scores for supplier "${supplier.supplierName}" 60 days from now.
 
 Current scores:
@@ -120,10 +120,10 @@ Data points available: ${history.length} days of history`,
             .values({
               supplierId: supplier.supplierId,
               forecastDate: forecastDateStr,
-              predictedRiskScore: result.output.predictedRiskScore,
-              predictedCaseScore: result.output.predictedCaseScore,
-              predictedSurveyScore: result.output.predictedSurveyScore,
-              predictedTrainingScore: result.output.predictedTrainingScore,
+              predictedRiskScore: Math.round(result.output.predictedRiskScore),
+              predictedCaseScore: Math.round(result.output.predictedCaseScore),
+              predictedSurveyScore: Math.round(result.output.predictedSurveyScore),
+              predictedTrainingScore: Math.round(result.output.predictedTrainingScore),
               confidence: result.output.confidence,
               trendDirection: result.output.trendDirection,
               aiReasoning: result.output.reasoning,
@@ -134,10 +134,10 @@ Data points available: ${history.length} days of history`,
                 supplierRiskForecast.forecastDate,
               ],
               set: {
-                predictedRiskScore: result.output.predictedRiskScore,
-                predictedCaseScore: result.output.predictedCaseScore,
-                predictedSurveyScore: result.output.predictedSurveyScore,
-                predictedTrainingScore: result.output.predictedTrainingScore,
+                predictedRiskScore: Math.round(result.output.predictedRiskScore),
+                predictedCaseScore: Math.round(result.output.predictedCaseScore),
+                predictedSurveyScore: Math.round(result.output.predictedSurveyScore),
+                predictedTrainingScore: Math.round(result.output.predictedTrainingScore),
                 confidence: result.output.confidence,
                 trendDirection: result.output.trendDirection,
                 aiReasoning: result.output.reasoning,

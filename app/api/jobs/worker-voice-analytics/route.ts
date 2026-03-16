@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { generateText, Output } from "ai";
-import { getOllamaModel, OLLAMA_NO_THINK } from "@/lib/ai/provider";
+import { getOllamaModel } from "@/lib/ai/provider";
 import { query as pgQuery } from "@/lib/db/postgres";
 import { db } from "@/lib/db/drizzle";
 import { workerVoiceTrends } from "@/lib/db/schema";
@@ -8,7 +8,7 @@ import { z } from "zod";
 import type { VoiceTopic } from "@/lib/db/schema";
 import { logger } from "@/lib/logger";
 
-export const maxDuration = 300; // 5 min for batch processing
+export const maxDuration = 600; // 10 min — processing all suppliers
 
 const topicSchema = z.object({
   topics: z.array(
@@ -23,32 +23,34 @@ const topicSchema = z.object({
 
 /**
  * Batch job: Analyze survey responses to extract worker voice trends.
- * Runs monthly. Uses local Ollama (qwen3.5:4b, think:false) to minimize cost.
+ * Runs monthly. Uses local Ollama (qwen3:4b, think:false) to minimize cost.
  *
  * POST /api/jobs/worker-voice-analytics
  */
 export async function POST() {
   try {
-    const model = getOllamaModel("qwen3.5:4b");
+    const model = getOllamaModel("qwen3:4b");
     const now = new Date();
     const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
 
     // Query survey responses from PostgreSQL (engage database)
+    // Use window function to get up to 50 responses per supplier (ensures all suppliers represented)
     const responsesResult = await pgQuery(
-      `SELECT
-        r.response_text,
-        r.created_date,
-        c.client_key,
-        c.name as client_name
-      FROM survey_mdlsurveyquestionresponses r
-      JOIN survey_mdlsurveyquestion q ON r.question_id = q.id
-      JOIN survey_mdlsurvey s ON q.survey_id = s.id
-      LEFT JOIN clients_clientinfo c ON s.client_id = c.id
-      WHERE r.response_text IS NOT NULL
-        AND r.response_text != ''
-        AND length(r.response_text) > 10
-      ORDER BY r.created_date DESC
-      LIMIT 500`,
+      `SELECT text_response AS response_text, created_date, client_key, client_name
+      FROM (
+        SELECT r.text_response, r.created_date, c.client_key, c.name as client_name,
+               ROW_NUMBER() OVER (PARTITION BY c.client_key ORDER BY r.created_date DESC) as rn
+        FROM survey_mdlsurveyquestionresponses r
+        JOIN survey_mdlsurveyquestions q ON r.survey_question_id = q.id
+        JOIN survey_mdlsurvey_questions sq ON sq.mdlsurveyquestions_id = q.id
+        JOIN survey_mdlsurvey s ON sq.mdlsurvey_id = s.id
+        LEFT JOIN clients_clientinfo c ON s.client_id = c.id
+        WHERE r.text_response IS NOT NULL
+          AND r.text_response != ''
+          AND length(r.text_response) > 10
+      ) sub
+      WHERE rn <= 50
+      ORDER BY client_key, created_date DESC`,
     );
 
     const responses = responsesResult.rows as Array<{
@@ -91,9 +93,9 @@ export async function POST() {
         try {
           const result = await generateText({
             model,
-            providerOptions: OLLAMA_NO_THINK,
+            maxRetries: 3,
             system:
-              "You are an expert at analyzing worker feedback from factory surveys. Extract the main topics/themes being discussed and their sentiment. Be specific about workplace issues.",
+              "You are an expert at analyzing worker feedback from factory surveys. Extract the main topics/themes being discussed and their sentiment. Be specific about workplace issues. You MUST respond with valid JSON only — no markdown, no explanation, no extra text.",
             prompt: `Analyze these ${batch.length} worker survey responses and extract the key topics/themes:\n\n${batch.map((t, idx) => `${idx + 1}. ${t.substring(0, 300)}`).join("\n")}`,
             output: Output.object({ schema: topicSchema }),
           });
@@ -165,9 +167,9 @@ export async function POST() {
     try {
       const globalResult = await generateText({
         model,
-        providerOptions: OLLAMA_NO_THINK,
+        maxRetries: 3,
         system:
-          "You are an expert at analyzing worker feedback. Extract the main topics across all factories.",
+          "You are an expert at analyzing worker feedback. Extract the main topics across all factories. You MUST respond with valid JSON only — no markdown, no explanation, no extra text.",
         prompt: `Analyze these ${globalBatch.length} worker survey responses from multiple factories and extract global themes:\n\n${globalBatch.map((t, idx) => `${idx + 1}. ${t.substring(0, 300)}`).join("\n")}`,
         output: Output.object({ schema: topicSchema }),
       });

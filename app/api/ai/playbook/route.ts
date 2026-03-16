@@ -1,22 +1,22 @@
-import { NextRequest, NextResponse } from "next/server";
-import { generateText } from "ai";
-import { db } from "@/lib/db/drizzle";
-import { casePlaybookCache } from "@/lib/db/schema";
-import { paramQuery as mssqlParamQuery } from "@/lib/db/sql-server";
-import mssql from "mssql";
-import { getModelFromRequest } from "@/lib/ai/provider";
-import { and, eq } from "drizzle-orm";
-import { logger } from "@/lib/logger";
+import { NextRequest, NextResponse } from 'next/server';
+import { generateText } from 'ai';
+import { db } from '@/lib/db/drizzle';
+import { casePlaybookCache } from '@/lib/db/schema';
+import { paramQuery as mssqlParamQuery } from '@/lib/db/sql-server';
+import mssql from 'mssql';
+import { getModelFromRequest } from '@/lib/ai/provider';
+import { and, eq } from 'drizzle-orm';
+import { logger } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
-    const caseTypeId = searchParams.get("caseTypeId");
-    const region = searchParams.get("region") || "Global";
+    const caseTypeId = searchParams.get('caseTypeId');
+    const region = searchParams.get('region') || 'Global';
 
     if (!caseTypeId) {
       return NextResponse.json(
-        { error: "caseTypeId is required" },
+        { error: 'caseTypeId is required' },
         { status: 400 },
       );
     }
@@ -34,8 +34,7 @@ export async function GET(request: NextRequest) {
       .limit(1);
 
     if (cached.length > 0) {
-      const cacheAge =
-        Date.now() - new Date(cached[0].generatedAt).getTime();
+      const cacheAge = Date.now() - new Date(cached[0].generatedAt).getTime();
       if (cacheAge < 7 * 24 * 60 * 60 * 1000) {
         return NextResponse.json(cached[0]);
       }
@@ -70,7 +69,7 @@ export async function GET(request: NextRequest) {
         bestResolutionDays: null,
         totalResolved: 0,
         bestPractices: [],
-        aiSummary: "No resolved cases found for this case type.",
+        aiSummary: 'No resolved cases found for this case type.',
       });
     }
 
@@ -92,7 +91,10 @@ export async function GET(request: NextRequest) {
     let caseNotes: string[] = [];
     if (fastestCaseIds.length > 0) {
       try {
-        const noteParams: Record<string, { type: mssql.ISqlType; value: unknown }> = {};
+        const noteParams: Record<
+          string,
+          { type: (() => mssql.ISqlType) | mssql.ISqlType; value: unknown }
+        > = {};
         const placeholders = fastestCaseIds.map((id: number, i: number) => {
           noteParams[`cid${i}`] = { type: mssql.Int, value: id };
           return `@cid${i}`;
@@ -100,7 +102,7 @@ export async function GET(request: NextRequest) {
         const notesResult = await mssqlParamQuery(
           `SELECT cn.Notes
           FROM CaseNote cn
-          WHERE cn.CaseId IN (${placeholders.join(",")})
+          WHERE cn.CaseId IN (${placeholders.join(',')})
             AND cn.Deleted = 0
           ORDER BY cn.Created ASC`,
           noteParams,
@@ -109,7 +111,7 @@ export async function GET(request: NextRequest) {
           .map((n: { Notes: string }) => n.Notes)
           .filter(Boolean);
       } catch (e) {
-        logger.warn("ai/playbook", "Case notes unavailable", e);
+        logger.warn('ai/playbook', 'Case notes unavailable', e);
       }
     }
 
@@ -121,9 +123,9 @@ Case Type: ${caseTypeName}
 Total Resolved: ${resolvedCases.length}
 Average Resolution: ${Math.round(avgResolutionDays)} days
 Fastest Resolution: ${bestResolutionDays} days
-Countries: ${[...new Set(resolvedCases.map((c: { MailingCountry: string }) => c.MailingCountry))].join(", ")}
+Countries: ${[...new Set(resolvedCases.map((c: { MailingCountry: string }) => c.MailingCountry))].join(', ')}
 
-${caseNotes.length > 0 ? `Case Notes from fastest resolutions:\n${caseNotes.slice(0, 10).join("\n---\n")}` : "No case notes available."}
+${caseNotes.length > 0 ? `Case Notes from fastest resolutions:\n${caseNotes.slice(0, 10).join('\n---\n')}` : 'No case notes available.'}
 
 Respond with a JSON object:
 {
@@ -134,8 +136,7 @@ Respond with a JSON object:
 Best practices should be specific, actionable steps that case managers can follow. Base them on the data provided.`;
 
     let bestPractices: string[] = [];
-    let aiSummary =
-      "Resolution patterns analyzed from historical data.";
+    let aiSummary = 'Resolution patterns analyzed from historical data.';
 
     try {
       const { text } = await generateText({
@@ -151,7 +152,7 @@ Best practices should be specific, actionable steps that case managers can follo
         aiSummary = parsed.summary || aiSummary;
       }
     } catch (e) {
-      logger.warn("ai/playbook", "AI insight generation failed", e);
+      logger.warn('ai/playbook', 'AI insight generation failed', e);
       bestPractices = [
         `Average resolution time is ${Math.round(avgResolutionDays)} days`,
         `Best performers resolve in ${bestResolutionDays} days`,
@@ -184,9 +185,9 @@ Best practices should be specific, actionable steps that case managers can follo
 
     return NextResponse.json(result);
   } catch (error) {
-    logger.error("ai/playbook", "Playbook generation failed", error);
+    logger.error('ai/playbook', 'Playbook generation failed', error);
     return NextResponse.json(
-      { error: "Internal Server Error" },
+      { error: 'Internal Server Error' },
       { status: 500 },
     );
   }

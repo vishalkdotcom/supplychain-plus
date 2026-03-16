@@ -76,7 +76,7 @@ export async function POST(request: Request) {
         SELECT co.Id as CompanyId,
           COUNT(*) as total,
           SUM(CASE WHEN c.Priority = 1 THEN 1 ELSE 0 END) as high_priority,
-          SUM(CASE WHEN c.CaseStatusId IN (SELECT Id FROM CaseStatus WHERE Name = 'Open') THEN 1 ELSE 0 END) as open_cases
+          SUM(CASE WHEN c.CaseStatusId = 1 THEN 1 ELSE 0 END) as open_cases
         FROM [Case] c
         JOIN Company co ON c.CompanyId = co.Id
         WHERE c.Deleted = 0

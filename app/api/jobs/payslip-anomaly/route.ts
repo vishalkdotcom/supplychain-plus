@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { generateText, Output } from "ai";
-import { getOllamaModel, OLLAMA_NO_THINK } from "@/lib/ai/provider";
+import { getOllamaModel } from "@/lib/ai/provider";
 import { query as mssqlQuery } from "@/lib/db/sql-server";
 import { db } from "@/lib/db/drizzle";
 import { payslipAnomalies, alerts } from "@/lib/db/schema";
@@ -48,24 +48,29 @@ export async function POST() {
     const model = getOllamaModel("gemma3:1b");
 
     // Query payslip data from SQL Server
+    // Payslip table has Month/Year/StartDate/EndDate; wage data is in stgPayslipReportData (key-value format)
     const result = await mssqlQuery(`
       SELECT
         p.Id,
         p.CompanyId,
         co.Name as CompanyName,
-        cp.MailingCountry as Country,
-        p.NetPay,
-        p.GrossPay,
-        p.PayPeriodStart,
-        p.PayPeriodEnd,
-        p.Currency,
-        p.WorkerCount
+        co.MailingCountry as Country,
+        CAST(ISNULL(net.Value, '0') AS FLOAT) as NetPay,
+        CAST(ISNULL(gross.Value, '0') AS FLOAT) as GrossPay,
+        p.StartDate as PayPeriodStart,
+        p.EndDate as PayPeriodEnd,
+        ISNULL(cur.Value, 'USD') as Currency,
+        CAST(ISNULL(wc.Value, '0') AS INT) as WorkerCount
       FROM Payslip p
       JOIN Company co ON p.CompanyId = co.Id
-      LEFT JOIN CompanyPost cp ON co.Id = cp.CompanyId
-      WHERE p.NetPay IS NOT NULL
+      LEFT JOIN stgPayslipReportData net ON net.PayslipId = p.Id AND net.HeaderText = 'Net Wage'
+      LEFT JOIN stgPayslipReportData gross ON gross.PayslipId = p.Id AND gross.HeaderText = 'Gross Wage'
+      LEFT JOIN stgPayslipReportData cur ON cur.PayslipId = p.Id AND cur.HeaderText = 'Currency'
+      LEFT JOIN stgPayslipReportData wc ON wc.PayslipId = p.Id AND wc.HeaderText = 'Worker Count'
+      WHERE p.Deleted = 0
         AND co.Deleted = 0
-      ORDER BY p.PayPeriodEnd DESC
+        AND net.Value IS NOT NULL
+      ORDER BY p.EndDate DESC
     `);
 
     const payslips = result.recordset as Array<{
@@ -193,9 +198,9 @@ export async function POST() {
 
         const aiResult = await generateText({
           model,
-          providerOptions: OLLAMA_NO_THINK,
+          maxRetries: 3,
           system:
-            "You are a labor compliance expert analyzing payslip data for potential wage theft or anomalies.",
+            "You are a labor compliance expert analyzing payslip data for potential wage theft or anomalies. You MUST respond with valid JSON only — no markdown, no explanation, no extra text.",
           prompt: `Interpret this payslip anomaly for ${anomaly.supplierName} in ${anomaly.details.country}:
 Type: ${typeLabel}
 Expected: ${anomaly.details.expected} ${anomaly.details.currency}

@@ -1,37 +1,31 @@
-import { NextResponse } from "next/server";
-import { generateText, embed, Output } from "ai";
-import {
-  getOllamaModel,
-  getOllamaEmbedding,
-  OLLAMA_NO_THINK,
-} from "@/lib/ai/provider";
-import { query as mssqlQuery } from "@/lib/db/sql-server";
-import { db } from "@/lib/db/drizzle";
-import { caseEmbeddings, caseClusters } from "@/lib/db/schema";
-import { sql } from "drizzle-orm";
-import { z } from "zod";
-import { logger } from "@/lib/logger";
+import { NextResponse } from 'next/server';
+import { generateText, embed, Output } from 'ai';
+import { getOllamaModel, getOllamaEmbedding } from '@/lib/ai/provider';
+import { query as mssqlQuery } from '@/lib/db/sql-server';
+import { db } from '@/lib/db/drizzle';
+import { caseEmbeddings, caseClusters } from '@/lib/db/schema';
+import { inArray } from 'drizzle-orm';
+import { z } from 'zod';
+import { logger } from '@/lib/logger';
 
 export const maxDuration = 600; // 10 min — heavy batch
 
 const clusterLabelSchema = z.object({
-  label: z.string().describe("Short label for this cluster of cases"),
-  summary: z
-    .string()
-    .describe("2-3 sentence summary of the systemic pattern"),
-  severity: z.enum(["critical", "warning", "info"]),
+  label: z.string().describe('Short label for this cluster of cases'),
+  summary: z.string().describe('2-3 sentence summary of the systemic pattern'),
+  severity: z.enum(['critical', 'warning', 'info']),
 });
 
 /**
  * Batch job: Embed case messages and cluster them to find systemic patterns.
- * Uses local Ollama: bge-m3 for embeddings, qwen3.5:4b for labeling.
+ * Uses local Ollama: bge-m3 for embeddings, qwen3:4b for labeling.
  *
  * POST /api/jobs/case-clustering
  */
 export async function POST() {
   try {
-    const embeddingModel = getOllamaEmbedding("bge-m3");
-    const labelModel = getOllamaModel("qwen3.5:4b");
+    const embeddingModel = getOllamaEmbedding('bge-m3');
+    const labelModel = getOllamaModel('qwen3:4b');
 
     // Step 1: Query case messages from SQL Server
     const result = await mssqlQuery(`
@@ -64,7 +58,7 @@ export async function POST() {
     if (messages.length === 0) {
       return NextResponse.json({
         success: true,
-        message: "No messages to process",
+        message: 'No messages to process',
       });
     }
 
@@ -107,16 +101,17 @@ export async function POST() {
 
         embeddedCount++;
       } catch (e) {
-        logger.error("jobs/case-clustering", `Embedding failed for message ${msg.MessageId}`, e);
+        logger.error(
+          'jobs/case-clustering',
+          `Embedding failed for message ${msg.MessageId} (OLLAMA_BASE_URL=${process.env.OLLAMA_BASE_URL})`,
+          e,
+        );
       }
     }
 
     // Step 3: Simple clustering using cosine similarity
     // Group similar messages by finding nearest neighbors
-    const clusters: Map<
-      number,
-      Array<(typeof allEmbeddings)[0]>
-    > = new Map();
+    const clusters: Map<number, Array<(typeof allEmbeddings)[0]>> = new Map();
     const assigned = new Set<number>();
     let clusterIdx = 0;
     const SIMILARITY_THRESHOLD = 0.75;
@@ -157,15 +152,26 @@ export async function POST() {
     for (const [, members] of clusters) {
       const sampleTexts = members.slice(0, 5).map((m) => m.text);
       const regions = [...new Set(members.map((m) => m.companyName))];
-      const caseTypes = [...new Set(members.map((m) => m.caseType).filter(Boolean))];
+      const caseTypes = [
+        ...new Set(members.map((m) => m.caseType).filter(Boolean)),
+      ];
 
       try {
         const labelResult = await generateText({
           model: labelModel,
-          providerOptions: OLLAMA_NO_THINK,
+          maxRetries: 3,
           system:
-            "You are an expert at identifying systemic patterns in worker grievance cases across multiple factories.",
-          prompt: `These ${members.length} worker complaints from ${regions.length} different factories share a common pattern. Analyze and label this cluster:\n\nFactories: ${regions.join(", ")}\nCase Types: ${caseTypes.join(", ")}\n\nSample messages:\n${sampleTexts.map((t, i) => `${i + 1}. ${t}`).join("\n")}`,
+            'You are an expert at identifying systemic patterns in worker grievance cases across multiple factories. You MUST respond with valid JSON only — no markdown, no explanation, no extra text.',
+          prompt: `These ${members.length} worker complaints from ${regions.length} different factories share a common pattern. Analyze and label this cluster.
+
+Factories: ${regions.join(', ')}
+Case Types: ${caseTypes.join(', ')}
+
+Sample messages:
+${sampleTexts.map((t, i) => `${i + 1}. ${t}`).join('\n')}
+
+Respond with ONLY this JSON structure:
+{"label": "<short label>", "summary": "<2-3 sentence summary>", "severity": "<critical|warning|info>"}`,
           output: Output.object({ schema: clusterLabelSchema }),
         });
 
@@ -190,14 +196,12 @@ export async function POST() {
           await db
             .update(caseEmbeddings)
             .set({ clusterId })
-            .where(
-              sql`${caseEmbeddings.messageId} = ANY(${messageIds}::text[])`,
-            );
+            .where(inArray(caseEmbeddings.messageId, messageIds));
 
           clustersCreated++;
         }
       } catch (e) {
-        logger.error("jobs/case-clustering", "Cluster labeling failed", e);
+        logger.error('jobs/case-clustering', 'Cluster labeling failed', e);
       }
     }
 
@@ -209,9 +213,9 @@ export async function POST() {
       clustersLabeled: clustersCreated,
     });
   } catch (error) {
-    logger.error("jobs/case-clustering", "Case clustering failed", error);
+    logger.error('jobs/case-clustering', 'Case clustering failed', error);
     return NextResponse.json(
-      { error: "Case clustering failed" },
+      { error: 'Case clustering failed' },
       { status: 500 },
     );
   }

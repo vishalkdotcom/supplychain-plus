@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { paramQuery } from "@/lib/db/sql-server";
 import { db } from "@/lib/db/drizzle";
 import { caseSummaryCache } from "@/lib/db/schema";
-import { sql } from "drizzle-orm";
+import { inArray } from "drizzle-orm";
 import { Case, AIGuidance, PaginatedResponse } from "@/types";
 import mssql from "mssql";
 import { extractEnglishFromMlang } from "@/lib/mlang";
@@ -116,7 +116,7 @@ export async function GET(request: NextRequest) {
         const cached = await db
           .select()
           .from(caseSummaryCache)
-          .where(sql`${caseSummaryCache.caseId} = ANY(${caseIds}::text[])`);
+          .where(inArray(caseSummaryCache.caseId, caseIds));
         for (const c of cached) {
           cacheMap.set(c.caseId, {
             aiSummary: c.aiSummary,

@@ -1,38 +1,55 @@
 import { db } from "../lib/db/drizzle";
-import { supplierRiskHistory } from "../lib/db/schema";
+import { supplierRiskScores, supplierRiskHistory } from "../lib/db/schema";
+
+function clamp(n: number, min = 0, max = 100) {
+  return Math.min(max, Math.max(min, Math.round(n)));
+}
 
 async function seedHistory() {
-  const supplierId = "137089";
-  console.log(`🚀 Seeding historical data for supplier ${supplierId}...`);
+  // Fetch all suppliers with current scores as baseline
+  const suppliers = await db.select().from(supplierRiskScores);
 
-  const now = new Date();
-  const historyData = [];
-
-  // Generate 30 days of data
-  for (let i = 29; i >= 0; i--) {
-    const date = new Date(now);
-    date.setDate(now.getDate() - i);
-    const dateString = date.toISOString().split("T")[0];
-
-    // Create a fluctuating risk score
-    // Starting at 40, slightly trending up
-    const baseScore = 40 + (29 - i) * 0.5; 
-    const randomFluc = Math.floor(Math.random() * 10) - 5; // +/- 5
-    const riskScore = Math.min(100, Math.max(0, Math.round(baseScore + randomFluc)));
-
-    historyData.push({
-      supplierId,
-      riskScore,
-      caseScore: Math.max(0, riskScore - 20),
-      surveyScore: Math.min(100, riskScore + 10),
-      trainingScore: 85,
-      engagementScore: 70,
-      snapshotDate: dateString,
-    });
+  if (suppliers.length === 0) {
+    console.error("No suppliers found in supplier_risk_scores. Run calculate-risk first.");
+    process.exit(1);
   }
 
-  try {
-    for (const data of historyData) {
+  console.log(`Seeding 30 days of history for ${suppliers.length} suppliers...`);
+
+  const now = new Date();
+  let inserted = 0;
+
+  for (const supplier of suppliers) {
+    const rows = [];
+
+    for (let i = 29; i >= 0; i--) {
+      const date = new Date(now);
+      date.setDate(now.getDate() - i);
+      const dateString = date.toISOString().split("T")[0];
+
+      // Work backwards from current score with slight drift + daily noise
+      const drift = (29 - i) * 0.3; // scores were slightly lower in the past
+      const noise = () => Math.floor(Math.random() * 10) - 5; // +/- 5
+
+      const riskScore = clamp((supplier.riskScore ?? 50) - drift + noise());
+      const caseScore = clamp((supplier.caseScore ?? 50) - drift + noise());
+      const surveyScore = clamp((supplier.surveyScore ?? 50) - drift * 0.5 + noise());
+      const trainingScore = clamp((supplier.trainingScore ?? 80) + noise() * 0.5);
+      const engagementScore = clamp((supplier.engagementScore ?? 70) + noise() * 0.3);
+
+      rows.push({
+        supplierId: supplier.supplierId,
+        riskScore,
+        caseScore,
+        surveyScore,
+        trainingScore,
+        engagementScore,
+        snapshotDate: dateString,
+      });
+    }
+
+    // Batch insert per supplier
+    for (const data of rows) {
       await db
         .insert(supplierRiskHistory)
         .values(data)
@@ -47,11 +64,14 @@ async function seedHistory() {
           },
         });
     }
-    console.log(`✅ Successfully seeded 30 days of history for ${supplierId}`);
-  } catch (error) {
-    console.error("❌ Seeding failed:", error);
+
+    inserted += rows.length;
+    if ((suppliers.indexOf(supplier) + 1) % 50 === 0) {
+      console.log(`  ... ${suppliers.indexOf(supplier) + 1}/${suppliers.length} suppliers done`);
+    }
   }
 
+  console.log(`Done! Inserted ${inserted} history rows for ${suppliers.length} suppliers.`);
   process.exit(0);
 }
 
