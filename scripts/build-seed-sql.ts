@@ -706,6 +706,42 @@ function buildMySQLSeed(): string {
   }
   lines.push("");
 
+  // ── Companies (mdl_company) ──
+  // Map supplier IDs 1-200 to Moodle companies so mdl_company_course can link them
+  lines.push("-- Companies (IOMAD)");
+  const factoryNames = content.factoryNames.length >= SUPPLIER_COUNT
+    ? content.factoryNames
+    : [...content.factoryNames, ...Array.from({ length: SUPPLIER_COUNT - content.factoryNames.length }, (_, i) => `Factory ${i + 201}`)];
+  const supplierCountries = assignCountries();
+  for (let i = 1; i <= SUPPLIER_COUNT; i++) {
+    const name = esc(factoryNames[i - 1]);
+    const shortname = esc(factoryNames[i - 1].substring(0, 30));
+    const country = supplierCountries[i - 1].substring(0, 2).toUpperCase();
+    lines.push(
+      `INSERT INTO mdl_company (id, name, shortname, city, country) VALUES (${i}, '${name}', '${shortname}', '', '${country}');`,
+    );
+  }
+  lines.push("");
+
+  // ── Company-Course mapping (mdl_company_course) ──
+  // Each supplier gets 3-8 courses assigned to them
+  lines.push("-- Company-Course assignments");
+  let ccId = 1;
+  for (let s = 1; s <= SUPPLIER_COUNT; s++) {
+    const numCourses = randInt(3, Math.min(8, courseIds.length));
+    const assigned = new Set<number>();
+    for (let c = 0; c < numCourses; c++) {
+      const cId = courseIds[Math.floor(seededRandom() * courseIds.length)];
+      if (assigned.has(cId)) continue;
+      assigned.add(cId);
+      lines.push(
+        `INSERT INTO mdl_company_course (id, companyid, courseid, departmentid, autoenrol) VALUES (${ccId}, ${s}, ${cId}, 0, 0);`,
+      );
+      ccId++;
+    }
+  }
+  lines.push("");
+
   // ── Enrollment methods ──
   lines.push("-- Enrollment methods (one manual per course)");
   let enrolId = 1;

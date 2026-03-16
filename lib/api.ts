@@ -34,6 +34,7 @@ interface CaseParams extends PaginationParams {
 
 interface SurveyParams extends PaginationParams {
   supplier?: string;
+  supplierId?: string;
 }
 
 function buildQueryString(
@@ -106,6 +107,7 @@ export async function fetchSurveys(
     perPage: params.perPage,
     search: params.search,
     supplier: params.supplier,
+    supplierId: params.supplierId,
   });
   const res = await fetch(`${API_BASE}/surveys${qs}`);
   if (!res.ok) throw new Error("Failed to fetch surveys");

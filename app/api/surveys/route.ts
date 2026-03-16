@@ -35,6 +35,13 @@ export async function GET(request: NextRequest) {
       paramIndex++;
     }
 
+    const supplierId = searchParams.get("supplierId") || "";
+    if (supplierId) {
+      conditions.push(`c.client_key = $${paramIndex}`);
+      params.push(supplierId);
+      paramIndex++;
+    }
+
     const whereClause =
       conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
 

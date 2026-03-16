@@ -69,7 +69,7 @@ export default function SupplierDetailPage({
 
   const { data: allSurveysRes } = useQuery({
     queryKey: ["surveys", id],
-    queryFn: () => fetchSurveys({ supplier: id }),
+    queryFn: () => fetchSurveys({ supplierId: id }),
   });
 
   const { data: recommendations } = useQuery<AIRecommendation[]>({
