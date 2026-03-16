@@ -39,14 +39,19 @@ import {
   fetchActivities,
   fetchSuppliers,
   fetchRecommendations,
+  fetchBrands,
 } from "@/lib/api";
 import { AIRecommendation, Supplier } from "@/types";
 import { getModuleColors } from "@/lib/risk-utils";
+import { useView } from "@/components/view-context";
 
 export function DashboardView() {
+  const { viewMode, currentBrandId } = useView();
+  const parentCompanyId = viewMode === "brand" ? currentBrandId : undefined;
+
   const { data: metrics, isLoading: isMetricsLoading } = useQuery({
-    queryKey: ["metrics"],
-    queryFn: fetchMetrics,
+    queryKey: ["metrics", parentCompanyId],
+    queryFn: () => fetchMetrics(parentCompanyId || undefined),
   });
 
   const { data: activities, isLoading: isActivitiesLoading } = useQuery({
@@ -55,8 +60,8 @@ export function DashboardView() {
   });
 
   const { data: suppliersRes, isLoading: isSuppliersLoading } = useQuery({
-    queryKey: ["suppliers"],
-    queryFn: () => fetchSuppliers(),
+    queryKey: ["suppliers", parentCompanyId],
+    queryFn: () => fetchSuppliers({ parentCompanyId: parentCompanyId || undefined }),
   });
 
   const EMPTY_SUPPLIERS: Supplier[] = [];
@@ -97,7 +102,9 @@ export function DashboardView() {
             WOVO AI Control Center
           </h1>
           <p className="text-muted-foreground">
-            Cross-module intelligence across your supply chain
+            {viewMode === "brand" && currentBrandId
+              ? `Filtered by brand — viewing brand suppliers`
+              : "Cross-module intelligence across your supply chain"}
           </p>
         </div>
       </div>

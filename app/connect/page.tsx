@@ -41,7 +41,7 @@ export default function ConnectPage() {
 
   const perPage = 8;
 
-  const { viewMode, currentSupplierId } = useView();
+  const { viewMode, currentSupplierId, currentBrandId } = useView();
 
   const { data: response, isLoading } = useQuery({
     queryKey: [
@@ -51,6 +51,7 @@ export default function ConnectPage() {
       params.supplier,
       params.severity,
       viewMode === "supplier" ? currentSupplierId : "all",
+      viewMode === "brand" ? currentBrandId : undefined,
     ],
     queryFn: () =>
       fetchCases({
@@ -59,6 +60,12 @@ export default function ConnectPage() {
         search: params.search,
         supplier: params.supplier,
         severity: params.severity,
+        ...(viewMode === "brand" && currentBrandId
+          ? { parentCompanyId: currentBrandId }
+          : {}),
+        ...(viewMode === "supplier" && currentSupplierId
+          ? { supplierId: currentSupplierId }
+          : {}),
       }),
     placeholderData: keepPreviousData,
   });

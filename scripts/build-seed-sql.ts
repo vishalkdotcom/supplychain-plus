@@ -24,6 +24,7 @@ interface SeedContent {
   surveyQuestionTitles: string[];
   surveyScoreOptionSets: Array<{ options: Array<{ label: string; weight: number }> }>;
   surveyFreeTextResponses: string[];
+  brandNames: string[];
   coursesByCategory: Record<string, Array<{ name: string; summary: string }>>;
 }
 
@@ -34,6 +35,7 @@ const content: SeedContent = JSON.parse(
 // ─── Shared constants ──────────────────────────────────────
 
 const SUPPLIER_COUNT = 200;
+const BRAND_COUNT = 20;
 const WORKER_COUNT = 50000;
 const SURVEY_COUNT = 500;
 const QUESTIONS_PER_SURVEY = 10;
@@ -116,6 +118,44 @@ function assignCountries(): string[] {
   while (countries.length > SUPPLIER_COUNT) countries.pop();
   // Shuffle
   return countries.sort(() => seededRandom() - 0.5);
+}
+
+// Brand headquarters countries (indexed by brand position in brandNames array)
+const BRAND_COUNTRIES = [
+  "United States",  // Nike Inc.
+  "Germany",        // Adidas AG
+  "Germany",        // Puma SE
+  "Sweden",         // H&M Group
+  "Spain",          // Inditex (Zara)
+  "United States",  // Gap Inc.
+  "United States",  // Levi Strauss & Co.
+  "United States",  // Patagonia Inc.
+  "Ireland",        // Primark (ABF)
+  "France",         // Decathlon SA
+  "United States",  // VF Corporation
+  "United States",  // PVH Corp.
+  "United States",  // Hanesbrands Inc.
+  "United States",  // Kontoor Brands
+  "Hong Kong",      // Li & Fung Ltd.
+  "Denmark",        // Bestseller A/S
+  "Japan",          // Fast Retailing (Uniqlo)
+  "United States",  // Ralph Lauren Corp.
+  "United States",  // Under Armour Inc.
+  "United States",  // Columbia Sportswear
+];
+
+// Assign each supplier to a brand (one-to-many: each supplier has exactly one parent brand)
+function assignBrands(): number[] {
+  const brandAssignments: number[] = [];
+  // Distribute suppliers evenly across brands with some randomness
+  for (let i = 0; i < SUPPLIER_COUNT; i++) {
+    // Base assignment: round-robin across brands, then shuffle with randomness
+    const baseBrand = i % BRAND_COUNT;
+    // 70% chance to keep the base brand, 30% chance to pick random brand
+    const brandIdx = seededRandom() < 0.7 ? baseBrand : randInt(0, BRAND_COUNT - 1);
+    brandAssignments.push(brandIdx);
+  }
+  return brandAssignments;
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -212,7 +252,26 @@ function buildPostgresSeed(): string {
   lines.push(`SELECT setval(pg_get_serial_sequence('translations_mdlsupportedlanguages', 'id'), 10, true);`);
   lines.push("");
 
-  // ── clients_clientinfo ──
+  // ── clients_clientinfo (brands + suppliers) ──
+  const brandAssignmentsPg = assignBrands();
+  const brandNamesPg = content.brandNames.length >= BRAND_COUNT
+    ? content.brandNames
+    : [...content.brandNames, ...Array.from({ length: BRAND_COUNT - content.brandNames.length }, (_, i) => `Brand ${i + 1}`)];
+
+  // Insert brand companies (IDs 201-220)
+  lines.push("-- Brands (clients_clientinfo)");
+  for (let i = 0; i < BRAND_COUNT; i++) {
+    const brandId = SUPPLIER_COUNT + 1 + i; // 201, 202, ...220
+    const name = esc(brandNamesPg[i]);
+    const country = BRAND_COUNTRIES[i] || "United States";
+    const created = isoDate(randomDate(730));
+    lines.push(
+      `INSERT INTO clients_clientinfo (id, name, client_key, client_id, country, is_active, is_deleted, is_anonymous, allow_connect_raw_data_download, allow_survey_raw_data_download, allow_questionnaire_raw_data_download, created_at, created_date) VALUES (${brandId}, '${name}', ${brandId}, 'brand-${String(i + 1).padStart(3, "0")}', '${country}', true, false, false, false, false, false, '${created}', '${created}');`,
+    );
+  }
+  lines.push("");
+
+  // Insert supplier companies (IDs 1-200)
   lines.push("-- Suppliers (clients_clientinfo)");
   for (let i = 1; i <= SUPPLIER_COUNT; i++) {
     const name = esc(factoryNames[i - 1]);
@@ -222,7 +281,34 @@ function buildPostgresSeed(): string {
       `INSERT INTO clients_clientinfo (id, name, client_key, client_id, country, is_active, is_deleted, is_anonymous, allow_connect_raw_data_download, allow_survey_raw_data_download, allow_questionnaire_raw_data_download, created_at, created_date) VALUES (${i}, '${name}', ${i}, 'supplier-${String(i).padStart(3, "0")}', '${country}', true, false, false, false, false, false, '${created}', '${created}');`,
     );
   }
-  lines.push(`SELECT setval('clients_clientinfo_id_seq', ${SUPPLIER_COUNT}, true);`);
+  lines.push(`SELECT setval('clients_clientinfo_id_seq', ${SUPPLIER_COUNT + BRAND_COUNT}, true);`);
+  lines.push("");
+
+  // ── clients_clientrelation (one per brand, relation_type=0 PARENT) ──
+  lines.push("-- Client relations (brands as PARENT relations)");
+  for (let i = 0; i < BRAND_COUNT; i++) {
+    const relationId = i + 1;
+    const brandClientInfoId = SUPPLIER_COUNT + 1 + i; // 201-220 (references the brand's clients_clientinfo.id)
+    // relation_type=0 means PARENT, relation_id references the brand's clientinfo id
+    lines.push(
+      `INSERT INTO clients_clientrelation (id, relation_id, relation_type, is_wovo_relation) VALUES (${relationId}, ${brandClientInfoId}, 0, true);`,
+    );
+  }
+  lines.push(`SELECT setval('clients_clientrelation_id_seq', ${BRAND_COUNT}, true);`);
+  lines.push("");
+
+  // ── clients_clientinfotorelationmapping (links each supplier to its brand relation) ──
+  lines.push("-- Supplier-to-brand relation mappings");
+  for (let i = 0; i < SUPPLIER_COUNT; i++) {
+    const mappingId = i + 1;
+    const supplierClientInfoId = i + 1; // 1-200
+    const brandIdx = brandAssignmentsPg[i];
+    const clientRelationId = brandIdx + 1; // relation IDs are 1-20
+    lines.push(
+      `INSERT INTO clients_clientinfotorelationmapping (id, clientinfo_id, clientrelation_id) VALUES (${mappingId}, ${supplierClientInfoId}, ${clientRelationId});`,
+    );
+  }
+  lines.push(`SELECT setval('clients_clientinfo_relation_mapping_id_seq', ${SUPPLIER_COUNT}, true);`);
   lines.push("");
 
   // ── survey_mdlsurveyquestiontype ──
@@ -566,18 +652,35 @@ function buildSqlServerSeed(): string {
   lines.push("GO");
   lines.push("");
 
-  // ── Company ──
+  // ── Company (brands + suppliers) ──
   lines.push("SET IDENTITY_INSERT Company ON;");
   const supplierCountries = assignCountries();
+  const brandAssignments = assignBrands();
   const factoryNames = content.factoryNames.length >= SUPPLIER_COUNT
     ? content.factoryNames
     : [...content.factoryNames, ...Array.from({ length: SUPPLIER_COUNT - content.factoryNames.length }, (_, i) => `Factory ${i + 201}`)];
 
+  const brandNames = content.brandNames.length >= BRAND_COUNT
+    ? content.brandNames
+    : [...content.brandNames, ...Array.from({ length: BRAND_COUNT - content.brandNames.length }, (_, i) => `Brand ${i + 1}`)];
+
+  // Insert brand companies first (IDs 201-220, no ParentCompanyId)
+  for (let i = 0; i < BRAND_COUNT; i++) {
+    const brandId = SUPPLIER_COUNT + 1 + i; // 201, 202, ...220
+    const name = esc(brandNames[i]);
+    const country = BRAND_COUNTRIES[i] || "United States";
+    lines.push(
+      `INSERT INTO Company (Id, Name, Deleted, CreatedBy, Created, CleanName, MailingCountry) VALUES (${brandId}, N'${name}', 0, 1, GETDATE(), N'${name}', N'${country}');`,
+    );
+  }
+
+  // Insert supplier companies (IDs 1-200) with ParentCompanyId pointing to their brand
   for (let i = 0; i < SUPPLIER_COUNT; i++) {
     const name = esc(factoryNames[i]);
     const country = supplierCountries[i];
+    const parentCompanyId = SUPPLIER_COUNT + 1 + brandAssignments[i]; // 201-220
     lines.push(
-      `INSERT INTO Company (Id, Name, Deleted, CreatedBy, Created, CleanName, MailingCountry) VALUES (${i + 1}, N'${name}', 0, 1, GETDATE(), N'${name}', N'${country}');`,
+      `INSERT INTO Company (Id, Name, Deleted, CreatedBy, Created, CleanName, MailingCountry, ParentCompanyId) VALUES (${i + 1}, N'${name}', 0, 1, GETDATE(), N'${name}', N'${country}', ${parentCompanyId});`,
     );
   }
   lines.push("SET IDENTITY_INSERT Company OFF;");
@@ -673,6 +776,40 @@ function buildMySQLSeed(): string {
   lines.push("");
 
   const allCourses = Object.entries(content.coursesByCategory);
+
+  // ── Companies (brands + suppliers) ──
+  lines.push("-- Companies (brands and suppliers)");
+  const brandAssignmentsMySQL = assignBrands();
+  const factoryNamesMySQL = content.factoryNames.length >= SUPPLIER_COUNT
+    ? content.factoryNames
+    : [...content.factoryNames, ...Array.from({ length: SUPPLIER_COUNT - content.factoryNames.length }, (_, i) => `Factory ${i + 201}`)];
+  const brandNamesMySQL = content.brandNames.length >= BRAND_COUNT
+    ? content.brandNames
+    : [...content.brandNames, ...Array.from({ length: BRAND_COUNT - content.brandNames.length }, (_, i) => `Brand ${i + 1}`)];
+  const supplierCountriesMySQL = assignCountries();
+
+  // Insert brand companies first (IDs 201-220, parentid=0)
+  for (let i = 0; i < BRAND_COUNT; i++) {
+    const brandId = SUPPLIER_COUNT + 1 + i;
+    const name = esc(brandNamesMySQL[i]);
+    const shortname = esc(brandNamesMySQL[i].substring(0, 30));
+    const country = BRAND_COUNTRIES[i] || "US";
+    lines.push(
+      `INSERT INTO mdl_company (id, name, shortname, city, country, parentid, suspended) VALUES (${brandId}, '${name}', '${shortname}', '', '${country}', 0, 0);`,
+    );
+  }
+
+  // Insert supplier companies (IDs 1-200, parentid pointing to brand)
+  for (let i = 0; i < SUPPLIER_COUNT; i++) {
+    const name = esc(factoryNamesMySQL[i]);
+    const shortname = esc(factoryNamesMySQL[i].substring(0, 30));
+    const country = supplierCountriesMySQL[i];
+    const parentId = SUPPLIER_COUNT + 1 + brandAssignmentsMySQL[i];
+    lines.push(
+      `INSERT INTO mdl_company (id, name, shortname, city, country, parentid, suspended) VALUES (${i + 1}, '${name}', '${shortname}', '', '${country}', ${parentId}, 0);`,
+    );
+  }
+  lines.push("");
 
   // ── Course categories ──
   lines.push("-- Course categories");

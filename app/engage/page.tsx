@@ -69,7 +69,7 @@ export default function EngagePage() {
 
   const { activeConfig } = useAISettings();
 
-  const { viewMode, currentSupplierId } = useView();
+  const { viewMode, currentSupplierId, currentBrandId } = useView();
 
   const { data: response, isLoading } = useQuery({
     queryKey: [
@@ -77,6 +77,7 @@ export default function EngagePage() {
       params.page,
       params.search,
       viewMode === "supplier" ? currentSupplierId : "all",
+      viewMode === "brand" ? currentBrandId : undefined,
     ],
     queryFn: () =>
       fetchSurveys({
@@ -87,6 +88,9 @@ export default function EngagePage() {
           viewMode === "supplier" && currentSupplierId
             ? currentSupplierId
             : undefined,
+        ...(viewMode === "brand" && currentBrandId
+          ? { parentCompanyId: currentBrandId }
+          : {}),
       }),
     placeholderData: keepPreviousData,
   });

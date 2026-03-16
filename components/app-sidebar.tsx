@@ -5,6 +5,7 @@ import { ModeToggle } from "@/components/mode-toggle";
 import {
   IconBrandOpenai,
   IconBuilding,
+  IconBuildingSkyscraper,
   IconChartBar,
   IconDashboard,
   IconMessage,
@@ -34,6 +35,11 @@ const primaryNav = [
     title: "Control Center",
     url: "/",
     icon: IconDashboard,
+  },
+  {
+    title: "Brands",
+    url: "/brands",
+    icon: IconBuildingSkyscraper,
   },
   {
     title: "Suppliers",

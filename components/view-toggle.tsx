@@ -7,9 +7,10 @@ import {
   IconBuildingSkyscraper,
   IconCheck,
   IconChevronDown,
+  IconWorld,
 } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
-import { fetchSuppliers } from "@/lib/api";
+import { fetchSuppliers, fetchBrands } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,19 +28,42 @@ import {
 } from "@/components/ui/popover";
 
 export function ViewToggle() {
-  const { viewMode, setViewMode, currentSupplierId, setCurrentSupplierId } =
-    useView();
+  const {
+    viewMode,
+    setViewMode,
+    currentBrandId,
+    setCurrentBrandId,
+    currentSupplierId,
+    setCurrentSupplierId,
+  } = useView();
   const [open, setOpen] = React.useState(false);
 
+  const { data: brands } = useQuery({
+    queryKey: ["brands"],
+    queryFn: () => fetchBrands(),
+  });
+
   const { data: suppliersRes } = useQuery({
-    queryKey: ["suppliers"],
-    queryFn: () => fetchSuppliers(),
+    queryKey: ["suppliers", currentBrandId],
+    queryFn: () =>
+      fetchSuppliers({
+        perPage: 50,
+        parentCompanyId: currentBrandId || undefined,
+      }),
   });
 
   const suppliers = suppliersRes?.data || [];
 
-  const handleBrandSelect = () => {
+  const handlePortfolioSelect = () => {
+    setViewMode("portfolio");
+    setCurrentBrandId(null);
+    setCurrentSupplierId(null);
+    setOpen(false);
+  };
+
+  const handleBrandSelect = (brandId: string) => {
     setViewMode("brand");
+    setCurrentBrandId(brandId);
     setCurrentSupplierId(null);
     setOpen(false);
   };
@@ -50,9 +74,33 @@ export function ViewToggle() {
     setOpen(false);
   };
 
-  const currentSupplier = suppliers.find(
-    (s) => s.id === currentSupplierId
-  );
+  const currentBrand = brands?.find((b) => b.id === currentBrandId);
+  const currentSupplier = suppliers.find((s) => s.id === currentSupplierId);
+
+  const displayLabel = () => {
+    if (viewMode === "supplier" && currentSupplier) {
+      return (
+        <div className="flex items-center gap-2 overflow-hidden">
+          <IconBuilding className="h-4 w-4 shrink-0 text-muted-foreground" />
+          <span className="truncate">{currentSupplier.name}</span>
+        </div>
+      );
+    }
+    if (viewMode === "brand" && currentBrand) {
+      return (
+        <div className="flex items-center gap-2 overflow-hidden">
+          <IconBuildingSkyscraper className="h-4 w-4 shrink-0 text-indigo-500" />
+          <span className="truncate">{currentBrand.name}</span>
+        </div>
+      );
+    }
+    return (
+      <div className="flex items-center gap-2 overflow-hidden">
+        <IconWorld className="h-4 w-4 shrink-0 text-indigo-500" />
+        <span className="truncate">Portfolio (All Brands)</span>
+      </div>
+    );
+  };
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -63,44 +111,57 @@ export function ViewToggle() {
           aria-expanded={open}
           className="w-[250px] justify-between h-9 px-3"
         >
-          {viewMode === "brand" ? (
-            <div className="flex items-center gap-2 overflow-hidden">
-              <IconBuildingSkyscraper className="h-4 w-4 shrink-0 text-indigo-500" />
-              <span className="truncate">Portfolio (All Brands)</span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 overflow-hidden">
-              <IconBuilding className="h-4 w-4 shrink-0 text-muted-foreground" />
-              <span className="truncate">
-                {currentSupplier?.name || "Select a supplier..."}
-              </span>
-            </div>
-          )}
+          {displayLabel()}
           <IconChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[300px] p-0 shadow-lg" align="end">
         <Command>
-          <CommandInput placeholder="Search portfolio..." className="h-9" />
+          <CommandInput placeholder="Search brands & suppliers..." className="h-9" />
           <CommandList>
             <CommandEmpty>No results found.</CommandEmpty>
             <CommandGroup heading="Global View">
               <CommandItem
-                onSelect={handleBrandSelect}
+                onSelect={handlePortfolioSelect}
                 className="cursor-pointer"
               >
-                <IconBuildingSkyscraper className="mr-2 h-4 w-4 text-indigo-500" />
+                <IconWorld className="mr-2 h-4 w-4 text-indigo-500" />
                 <span>Portfolio (All Brands)</span>
                 <IconCheck
                   className={cn(
                     "ml-auto h-4 w-4",
-                    viewMode === "brand" ? "opacity-100" : "opacity-0"
+                    viewMode === "portfolio" ? "opacity-100" : "opacity-0"
                   )}
                 />
               </CommandItem>
             </CommandGroup>
+            {brands && brands.length > 0 && (
+              <CommandGroup heading="Brands">
+                {brands.map((brand) => (
+                  <CommandItem
+                    key={brand.id}
+                    onSelect={() => handleBrandSelect(brand.id)}
+                    className="cursor-pointer"
+                  >
+                    <IconBuildingSkyscraper className="mr-2 h-4 w-4 text-indigo-500" />
+                    <span className="truncate">{brand.name}</span>
+                    <span className="ml-auto text-xs text-muted-foreground mr-2">
+                      {brand.supplierCount}
+                    </span>
+                    <IconCheck
+                      className={cn(
+                        "h-4 w-4 shrink-0",
+                        viewMode === "brand" && currentBrandId === brand.id
+                          ? "opacity-100"
+                          : "opacity-0"
+                      )}
+                    />
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
             {suppliers.length > 0 && (
-              <CommandGroup heading="Suppliers">
+              <CommandGroup heading={currentBrand ? `${currentBrand.name} Suppliers` : "Suppliers"}>
                 {suppliers.map((supplier) => (
                   <CommandItem
                     key={supplier.id}

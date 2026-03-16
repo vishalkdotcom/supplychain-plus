@@ -17,6 +17,7 @@ export async function GET(request: NextRequest) {
     );
     const search = searchParams.get("search") || "";
     const supplier = searchParams.get("supplier") || "all";
+    const parentCompanyId = searchParams.get("parentCompanyId") || "";
     const offset = (page - 1) * perPage;
 
     // Build dynamic WHERE clauses
@@ -32,6 +33,17 @@ export async function GET(request: NextRequest) {
     if (supplier !== "all") {
       conditions.push(`c.name = $${paramIndex}`);
       params.push(supplier);
+      paramIndex++;
+    }
+    if (parentCompanyId) {
+      // Filter to suppliers belonging to this brand via clientrelation
+      conditions.push(`c.client_key = ANY(
+        SELECT ci.client_key FROM clients_clientinfo ci
+        JOIN clients_clientinfotorelationmapping m ON m.clientinfo_id = ci.id
+        JOIN clients_clientrelation r ON r.id = m.clientrelation_id
+        WHERE r.relation_type = 0 AND r.relation_id = $${paramIndex}
+      )`);
+      params.push(parseInt(parentCompanyId));
       paramIndex++;
     }
 
