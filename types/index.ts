@@ -192,10 +192,22 @@ export interface DashboardMetrics {
 }
 
 // ===============================
+// Brand / Parent Company
+// ===============================
+
+export interface Brand {
+  id: string; // Company.Id / client_key of the parent company
+  name: string;
+  country?: string;
+  supplierCount: number;
+  avgRiskScore: number;
+}
+
+// ===============================
 // View Context
 // ===============================
 
-export type ViewPerspective = "brand" | "supplier";
+export type ViewPerspective = "portfolio" | "brand" | "supplier";
 
 // ===============================
 // Pagination

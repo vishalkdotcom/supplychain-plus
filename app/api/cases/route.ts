@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get("search") || "";
     const supplier = searchParams.get("supplier") || "all";
     const supplierId = searchParams.get("supplierId") || "";
+    const parentCompanyId = searchParams.get("parentCompanyId") || "";
     const severity = searchParams.get("severity") || "all";
     const offset = (page - 1) * perPage;
 
@@ -43,6 +44,10 @@ export async function GET(request: NextRequest) {
     if (supplierId) {
       conditions.push("co.Id = @supplierId");
       params.supplierId = { type: mssql.Int, value: parseInt(supplierId) };
+    }
+    if (parentCompanyId) {
+      conditions.push("co.ParentCompanyId = @parentCompanyId");
+      params.parentCompanyId = { type: mssql.Int, value: parseInt(parentCompanyId) };
     }
     if (severity !== "all") {
       const priorityMap: Record<string, number> = {

@@ -1,5 +1,6 @@
 import {
   Supplier,
+  Brand,
   Case,
   Survey,
   Course,
@@ -24,17 +25,20 @@ interface PaginationParams {
 interface SupplierParams extends PaginationParams {
   region?: string;
   riskLevel?: string;
+  parentCompanyId?: string;
 }
 
 interface CaseParams extends PaginationParams {
   supplier?: string;
   supplierId?: string;
   severity?: string;
+  parentCompanyId?: string;
 }
 
 interface SurveyParams extends PaginationParams {
   supplier?: string;
   supplierId?: string;
+  parentCompanyId?: string;
 }
 
 function buildQueryString(
@@ -59,6 +63,7 @@ export async function fetchSuppliers(
     search: params.search,
     region: params.region,
     riskLevel: params.riskLevel,
+    parentCompanyId: params.parentCompanyId,
   });
   const res = await fetch(`${API_BASE}/suppliers${qs}`);
   if (!res.ok) throw new Error("Failed to fetch suppliers");
@@ -87,6 +92,7 @@ export async function fetchCases(
     supplier: params.supplier,
     supplierId: params.supplierId,
     severity: params.severity,
+    parentCompanyId: params.parentCompanyId,
   });
   const res = await fetch(`${API_BASE}/cases${qs}`);
   if (!res.ok) throw new Error("Failed to fetch cases");
@@ -108,6 +114,7 @@ export async function fetchSurveys(
     search: params.search,
     supplier: params.supplier,
     supplierId: params.supplierId,
+    parentCompanyId: params.parentCompanyId,
   });
   const res = await fetch(`${API_BASE}/surveys${qs}`);
   if (!res.ok) throw new Error("Failed to fetch surveys");
@@ -133,9 +140,17 @@ export async function fetchActivities(): Promise<ActivityItem[]> {
   return res.json();
 }
 
-export async function fetchMetrics(): Promise<DashboardMetrics> {
-  const res = await fetch(`${API_BASE}/metrics`);
+export async function fetchMetrics(parentCompanyId?: string): Promise<DashboardMetrics> {
+  const qs = parentCompanyId ? `?parentCompanyId=${parentCompanyId}` : "";
+  const res = await fetch(`${API_BASE}/metrics${qs}`);
   if (!res.ok) throw new Error("Failed to fetch metrics");
+  return res.json();
+}
+
+export async function fetchBrands(search?: string): Promise<Brand[]> {
+  const qs = search ? `?search=${encodeURIComponent(search)}` : "";
+  const res = await fetch(`${API_BASE}/brands${qs}`);
+  if (!res.ok) throw new Error("Failed to fetch brands");
   return res.json();
 }
 

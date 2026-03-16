@@ -18,6 +18,7 @@ export async function GET(request: NextRequest) {
     );
     const search = searchParams.get("search") || "";
     const riskLevel = searchParams.get("riskLevel") || "all";
+    const parentCompanyId = searchParams.get("parentCompanyId") || "";
     const offset = (page - 1) * perPage;
 
     // Build dynamic WHERE clauses for basic supplier info
@@ -102,6 +103,13 @@ export async function GET(request: NextRequest) {
         parent_company_id: riskData?.parentCompanyId || null,
       };
     });
+
+    // Filter by parentCompanyId (brand)
+    if (parentCompanyId) {
+      mergedRows = mergedRows.filter(
+        (row: MergedRow) => row.parent_company_id === parentCompanyId,
+      );
+    }
 
     if (riskLevel !== "all") {
       mergedRows = mergedRows.filter((row: MergedRow) => {
