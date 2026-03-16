@@ -4,7 +4,6 @@ import { wcGlobalQuery } from "@/lib/db/postgres-wc-global";
 import { db } from "@/lib/db/drizzle";
 import { supplierRiskScores as supplierRiskScoresSchema } from "@/lib/db/schema";
 import { Supplier, PaginatedResponse, RiskReason } from "@/types";
-import { extractEnglishFromMlang } from "@/lib/mlang";
 import { inArray } from "drizzle-orm";
 import { logger } from "@/lib/logger";
 import { deriveRegion } from "@/lib/risk-utils";
@@ -68,10 +67,15 @@ export async function GET(request: NextRequest) {
     type RiskScoreRow = typeof supplierRiskScoresSchema.$inferSelect;
     const riskScoresMap: Record<string, RiskScoreRow> = {};
     
+    // Collect all parentCompanyIds to identify brand rows (they should not appear as suppliers)
+    const brandIds = new Set<string>();
     if (clientKeysForRisk.length > 0) {
       const riskData = await db.select().from(supplierRiskScoresSchema).where(inArray(supplierRiskScoresSchema.supplierId, clientKeysForRisk));
       for (const r of riskData) {
         riskScoresMap[r.supplierId] = r;
+        if (r.parentCompanyId) {
+          brandIds.add(r.parentCompanyId);
+        }
       }
     }
 
@@ -105,6 +109,13 @@ export async function GET(request: NextRequest) {
         parent_company_id: riskData?.parentCompanyId || null,
       };
     });
+
+    // Exclude brand/parent company rows — they should only appear on the Brands page
+    if (brandIds.size > 0) {
+      mergedRows = mergedRows.filter(
+        (row: MergedRow) => !brandIds.has(String(row.client_key)),
+      );
+    }
 
     // Filter by parentCompanyId (brand)
     if (parentCompanyId) {
@@ -162,7 +173,7 @@ export async function GET(request: NextRequest) {
 
     const suppliers: Supplier[] = paginatedRows.map((row) => ({
       id: String(row.client_key),
-      name: extractEnglishFromMlang(row.name),
+      name: row.name,
       region: row.cached_region || deriveRegion(row.country),
       country: row.country || "Unknown",
       location: row.country || "Unknown",

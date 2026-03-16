@@ -6,7 +6,6 @@ import { supplierRiskScores as supplierRiskScoresSchema } from "@/lib/db/schema"
 import { Supplier } from "@/types";
 import { eq } from "drizzle-orm";
 import { logger } from "@/lib/logger";
-import { extractEnglishFromMlang } from "@/lib/mlang";
 import { deriveRegion } from "@/lib/risk-utils";
 
 export async function GET(
@@ -55,7 +54,7 @@ export async function GET(
     const riskScore = risk?.riskScore || 50;
     const supplier: Supplier = {
       id: String(row.client_key),
-      name: extractEnglishFromMlang(row.name),
+      name: row.name,
       region: risk?.region || deriveRegion(row.country),
       country: row.country || "Unknown",
       location: row.country || "Unknown",

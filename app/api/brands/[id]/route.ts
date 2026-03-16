@@ -3,7 +3,6 @@ import { db } from "@/lib/db/drizzle";
 import { supplierRiskScores } from "@/lib/db/schema";
 import { query } from "@/lib/db/postgres";
 import { Brand } from "@/types";
-import { extractEnglishFromMlang } from "@/lib/mlang";
 import { eq, sql } from "drizzle-orm";
 import { logger } from "@/lib/logger";
 
@@ -35,9 +34,7 @@ export async function GET(
 
     const brand: Brand = {
       id,
-      name: row
-        ? extractEnglishFromMlang(row.name)
-        : `Brand #${id}`,
+      name: row?.name || `Brand #${id}`,
       country: row?.country || undefined,
       supplierCount: aggregate?.supplierCount || 0,
       avgRiskScore: aggregate?.avgRiskScore || 0,

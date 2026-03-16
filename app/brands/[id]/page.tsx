@@ -241,12 +241,12 @@ export default function BrandDetailPage() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
                   <IconBuilding className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <span className="font-medium group-hover:text-indigo-600 transition-colors">
+                  <span className="font-medium truncate group-hover:text-indigo-600 transition-colors">
                     {supplier.name}
                   </span>
                   <Badge
                     variant={getRiskBadgeVariant(supplier.riskLevel)}
-                    className="text-xs"
+                    className="text-xs shrink-0"
                   >
                     {supplier.riskLevel.toUpperCase()} {supplier.riskScore}
                   </Badge>

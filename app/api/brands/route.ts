@@ -4,7 +4,6 @@ import { supplierRiskScores } from "@/lib/db/schema";
 import { query } from "@/lib/db/postgres";
 import { isNotNull, sql } from "drizzle-orm";
 import { Brand } from "@/types";
-import { extractEnglishFromMlang } from "@/lib/mlang";
 import { logger } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
@@ -54,9 +53,7 @@ export async function GET(request: NextRequest) {
       const info = brandInfoMap[Number(agg.parentCompanyId)];
       return {
         id: agg.parentCompanyId!,
-        name: info
-          ? extractEnglishFromMlang(info.name)
-          : `Brand #${agg.parentCompanyId}`,
+        name: info?.name || `Brand #${agg.parentCompanyId}`,
         country: info?.country || undefined,
         supplierCount: agg.supplierCount,
         avgRiskScore: agg.avgRiskScore,
