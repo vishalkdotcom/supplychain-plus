@@ -6,6 +6,7 @@ import { db } from "@/lib/db/drizzle";
 import { payslipAnomalies, alerts } from "@/lib/db/schema";
 import { z } from "zod";
 import { logger } from "@/lib/logger";
+import { withJobTracking } from "@/lib/jobs/with-job-tracking";
 
 export const maxDuration = 300;
 
@@ -43,7 +44,7 @@ const interpretationSchema = z.object({
  *
  * POST /api/jobs/payslip-anomaly
  */
-export async function POST() {
+async function _postHandler(_request: Request) {
   try {
     const model = getOllamaModel("gemma3:1b");
 
@@ -267,3 +268,5 @@ Workers affected: ${anomaly.details.employeeCount}`,
     );
   }
 }
+
+export const POST = withJobTracking("payslip-anomaly", _postHandler);

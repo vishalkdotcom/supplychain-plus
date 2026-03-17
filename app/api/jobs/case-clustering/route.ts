@@ -7,6 +7,7 @@ import { caseEmbeddings, caseClusters } from '@/lib/db/schema';
 import { inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { logger } from '@/lib/logger';
+import { withJobTracking } from "@/lib/jobs/with-job-tracking";
 
 export const maxDuration = 600; // 10 min — heavy batch
 
@@ -22,7 +23,7 @@ const clusterLabelSchema = z.object({
  *
  * POST /api/jobs/case-clustering
  */
-export async function POST() {
+async function _postHandler(_request: Request) {
   try {
     const embeddingModel = getOllamaEmbedding('bge-m3');
     const labelModel = getOllamaModel('qwen3:4b');
@@ -234,3 +235,5 @@ function cosineSimilarity(a: number[], b: number[]): number {
   const mag = Math.sqrt(magA) * Math.sqrt(magB);
   return mag === 0 ? 0 : dot / mag;
 }
+
+export const POST = withJobTracking("case-clustering", _postHandler);

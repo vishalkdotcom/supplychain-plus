@@ -9,6 +9,7 @@ import {
   IconChartBar,
   IconDashboard,
   IconMessage,
+  IconPlayerPlay,
   IconSchool,
   IconSettings,
   IconSparkles,
@@ -139,6 +140,26 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        <SidebarSeparator />
+        <SidebarGroup>
+          <SidebarGroupLabel>Operations</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname.startsWith("/operations")}
+                  tooltip="Jobs"
+                >
+                  <Link href="/operations/jobs">
+                    <IconPlayerPlay />
+                    <span>Jobs</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

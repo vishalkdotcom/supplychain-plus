@@ -343,6 +343,77 @@ export const alerts = pgTable(
     index("idx_alerts_unread").on(table.isRead),
   ],
 );
+// ===============================
+// OPERATIONS LAYER
+// ===============================
+
+// Job Runs — execution history for all ML/batch jobs
+export const jobRuns = pgTable(
+  "job_runs",
+  {
+    id: serial("id").primaryKey(),
+    jobType: varchar("job_type", { length: 50 }).notNull(),
+    status: varchar("status", { length: 20 }).notNull().default("queued"), // queued, running, completed, failed, cancelled
+    triggeredBy: varchar("triggered_by", { length: 20 }).notNull().default("manual"), // manual, schedule, seed-script
+    startedAt: timestamp("started_at", { withTimezone: true }),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    durationMs: integer("duration_ms"),
+    resultSummary: jsonb("result_summary").$type<Record<string, unknown>>(),
+    error: text("error"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("idx_job_runs_type").on(table.jobType),
+    index("idx_job_runs_status").on(table.status),
+    index("idx_job_runs_created").on(table.createdAt),
+  ],
+);
+
+// Job Schedules — cron-like recurring schedules
+export const jobSchedules = pgTable(
+  "job_schedules",
+  {
+    id: serial("id").primaryKey(),
+    jobType: varchar("job_type", { length: 50 }).notNull(),
+    cronExpression: varchar("cron_expression", { length: 100 }).notNull(),
+    enabled: boolean("enabled").default(true).notNull(),
+    lastRunAt: timestamp("last_run_at", { withTimezone: true }),
+    nextRunAt: timestamp("next_run_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("idx_job_schedules_type").on(table.jobType),
+    index("idx_job_schedules_next").on(table.nextRunAt),
+  ],
+);
+
+// Job Queue — persistent smart queue for serializing Ollama-dependent jobs
+export const jobQueue = pgTable(
+  "job_queue",
+  {
+    id: serial("id").primaryKey(),
+    jobRunId: integer("job_run_id")
+      .notNull()
+      .references(() => jobRuns.id),
+    jobType: varchar("job_type", { length: 50 }).notNull(),
+    priority: integer("priority").default(0).notNull(),
+    requiresOllama: boolean("requires_ollama").default(false).notNull(),
+    status: varchar("status", { length: 20 }).notNull().default("waiting"), // waiting, processing, done
+    lockedAt: timestamp("locked_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("idx_job_queue_status").on(table.status),
+    index("idx_job_queue_run").on(table.jobRunId),
+  ],
+);
+
 // AI Chat History
 export const aiChatHistory = pgTable(
   "ai_chat_history",

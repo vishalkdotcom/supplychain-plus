@@ -7,6 +7,7 @@ import { workerVoiceTrends } from "@/lib/db/schema";
 import { z } from "zod";
 import type { VoiceTopic } from "@/lib/db/schema";
 import { logger } from "@/lib/logger";
+import { withJobTracking } from "@/lib/jobs/with-job-tracking";
 
 export const maxDuration = 600; // 10 min — processing all suppliers
 
@@ -27,7 +28,7 @@ const topicSchema = z.object({
  *
  * POST /api/jobs/worker-voice-analytics
  */
-export async function POST() {
+async function _postHandler(_request: Request) {
   try {
     const model = getOllamaModel("qwen3:4b");
     const now = new Date();
@@ -217,3 +218,5 @@ export async function POST() {
     );
   }
 }
+
+export const POST = withJobTracking("worker-voice-analytics", _postHandler);

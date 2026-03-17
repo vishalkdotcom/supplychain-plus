@@ -8,6 +8,7 @@ import {
   supplierRiskForecast,
 } from "@/lib/db/schema";
 import { desc, eq } from "drizzle-orm";
+import { withJobTracking } from "@/lib/jobs/with-job-tracking";
 import { z } from "zod";
 import { logger } from "@/lib/logger";
 
@@ -34,7 +35,7 @@ const forecastSchema = z.object({
  *
  * POST /api/jobs/risk-forecast
  */
-export async function POST() {
+async function _postHandler(_request: Request) {
   try {
     const model = getOllamaModel("qwen3:4b");
 
@@ -171,3 +172,5 @@ function avg(nums: number[]): number {
   if (nums.length === 0) return 0;
   return nums.reduce((a, b) => a + b, 0) / nums.length;
 }
+
+export const POST = withJobTracking("risk-forecast", _postHandler);

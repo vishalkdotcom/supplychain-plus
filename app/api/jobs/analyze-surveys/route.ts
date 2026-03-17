@@ -7,6 +7,7 @@ import { query as pgQuery } from "@/lib/db/postgres";
 
 import { z } from "zod";
 import { logger } from "@/lib/logger";
+import { withJobTracking } from "@/lib/jobs/with-job-tracking";
 
 const surveyAnalysisSchema = z.object({
   sentimentPositive: z.number(),
@@ -23,7 +24,7 @@ const surveyAnalysisSchema = z.object({
   insight: z.string().describe("One-paragraph summary of key findings"),
 });
 
-export async function POST(request: Request) {
+async function _postHandler(request: Request) {
   try {
     const body = await request.json().catch(() => ({}));
     const targetSurveyId = body?.surveyId as string | undefined;
@@ -148,3 +149,5 @@ ${responseText}`,
     );
   }
 }
+
+export const POST = withJobTracking("analyze-surveys", _postHandler);

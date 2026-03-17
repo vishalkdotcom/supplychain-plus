@@ -10,6 +10,7 @@ import { query as pgQuery } from "@/lib/db/postgres";
 import { query as mssqlQuery } from "@/lib/db/sql-server";
 import { query as mysqlQuery } from "@/lib/db/mysql";
 import { logger } from "@/lib/logger";
+import { withJobTracking } from "@/lib/jobs/with-job-tracking";
 
 interface SupplierRow {
   id: number;
@@ -25,7 +26,7 @@ interface CompanyGeoRow {
   Longitude: number | null;
 }
 
-export async function POST(request: Request) {
+async function _postHandler(request: Request) {
   try {
     const body = await request.json().catch(() => ({}));
     const targetSupplierId = body?.supplierId as string | undefined;
@@ -370,3 +371,5 @@ export async function POST(request: Request) {
     );
   }
 }
+
+export const POST = withJobTracking("calculate-risk", _postHandler);
