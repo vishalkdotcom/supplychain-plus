@@ -249,3 +249,58 @@ export interface Alert {
   isRead: boolean;
   createdAt: string;
 }
+
+// ===============================
+// Dashboard Briefing (AI Co-Pilot)
+// ===============================
+
+export interface MetricsBriefing {
+  summary: string;
+  newAlerts: number;
+  newHighRiskSuppliers: number;
+  escalatedCases: number;
+  resolvedCases: number;
+  riskMovements: RiskMovement[];
+  urgentCases: UrgentCase[];
+}
+
+export interface RiskMovement {
+  supplierId: string;
+  supplierName: string;
+  previousScore: number;
+  currentScore: number;
+  direction: "worsened" | "improved";
+  crossedThreshold: boolean;
+}
+
+export interface UrgentCase {
+  id: string;
+  supplierId: string;
+  supplierName: string;
+  topic: string;
+  severity: "high" | "medium" | "low";
+  status: string;
+  aiSummary: string;
+  createdAt: string;
+  ageDays: number;
+}
+
+// ===============================
+// Case Cross-Module Context
+// ===============================
+
+export interface CaseContext {
+  supplierOpenCases: number;
+  supplierRiskScore: number;
+  supplierRiskLevel: "high" | "medium" | "low";
+  caseAgeDays: number;
+  avgResolutionDays: number | null;
+  relatedSurveyThemes: string[];
+  trainingGaps: string[];
+  similarOpenCases: Array<{
+    id: string;
+    topic: string;
+    severity: string;
+    status: string;
+  }>;
+}

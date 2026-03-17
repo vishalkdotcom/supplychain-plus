@@ -11,6 +11,8 @@ import {
   PaginatedResponse,
   Alert,
   RiskHistoryEntry,
+  MetricsBriefing,
+  CaseContext,
 } from "@/types";
 
 const API_BASE = "/api";
@@ -199,4 +201,26 @@ export async function markAlertRead(alertId: string): Promise<void> {
     body: JSON.stringify({ alertId, isRead: true })
   });
   if (!res.ok) throw new Error("Failed to update alert");
+}
+
+export async function fetchBriefing(since?: string): Promise<MetricsBriefing> {
+  const qs = since ? `?since=${encodeURIComponent(since)}` : "";
+  const res = await fetch(`${API_BASE}/metrics/briefing${qs}`);
+  if (!res.ok) throw new Error("Failed to fetch briefing");
+  return res.json();
+}
+
+export async function fetchCaseContext(caseId: string): Promise<CaseContext> {
+  const res = await fetch(`${API_BASE}/cases/${caseId}/context`);
+  if (!res.ok) throw new Error("Failed to fetch case context");
+  return res.json();
+}
+
+export async function advanceCaseStatus(caseId: string): Promise<{ newStatus: string }> {
+  const res = await fetch(`${API_BASE}/cases/${caseId}/status`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+  });
+  if (!res.ok) throw new Error("Failed to advance case status");
+  return res.json();
 }

@@ -8,6 +8,12 @@
       "port": 3030
     },
     {
+      "name": "Worktree Dev",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "cd /d C:\\Users\\vishal\\.claude\\worktrees\\wovo\\amazing-feynman && bun next dev -p 3031"],
+      "port": 3031
+    },
+    {
       "name": "Drizzle Studio",
       "runtimeExecutable": "cmd",
       "runtimeArgs": ["/c", "cd /d C:\\vishal\\xp\\wovo && bun run db:studio"],

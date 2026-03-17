@@ -20,31 +20,42 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import {
   IconArrowRight,
   IconCheck,
-  IconClock,
   IconMessage,
-  IconRobot,
-  IconSchool,
-  IconSparkles,
-  IconUser,
-  IconBook,
-  IconWand,
-  IconLoader2,
-  IconHistory,
-  IconTrendingUp,
 } from "@tabler/icons-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchCase } from "@/lib/api";
+import { fetchCase, advanceCaseStatus } from "@/lib/api";
 import { useAISettings } from "@/hooks/use-ai-settings";
+import { getSeverityVariant } from "@/lib/risk-utils";
+
+import { CaseContextStrip } from "@/components/cases/case-context-strip";
+import { AIAnalysisCard } from "@/components/cases/ai-analysis-card";
+import { ActionPanel } from "@/components/cases/action-panel";
+import { CrossModuleContext } from "@/components/cases/cross-module-context";
 
 interface CaseDetailPageProps {
   params: Promise<{ id: string }>;
+}
+
+interface PlaybookData {
+  caseTypeName: string | null;
+  avgResolutionDays: number | null;
+  bestResolutionDays: number | null;
+  totalResolved: number;
+  bestPractices: string[];
+  aiSummary: string;
 }
 
 export default function CaseDetailPage({ params }: CaseDetailPageProps) {
@@ -62,11 +73,24 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
   const [summaryError, setSummaryError] = useState<string>("");
   const [copied, setCopied] = useState(false);
   const [isLoadingGuidance, setIsLoadingGuidance] = useState(false);
-  
+  const [isAdvancingStatus, setIsAdvancingStatus] = useState(false);
+  const [statusDialogOpen, setStatusDialogOpen] = useState(false);
+
   const [draftResponseText, setDraftResponseText] = useState<string>("");
   const [draftLanguage, setDraftLanguage] = useState("English");
   const [draftTone, setDraftTone] = useState("Professional");
   const [isRegeneratingDraft, setIsRegeneratingDraft] = useState(false);
+
+  // Playbook query
+  const { data: playbookData, isLoading: isPlaybookLoading } = useQuery<PlaybookData>({
+    queryKey: ["playbook", caseData?.caseTypeId],
+    queryFn: async () => {
+      const res = await fetch(`/api/ai/playbook?caseTypeId=${caseData!.caseTypeId}`);
+      if (!res.ok) throw new Error("Failed to fetch playbook");
+      return res.json();
+    },
+    enabled: !!caseData?.caseTypeId,
+  });
 
   // Sync draft response text with AI guidance
   useEffect(() => {
@@ -112,7 +136,6 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
     }
   };
 
-  // Sync aiSummary with loaded case data
   const displaySummary = aiSummary || caseData?.aiSummary || "";
 
   // Check if guidance is the hardcoded fallback
@@ -166,7 +189,6 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
   const handleGenerateSummary = useCallback(async () => {
     if (!caseData) return;
 
-    // Guard: don't call AI with empty content
     const content = caseData?.fullContent?.trim();
     if (!content || content === "No content." || content.length < 10) {
       setSummaryError(
@@ -199,7 +221,6 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
       }
       if (data.summary) {
         setAiSummary(data.summary);
-        // Invalidate the case query so the cached summary loads on next visit
         queryClient.invalidateQueries({ queryKey: ["cases", id] });
       }
     } catch (error) {
@@ -210,10 +231,31 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
     }
   }, [activeConfig, caseData, id, queryClient]);
 
+  const handleAdvanceStatus = async () => {
+    setIsAdvancingStatus(true);
+    try {
+      const result = await advanceCaseStatus(id);
+      toast.success(`Case advanced to ${result.newStatus.replace("_", " ")}`);
+      queryClient.invalidateQueries({ queryKey: ["cases", id] });
+      setStatusDialogOpen(false);
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to advance case status");
+    } finally {
+      setIsAdvancingStatus(false);
+    }
+  };
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(draftResponseText);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -235,19 +277,13 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
     (s) => s.key === caseData.status,
   );
 
-  const getSeverityVariant = (severity: string) => {
-    switch (severity) {
-      case "high":
-        return "destructive" as const;
-      case "medium":
-        return "default" as const;
-      default:
-        return "secondary" as const;
-    }
-  };
+  const canAdvance = currentStepIndex < statusSteps.length - 1;
+  const nextStep = canAdvance ? statusSteps[currentStepIndex + 1] : null;
 
   return (
     <div className="space-y-6">
+      {/* ===== ZONE 1: Header + Context ===== */}
+
       {/* Breadcrumb */}
       <Breadcrumb>
         <BreadcrumbList>
@@ -263,8 +299,8 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
 
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
+        <div className="space-y-2">
+          <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold">{caseData.id}</h1>
             <Badge variant={getSeverityVariant(caseData.severity)}>
               {caseData.severity.toUpperCase()}
@@ -272,8 +308,16 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
             <Badge variant="outline">{caseData.status.replace("_", " ")}</Badge>
           </div>
           <p className="text-muted-foreground">
-            {caseData.topic} • {caseData.supplierName}
+            {caseData.topic} &bull;{" "}
+            <Link
+              href={`/suppliers/${caseData.supplierId}`}
+              className="hover:underline text-primary"
+            >
+              {caseData.supplierName}
+            </Link>
           </p>
+          {/* Context Strip */}
+          <CaseContextStrip caseId={caseData.id} supplierId={caseData.supplierId} />
         </div>
         <Link href={`/suppliers/${caseData.supplierId}`}>
           <Button variant="outline">
@@ -283,24 +327,51 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
         </Link>
       </div>
 
-      {/* Status Workflow */}
+      {/* Interactive Status Workflow */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Case Status</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base">Case Status</CardTitle>
+            {canAdvance && nextStep && (
+              <Dialog open={statusDialogOpen} onOpenChange={setStatusDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button size="sm" variant="default">
+                    Advance to {nextStep.label}
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Advance Case Status</DialogTitle>
+                    <DialogDescription>
+                      Move case {caseData.id} from &ldquo;{statusSteps[currentStepIndex].label}&rdquo; to &ldquo;{nextStep.label}&rdquo;?
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setStatusDialogOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleAdvanceStatus} disabled={isAdvancingStatus}>
+                      {isAdvancingStatus ? "Advancing..." : "Confirm"}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 overflow-x-auto">
             {statusSteps.map((step, idx) => {
               const isComplete = idx < currentStepIndex;
               const isCurrent = idx === currentStepIndex;
               return (
-                <div key={step.key} className="flex items-center gap-2">
+                <div key={step.key} className="flex items-center gap-2 shrink-0">
                   <div
                     className={`flex items-center justify-center w-8 h-8 rounded-full text-xs font-medium ${
                       isComplete
                         ? "bg-green-500 text-white"
                         : isCurrent
-                          ? "bg-indigo-600 text-white"
+                          ? "bg-primary text-primary-foreground"
                           : "bg-muted text-muted-foreground"
                     }`}
                   >
@@ -315,7 +386,7 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
                   </span>
                   {idx < statusSteps.length - 1 && (
                     <div
-                      className={`w-8 h-0.5 ${
+                      className={`w-6 h-0.5 ${
                         isComplete ? "bg-green-500" : "bg-muted"
                       }`}
                     />
@@ -324,18 +395,14 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
               );
             })}
           </div>
-          {caseData.assignee && (
-            <div className="flex items-center gap-2 mt-4 text-sm text-muted-foreground">
-              <IconUser className="h-4 w-4" />
-              <span>Assigned to: {caseData.assignee}</span>
-            </div>
-          )}
         </CardContent>
       </Card>
 
+      {/* ===== ZONE 2: Two-Column Understanding + Action ===== */}
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Case Content */}
+        {/* Left Column: Case Intelligence */}
         <div className="lg:col-span-2 space-y-4">
+          {/* Worker Report */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -351,348 +418,63 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
             </CardContent>
           </Card>
 
-          {/* AI Summary */}
-          <Card className="border-indigo-200 bg-indigo-50/30">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <IconRobot className="h-5 w-5 text-indigo-600" />
-                  AI Summary
-                </CardTitle>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleGenerateSummary}
-                  disabled={isLoadingSummary}
-                >
-                  {isLoadingSummary ? "Generating..." : "Refresh Summary"}
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {isLoadingSummary ? (
-                <div className="flex items-center justify-center py-4">
-                  <div className="animate-spin h-5 w-5 border-2 border-indigo-600 border-t-transparent rounded-full"></div>
-                </div>
-              ) : summaryError ? (
-                <p className="text-sm text-red-600">{summaryError}</p>
-              ) : (
-                <p className="text-sm">{displaySummary}</p>
-              )}
-            </CardContent>
-          </Card>
+          {/* AI Analysis (merged Summary + Steps) */}
+          <AIAnalysisCard
+            caseData={caseData}
+            displaySummary={displaySummary}
+            isLoadingSummary={isLoadingSummary}
+            isLoadingGuidance={isLoadingGuidance}
+            summaryError={summaryError}
+            onRefreshSummary={handleGenerateSummary}
+          />
+
+          {/* Cross-Module Context */}
+          <CrossModuleContext caseId={caseData.id} supplierId={caseData.supplierId} />
         </div>
 
-        {/* AI Guidance Panel */}
-        <div className="space-y-4">
-          {caseData.aiGuidance && (
-            <>
-              <Card className="border-purple-200 bg-linear-to-br from-purple-50/50 to-indigo-50/50">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2">
-                      <IconSparkles className="h-5 w-5 text-purple-600" />
-                      AI Guidance
-                    </CardTitle>
-                    {isLoadingGuidance && (
-                      <div className="animate-spin h-4 w-4 border-2 border-purple-600 border-t-transparent rounded-full" />
-                    )}
-                  </div>
-                  <CardDescription>
-                    {isLoadingGuidance
-                      ? "Generating AI guidance..."
-                      : "Recommended steps for this case"}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {/* Recommended Steps */}
-                  <div className="space-y-2">
-                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      Recommended Steps
-                    </span>
-                    <ol className="space-y-2">
-                      {caseData.aiGuidance.recommendedSteps.map((step, idx) => (
-                        <li
-                          key={idx}
-                          className="flex items-start gap-2 text-sm"
-                        >
-                          <span className="flex items-center justify-center w-5 h-5 rounded-full bg-purple-100 text-purple-600 text-xs font-medium shrink-0">
-                            {idx + 1}
-                          </span>
-                          <span>{step}</span>
-                        </li>
-                      ))}
-                    </ol>
-                  </div>
-
-                  {/* Resolution Time */}
-                  <div className="flex items-center gap-2 p-3 rounded-lg bg-white/80">
-                    <IconClock className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">
-                      Est. resolution:{" "}
-                      <strong>
-                        {caseData.aiGuidance.estimatedResolutionDays} days
-                      </strong>
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Draft Response & Multi-Language Hub */}
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="text-base">Draft Response</CardTitle>
-                      <CardDescription>
-                        Suggested reply to send to the worker
-                      </CardDescription>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Select value={draftLanguage} onValueChange={setDraftLanguage}>
-                        <SelectTrigger className="h-8 w-[120px] text-xs">
-                          <SelectValue placeholder="Language" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="English">English</SelectItem>
-                          <SelectItem value="Bengali">Bengali</SelectItem>
-                          <SelectItem value="Vietnamese">Vietnamese</SelectItem>
-                          <SelectItem value="Spanish">Spanish</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Select value={draftTone} onValueChange={setDraftTone}>
-                        <SelectTrigger className="h-8 w-[120px] text-xs">
-                          <SelectValue placeholder="Tone" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Professional">Professional</SelectItem>
-                          <SelectItem value="Empathetic">Empathetic</SelectItem>
-                          <SelectItem value="Firm">Firm</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <Textarea 
-                    value={draftResponseText}
-                    onChange={(e) => setDraftResponseText(e.target.value)}
-                    className="min-h-[120px] text-sm"
-                  />
-                  <div className="flex gap-2">
-                    <Button
-                      variant="secondary"
-                      className="flex-1"
-                      onClick={handleRegenerateDraft}
-                      disabled={isRegeneratingDraft}
-                    >
-                      {isRegeneratingDraft ? (
-                        <><IconLoader2 className="w-4 h-4 mr-2 animate-spin" /> Translating...</>
-                      ) : (
-                        <><IconWand className="w-4 h-4 mr-2" /> Regenerate</>
-                      )}
-                    </Button>
-                    <Button
-                      className="flex-1"
-                      variant="outline"
-                      onClick={() => {
-                        navigator.clipboard.writeText(draftResponseText);
-                        setCopied(true);
-                        setTimeout(() => setCopied(false), 2000);
-                      }}
-                    >
-                      {copied ? "✓ Copied" : "Copy to Clipboard"}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Smart FAQ Auto-Resolution */}
-              {caseData.aiGuidance.suggestedFAQs && caseData.aiGuidance.suggestedFAQs.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-base">
-                      <IconBook className="h-5 w-5 text-blue-500" />
-                      Smart FAQ Matches
-                    </CardTitle>
-                    <CardDescription>
-                      Known resolutions that might apply
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <Accordion type="single" collapsible className="w-full">
-                      {caseData.aiGuidance.suggestedFAQs.map((faq, idx) => (
-                        <AccordionItem key={idx} value={`item-${idx}`}>
-                          <AccordionTrigger className="text-sm text-left hover:no-underline">
-                            <div className="flex items-center gap-2">
-                              <Badge variant={faq.confidence > 80 ? "default" : "secondary"} className="text-[10px]">
-                                {faq.confidence}% Match
-                              </Badge>
-                              <span>{faq.question}</span>
-                            </div>
-                          </AccordionTrigger>
-                          <AccordionContent className="space-y-3">
-                            <p className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-md">
-                              {faq.answer}
-                            </p>
-                            <Button 
-                              size="sm" 
-                              variant="outline" 
-                              className="w-full text-xs"
-                              onClick={() => {
-                                setDraftResponseText(prev => prev + "\n\nRegarding your concern: " + faq.answer);
-                                toast.success("FAQ applied to draft response");
-                              }}
-                            >
-                              1-Click Apply to Draft
-                            </Button>
-                          </AccordionContent>
-                        </AccordionItem>
-                      ))}
-                    </Accordion>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Historical Context (Case Resolution Playbook) */}
-              {caseData.caseTypeId && (
-                <PlaybookCard caseTypeId={caseData.caseTypeId} caseTopic={caseData.topic} />
-              )}
-
-              {/* Related Training */}
-              {caseData.aiGuidance.relatedTraining &&
-                caseData.aiGuidance.relatedTraining.length > 0 && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2 text-base">
-                        <IconSchool className="h-5 w-5" />
-                        Related Training
-                      </CardTitle>
-                      <CardDescription>
-                        Courses to deploy for this issue type
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                      {caseData.aiGuidance.relatedTraining.map((training) => (
-                        <div
-                          key={training}
-                          className="flex items-center justify-between p-2 rounded-lg bg-muted/50"
-                        >
-                          <span className="text-sm">{training}</span>
-                          <Link
-                            href={`/educate?topic=${encodeURIComponent(training)}`}
-                          >
-                            <Button size="sm" variant="ghost">
-                              Deploy
-                            </Button>
-                          </Link>
-                        </div>
-                      ))}
-                    </CardContent>
-                  </Card>
-                )}
-            </>
-          )}
+        {/* Right Column: Action Panel (sticky) */}
+        <div>
+          <ActionPanel
+            caseData={caseData}
+            draftResponseText={draftResponseText}
+            setDraftResponseText={setDraftResponseText}
+            draftLanguage={draftLanguage}
+            setDraftLanguage={setDraftLanguage}
+            draftTone={draftTone}
+            setDraftTone={setDraftTone}
+            isRegeneratingDraft={isRegeneratingDraft}
+            onRegenerateDraft={handleRegenerateDraft}
+            copied={copied}
+            onCopy={handleCopy}
+            playbookData={playbookData}
+            isPlaybookLoading={isPlaybookLoading}
+            caseTopic={caseData.topic}
+          />
         </div>
       </div>
-    </div>
-  );
-}
 
-interface PlaybookData {
-  caseTypeName: string | null;
-  avgResolutionDays: number | null;
-  bestResolutionDays: number | null;
-  totalResolved: number;
-  bestPractices: string[];
-  aiSummary: string;
-}
-
-function PlaybookCard({ caseTypeId, caseTopic }: { caseTypeId: string; caseTopic: string }) {
-  const { data: playbook, isLoading } = useQuery<PlaybookData>({
-    queryKey: ["playbook", caseTypeId],
-    queryFn: async () => {
-      const res = await fetch(`/api/ai/playbook?caseTypeId=${caseTypeId}`);
-      if (!res.ok) throw new Error("Failed to fetch playbook");
-      return res.json();
-    },
-  });
-
-  if (isLoading) {
-    return (
+      {/* ===== ZONE 3: Quick Actions Bar ===== */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <IconHistory className="h-5 w-5 text-violet-500" />
-            Historical Context
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="animate-pulse space-y-2">
-            <div className="h-4 bg-muted rounded w-3/4" />
-            <div className="h-4 bg-muted rounded w-1/2" />
+        <CardContent className="py-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-medium text-muted-foreground mr-2">Quick Actions:</span>
+            <Button variant="outline" size="sm" className="text-xs">
+              Assign Case
+            </Button>
+            <Button variant="outline" size="sm" className="text-xs text-destructive hover:text-destructive">
+              Escalate
+            </Button>
+            <Button variant="outline" size="sm" className="text-xs">
+              Link to Case
+            </Button>
+            <Link href={`/educate?topic=${encodeURIComponent(caseData.topic)}`}>
+              <Button variant="outline" size="sm" className="text-xs">
+                Deploy Training
+              </Button>
+            </Link>
           </div>
         </CardContent>
       </Card>
-    );
-  }
-
-  if (!playbook || playbook.totalResolved === 0) return null;
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
-          <IconHistory className="h-5 w-5 text-violet-500" />
-          Historical Context
-        </CardTitle>
-        <CardDescription>
-          Resolution patterns from {playbook.totalResolved} resolved &ldquo;{caseTopic}&rdquo; cases
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Stats */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-muted/50 rounded-lg p-3 text-center">
-            <div className="text-2xl font-bold text-foreground">
-              {playbook.avgResolutionDays != null ? Math.round(playbook.avgResolutionDays) : "—"}
-            </div>
-            <div className="text-xs text-muted-foreground">Avg Days to Resolve</div>
-          </div>
-          <div className="bg-muted/50 rounded-lg p-3 text-center">
-            <div className="text-2xl font-bold text-emerald-600">
-              {playbook.bestResolutionDays ?? "—"}
-            </div>
-            <div className="text-xs text-muted-foreground">Best Resolution</div>
-          </div>
-        </div>
-
-        {/* AI Summary */}
-        <p className="text-sm text-muted-foreground bg-violet-50 dark:bg-violet-950/20 p-3 rounded-md border border-violet-100 dark:border-violet-900">
-          {playbook.aiSummary}
-        </p>
-
-        {/* Best Practices */}
-        {playbook.bestPractices.length > 0 && (
-          <Accordion type="single" collapsible className="w-full">
-            <AccordionItem value="practices">
-              <AccordionTrigger className="text-sm hover:no-underline">
-                <div className="flex items-center gap-2">
-                  <IconTrendingUp className="h-4 w-4 text-emerald-500" />
-                  Best Practices ({playbook.bestPractices.length})
-                </div>
-              </AccordionTrigger>
-              <AccordionContent>
-                <ol className="list-decimal list-inside space-y-1.5 text-sm text-muted-foreground">
-                  {playbook.bestPractices.map((practice, idx) => (
-                    <li key={idx}>{practice}</li>
-                  ))}
-                </ol>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-        )}
-      </CardContent>
-    </Card>
+    </div>
   );
 }
