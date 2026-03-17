@@ -100,6 +100,23 @@ export default function SuppliersPage() {
             <SelectItem value="low">Low Risk</SelectItem>
           </SelectContent>
         </Select>
+        <Select
+          value={params.region}
+          onValueChange={(val) => setParams({ region: val, page: 1 })}
+        >
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="All Regions" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Regions</SelectItem>
+            <SelectItem value="Asia">Asia</SelectItem>
+            <SelectItem value="Europe">Europe</SelectItem>
+            <SelectItem value="Americas">Americas</SelectItem>
+            <SelectItem value="Africa">Africa</SelectItem>
+            <SelectItem value="Middle East">Middle East</SelectItem>
+            <SelectItem value="Oceania">Oceania</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Results count */}

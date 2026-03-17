@@ -37,7 +37,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { IconFileText, IconWand, IconLoader2, IconDownload, IconListCheck } from "@tabler/icons-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useQuery } from "@tanstack/react-query";
-import { fetchSupplier, fetchCases, fetchSurveys, fetchRecommendations, fetchTimeline, fetchTraining } from "@/lib/api";
+import { fetchSupplier, fetchCases, fetchSurveys, fetchRecommendations, fetchTimeline, fetchTraining, fetchBrands } from "@/lib/api";
 import { Case, Survey, AIRecommendation, EvidenceLink } from "@/types";
 import { SupplierHero } from "@/components/suppliers/supplier-hero";
 import { toast } from "sonner";
@@ -87,9 +87,38 @@ export default function SupplierDetailPage({
     queryFn: () => fetchTraining(id),
   });
 
+  // Fetch brands to resolve parent company name for breadcrumb
+  const { data: brands } = useQuery({
+    queryKey: ["brands"],
+    queryFn: () => fetchBrands(),
+    enabled: !!supplier?.parentCompanyId,
+  });
+
+  const parentBrand = supplier?.parentCompanyId
+    ? brands?.find((b) => b.id === supplier.parentCompanyId)
+    : undefined;
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
+
+  if (!supplier) {
+    notFound();
+  }
+
+  // Filter cases and surveys for this supplier — must be declared before handleExportPDF
+  const cases =
+    allCasesRes?.data?.filter((c: Case) => c.supplierId === id) || [];
+  const surveys =
+    allSurveysRes?.data?.filter((s: Survey) => s.supplierId === id) || [];
+  const supplierRecommendations = recommendations || [];
+  const timelineEvents = timeline || [];
+
   const handleGenerateNarrative = async () => {
-    if (!supplier) return;
-    
     setIsGeneratingNarrative(true);
     try {
       const res = await fetch("/api/ai/reports", {
@@ -97,9 +126,9 @@ export default function SupplierDetailPage({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ supplier, regulatoryFramework }),
       });
-      
+
       if (!res.ok) throw new Error("Failed to generate narrative");
-      
+
       const data = await res.json();
       setNarrative(data.narrative);
       toast.success("Executive summary generated successfully");
@@ -112,8 +141,6 @@ export default function SupplierDetailPage({
   };
 
   const handleExportPDF = async () => {
-    if (!supplier) return;
-
     try {
       const { generateHRDDReport } = await import("@/lib/hrdd-export");
 
@@ -171,26 +198,6 @@ export default function SupplierDetailPage({
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-      </div>
-    );
-  }
-
-  if (!supplier) {
-    notFound();
-  }
-
-  // Filter cases and surveys for this supplier
-  const cases =
-    allCasesRes?.data?.filter((c: Case) => c.supplierId === id) || [];
-  const surveys =
-    allSurveysRes?.data?.filter((s: Survey) => s.supplierId === id) || [];
-  const supplierRecommendations = recommendations || [];
-  const timelineEvents = timeline || [];
-
   return (
     <div className="space-y-6">
       {/* Header Area */}
@@ -200,6 +207,16 @@ export default function SupplierDetailPage({
             <BreadcrumbItem>
               <BreadcrumbLink href="/suppliers">Suppliers</BreadcrumbLink>
             </BreadcrumbItem>
+            {parentBrand && (
+              <>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbLink href={`/brands/${parentBrand.id}`}>
+                    {parentBrand.name}
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+              </>
+            )}
             <BreadcrumbSeparator />
             <BreadcrumbItem>
               <BreadcrumbPage>{supplier.name}</BreadcrumbPage>
@@ -217,7 +234,7 @@ export default function SupplierDetailPage({
       </div>
 
       {/* Hero */}
-      <SupplierHero supplier={supplier} />
+      <SupplierHero supplier={supplier} parentBrand={parentBrand} />
 
       {/* Risk Cards Matrix */}
       <div className="grid gap-6 lg:grid-cols-3">

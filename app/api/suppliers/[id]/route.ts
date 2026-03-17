@@ -6,6 +6,7 @@ import { supplierRiskScores as supplierRiskScoresSchema } from "@/lib/db/schema"
 import { Supplier } from "@/types";
 import { eq } from "drizzle-orm";
 import { logger } from "@/lib/logger";
+import { deriveRegion } from "@/lib/risk-utils";
 
 export async function GET(
   request: Request,
@@ -50,22 +51,18 @@ export async function GET(
       .limit(1);
     const risk = riskData[0];
 
+    const riskScore = risk?.riskScore || 50;
     const supplier: Supplier = {
       id: String(row.client_key),
       name: row.name,
-      region: "Global",
+      region: risk?.region || deriveRegion(row.country),
       country: row.country || "Unknown",
       location: row.country || "Unknown",
       workerCount,
       contactName: "N/A",
-      contactEmail: "n/a",
-      riskScore: risk?.riskScore || 50,
-      riskLevel:
-        (risk?.riskScore || 50) > 70
-          ? "high"
-          : (risk?.riskScore || 50) > 30
-            ? "medium"
-            : "low",
+      contactEmail: "N/A",
+      riskScore,
+      riskLevel: riskScore > 70 ? "high" : riskScore > 30 ? "medium" : "low",
       status: row.is_active ? "active" : "inactive",
       lastActivityDate: new Date().toISOString().split("T")[0],
       riskBreakdown: {
@@ -75,6 +72,9 @@ export async function GET(
         engagementScore: risk?.engagementScore || 50,
         reasons: risk?.reasons || [],
       },
+      ...(risk?.latitude != null && { latitude: risk.latitude }),
+      ...(risk?.longitude != null && { longitude: risk.longitude }),
+      ...(risk?.parentCompanyId && { parentCompanyId: risk.parentCompanyId }),
     };
 
     return NextResponse.json(supplier);

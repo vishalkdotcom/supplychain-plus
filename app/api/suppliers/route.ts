@@ -4,9 +4,9 @@ import { wcGlobalQuery } from "@/lib/db/postgres-wc-global";
 import { db } from "@/lib/db/drizzle";
 import { supplierRiskScores as supplierRiskScoresSchema } from "@/lib/db/schema";
 import { Supplier, PaginatedResponse, RiskReason } from "@/types";
-import { extractEnglishFromMlang } from "@/lib/mlang";
 import { inArray } from "drizzle-orm";
 import { logger } from "@/lib/logger";
+import { deriveRegion } from "@/lib/risk-utils";
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,6 +18,7 @@ export async function GET(request: NextRequest) {
     );
     const search = searchParams.get("search") || "";
     const riskLevel = searchParams.get("riskLevel") || "all";
+    const region = searchParams.get("region") || "all";
     const parentCompanyId = searchParams.get("parentCompanyId") || "";
     const offset = (page - 1) * perPage;
 
@@ -66,10 +67,15 @@ export async function GET(request: NextRequest) {
     type RiskScoreRow = typeof supplierRiskScoresSchema.$inferSelect;
     const riskScoresMap: Record<string, RiskScoreRow> = {};
     
+    // Collect all parentCompanyIds to identify brand rows (they should not appear as suppliers)
+    const brandIds = new Set<string>();
     if (clientKeysForRisk.length > 0) {
       const riskData = await db.select().from(supplierRiskScoresSchema).where(inArray(supplierRiskScoresSchema.supplierId, clientKeysForRisk));
       for (const r of riskData) {
         riskScoresMap[r.supplierId] = r;
+        if (r.parentCompanyId) {
+          brandIds.add(r.parentCompanyId);
+        }
       }
     }
 
@@ -104,6 +110,13 @@ export async function GET(request: NextRequest) {
       };
     });
 
+    // Exclude brand/parent company rows — they should only appear on the Brands page
+    if (brandIds.size > 0) {
+      mergedRows = mergedRows.filter(
+        (row: MergedRow) => !brandIds.has(String(row.client_key)),
+      );
+    }
+
     // Filter by parentCompanyId (brand)
     if (parentCompanyId) {
       mergedRows = mergedRows.filter(
@@ -118,6 +131,14 @@ export async function GET(request: NextRequest) {
         if (riskLevel === "medium") return score > 30 && score <= 70;
         if (riskLevel === "low") return score <= 30;
         return true;
+      });
+    }
+
+    // Filter by region
+    if (region !== "all") {
+      mergedRows = mergedRows.filter((row: MergedRow) => {
+        const supplierRegion = row.cached_region || deriveRegion(row.country);
+        return supplierRegion === region;
       });
     }
 
@@ -152,7 +173,7 @@ export async function GET(request: NextRequest) {
 
     const suppliers: Supplier[] = paginatedRows.map((row) => ({
       id: String(row.client_key),
-      name: extractEnglishFromMlang(row.name),
+      name: row.name,
       region: row.cached_region || deriveRegion(row.country),
       country: row.country || "Unknown",
       location: row.country || "Unknown",
@@ -200,65 +221,3 @@ export async function GET(request: NextRequest) {
   }
 }
 
-const REGION_MAP: Record<string, string> = {
-  // Asia
-  Vietnam: "Asia",
-  Cambodia: "Asia",
-  Bangladesh: "Asia",
-  China: "Asia",
-  India: "Asia",
-  Indonesia: "Asia",
-  Thailand: "Asia",
-  Myanmar: "Asia",
-  Philippines: "Asia",
-  Malaysia: "Asia",
-  Pakistan: "Asia",
-  "Sri Lanka": "Asia",
-  Taiwan: "Asia",
-  Japan: "Asia",
-  "South Korea": "Asia",
-  Laos: "Asia",
-  Nepal: "Asia",
-  // Europe
-  Germany: "Europe",
-  France: "Europe",
-  Italy: "Europe",
-  Spain: "Europe",
-  UK: "Europe",
-  "United Kingdom": "Europe",
-  Portugal: "Europe",
-  Turkey: "Europe",
-  Poland: "Europe",
-  Romania: "Europe",
-  // Americas
-  USA: "Americas",
-  "United States": "Americas",
-  Mexico: "Americas",
-  Brazil: "Americas",
-  Colombia: "Americas",
-  Guatemala: "Americas",
-  Honduras: "Americas",
-  "El Salvador": "Americas",
-  Canada: "Americas",
-  // Africa
-  Ethiopia: "Africa",
-  Kenya: "Africa",
-  Madagascar: "Africa",
-  Tanzania: "Africa",
-  Mauritius: "Africa",
-  "South Africa": "Africa",
-  Egypt: "Africa",
-  Morocco: "Africa",
-  Tunisia: "Africa",
-  // Middle East
-  Jordan: "Middle East",
-  UAE: "Middle East",
-  "Saudi Arabia": "Middle East",
-  // Oceania
-  Australia: "Oceania",
-};
-
-function deriveRegion(country: string | null): string {
-  if (!country) return "Global";
-  return REGION_MAP[country] || "Global";
-}

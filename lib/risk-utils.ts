@@ -81,3 +81,40 @@ export function getScoreBadgeClasses(score: number): string {
     return "bg-orange-50 text-orange-600 border-orange-200";
   return "bg-green-50 text-green-600 border-green-200";
 }
+
+/** Numeric risk score → risk level string. */
+export function getRiskLevel(score: number): "high" | "medium" | "low" {
+  if (score > 70) return "high";
+  if (score > 30) return "medium";
+  return "low";
+}
+
+/** Country name → geographic region. Used by supplier APIs. */
+const REGION_MAP: Record<string, string> = {
+  // Asia
+  Vietnam: "Asia", Cambodia: "Asia", Bangladesh: "Asia", China: "Asia",
+  India: "Asia", Indonesia: "Asia", Thailand: "Asia", Myanmar: "Asia",
+  Philippines: "Asia", Malaysia: "Asia", Pakistan: "Asia", "Sri Lanka": "Asia",
+  Taiwan: "Asia", Japan: "Asia", "South Korea": "Asia", Laos: "Asia", Nepal: "Asia",
+  // Europe
+  Germany: "Europe", France: "Europe", Italy: "Europe", Spain: "Europe",
+  UK: "Europe", "United Kingdom": "Europe", Portugal: "Europe", Turkey: "Europe",
+  Poland: "Europe", Romania: "Europe",
+  // Americas
+  USA: "Americas", "United States": "Americas", Mexico: "Americas",
+  Brazil: "Americas", Colombia: "Americas", Guatemala: "Americas",
+  Honduras: "Americas", "El Salvador": "Americas", Canada: "Americas",
+  // Africa
+  Ethiopia: "Africa", Kenya: "Africa", Madagascar: "Africa", Tanzania: "Africa",
+  Mauritius: "Africa", "South Africa": "Africa", Egypt: "Africa",
+  Morocco: "Africa", Tunisia: "Africa",
+  // Middle East
+  Jordan: "Middle East", UAE: "Middle East", "Saudi Arabia": "Middle East",
+  // Oceania
+  Australia: "Oceania",
+};
+
+export function deriveRegion(country: string | null): string {
+  if (!country) return "Global";
+  return REGION_MAP[country] || "Global";
+}

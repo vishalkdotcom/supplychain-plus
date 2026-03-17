@@ -1,6 +1,7 @@
 "use client";
 
-import type { Supplier } from "@/types";
+import Link from "next/link";
+import type { Supplier, Brand } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -9,14 +10,16 @@ import {
   IconMail,
   IconUser,
   IconCalendar,
+  IconBuildingSkyscraper,
 } from "@tabler/icons-react";
 import { getRiskBadgeVariant } from "@/lib/risk-utils";
 
 interface SupplierHeroProps {
   supplier: Supplier;
+  parentBrand?: Brand;
 }
 
-export function SupplierHero({ supplier }: SupplierHeroProps) {
+export function SupplierHero({ supplier, parentBrand }: SupplierHeroProps) {
   return (
     <Card>
       <CardContent className="pt-6">
@@ -34,6 +37,15 @@ export function SupplierHero({ supplier }: SupplierHeroProps) {
             </div>
 
             <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+              {parentBrand && (
+                <Link
+                  href={`/brands/${parentBrand.id}`}
+                  className="flex items-center gap-1.5 text-indigo-600 hover:text-indigo-700 transition-colors"
+                >
+                  <IconBuildingSkyscraper className="h-4 w-4" />
+                  <span>{parentBrand.name}</span>
+                </Link>
+              )}
               <div className="flex items-center gap-1.5">
                 <IconMapPin className="h-4 w-4" />
                 <span>

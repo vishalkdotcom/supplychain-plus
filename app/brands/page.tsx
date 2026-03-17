@@ -18,7 +18,7 @@ import {
   IconSearch,
 } from "@tabler/icons-react";
 import { useState } from "react";
-import { getScoreBadgeClasses } from "@/lib/risk-utils";
+import { getScoreBadgeClasses, getRiskLevel, getRiskBadgeVariant } from "@/lib/risk-utils";
 
 export default function BrandsPage() {
   const [search, setSearch] = useState("");
@@ -79,10 +79,10 @@ export default function BrandsPage() {
                     <span>{brand.supplierCount} suppliers</span>
                   </div>
                   <Badge
-                    variant="outline"
-                    className={getScoreBadgeClasses(brand.avgRiskScore)}
+                    variant={getRiskBadgeVariant(getRiskLevel(brand.avgRiskScore))}
+                    className="text-xs"
                   >
-                    Risk: {brand.avgRiskScore}
+                    {getRiskLevel(brand.avgRiskScore).toUpperCase()} {brand.avgRiskScore}
                   </Badge>
                 </div>
                 <div className="flex justify-end">

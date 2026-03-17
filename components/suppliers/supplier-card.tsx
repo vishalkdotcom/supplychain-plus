@@ -26,17 +26,17 @@ export function SupplierCard({ supplier }: SupplierCardProps) {
   return (
     <Card className="hover:shadow-lg transition-shadow cursor-pointer group">
       <CardHeader className="pb-2">
-        <div className="flex items-start justify-between">
+        <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
             <CardTitle className="text-lg truncate group-hover:text-indigo-600 transition-colors">
               {supplier.name}
             </CardTitle>
             <CardDescription className="flex items-center gap-1 mt-1">
-              <IconMapPin className="h-3 w-3" />
+              <IconMapPin className="h-3 w-3 shrink-0" />
               {supplier.country}
             </CardDescription>
           </div>
-          <Badge variant={getRiskBadgeVariant(supplier.riskLevel)}>
+          <Badge variant={getRiskBadgeVariant(supplier.riskLevel)} className="shrink-0">
             {supplier.riskLevel.toUpperCase()}
           </Badge>
         </div>
