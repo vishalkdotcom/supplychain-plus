@@ -15,7 +15,28 @@
       "Bash(grep -v \"SET transaction_timeout\\\\|\\\\\\\\restrict \" schemas/postgres_schema.sql)",
       "Bash(pwsh -File fix-sqlserver-schema.ps1)",
       "Bash(find:*)",
-      "Bash(bunx tsc:*)"
+      "Bash(bunx tsc:*)",
+      "Bash(git show:*)",
+      "Bash(curl:*)",
+      "Bash(ls:*)",
+      "Bash(MSYS_NO_PATHCONV=1 docker exec wovo_sqlserver bash -c '/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"SqlServer@123!\" -d WOVO -Q \"SELECT TOP 5 Id, Name, ParentCompanyId FROM Company WHERE ParentCompanyId IS NOT NULL ORDER BY Id\" -C')",
+      "Bash(MSYS_NO_PATHCONV=1 docker exec wovo_mysql mysql -u moodle -pmoodlepass iomadprod -e \"SELECT COUNT\\(*\\) as cnt FROM mdl_company_course; SELECT COUNT\\(*\\) as cnt FROM mdl_user_enrolments; SELECT COUNT\\(*\\) as cnt FROM mdl_course_completions;\")",
+      "Bash(MSYS_NO_PATHCONV=1 docker exec wovo_mysql mysql -u moodle -pmoodlepass iomadprod -e \"SELECT COUNT\\(*\\) as companies FROM mdl_company; SHOW TABLES;\" 2>/dev/null)",
+      "Bash(MSYS_NO_PATHCONV=1 docker exec wovo_mysql ls /docker-entrypoint-initdb.d/)",
+      "Bash(MSYS_NO_PATHCONV=1 docker exec wovo_mysql mysql -u moodle -pmoodlepass iomadprod -e \"DESCRIBE mdl_company;\" 2>/dev/null | head -30)",
+      "Bash(node:*)",
+      "Bash(npx tsc:*)",
+      "Bash(grep -r \"supplierRiskScores\\\\|supplierRiskHistory\\\\|batch.*job\\\\|ml.*batch\" /c/vishal/xp/wovo/lib/db/ --include=*.ts -l)",
+      "Bash(grep -r \"ml.*batch\\\\|batch.*job\\\\|job.*batch\" /c/vishal/xp/wovo --include=*.ts --include=*.sql -i)",
+      "Bash(xargs grep:*)",
+      "Bash(grep -r \"calculate-risk\\\\|analyze-surveys\\\\|risk-forecast\\\\|case-clustering\\\\|worker-voice\\\\|payslip-anomaly\" /c/vishal/xp/wovo --include=*.ts --include=*.tsx -l)",
+      "Bash(grep -r \"POST.*api/jobs\\\\|fetch.*api/jobs\\\\|setTimeout\\\\|setInterval\\\\|cron\" /c/vishal/xp/wovo --include=*.ts --include=*.tsx --include=*.json)",
+      "Skill(commit-commands:commit)",
+      "Bash(pwsh -NoProfile -Command \"try { Get-NetTCPConnection -LocalPort 5432 | Format-Table } catch { Write-Host 'No connections on 5432' }; Write-Host 'DONE'\")",
+      "Bash(docker port:*)",
+      "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")",
+      "Bash(mkdir -p \"C:\\\\Users\\\\vishal\\\\.claude\\\\worktrees\\\\wovo\\\\amazing-feynman\\\\app\\\\api\\\\cases\\\\[id]\\\\context\")",
+      "Bash(mkdir -p \"C:\\\\Users\\\\vishal\\\\.claude\\\\worktrees\\\\wovo\\\\amazing-feynman\\\\app\\\\api\\\\cases\\\\[id]\\\\status\")"
     ]
   }
 }

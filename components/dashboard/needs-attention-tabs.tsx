@@ -1,0 +1,354 @@
+"use client";
+
+import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
+import { useQueryState, parseAsString } from "nuqs";
+import { fetchAlerts, fetchBriefing, fetchCases } from "@/lib/api";
+import { Alert, MetricsBriefing } from "@/types";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  IconBell,
+  IconAlertTriangle,
+  IconTrendingUp,
+  IconTrendingDown,
+  IconArrowRight,
+  IconAlertCircle,
+  IconInfoCircle,
+  IconCheck,
+} from "@tabler/icons-react";
+import { Button } from "@/components/ui/button";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { markAlertRead } from "@/lib/api";
+import { useView } from "@/components/view-context";
+
+export function NeedsAttentionTabs() {
+  const [activeTab, setActiveTab] = useQueryState(
+    "attention",
+    parseAsString.withDefault("alerts")
+  );
+
+  const { data: alerts } = useQuery<Alert[]>({
+    queryKey: ["alerts"],
+    queryFn: () => fetchAlerts(true, 10),
+    refetchInterval: 60000,
+  });
+
+  const { data: briefing } = useQuery<MetricsBriefing>({
+    queryKey: ["briefing"],
+    queryFn: () => fetchBriefing(),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const alertCount = alerts?.length ?? 0;
+  const urgentCount = briefing?.urgentCases?.length ?? 0;
+  const movementCount = briefing?.riskMovements?.length ?? 0;
+
+  return (
+    <Card className="flex flex-col">
+      <CardHeader className="pb-0">
+        <CardTitle className="text-base">Needs Attention</CardTitle>
+      </CardHeader>
+      <CardContent className="pt-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="w-full grid grid-cols-3">
+            <TabsTrigger value="alerts" className="text-xs gap-1">
+              <IconBell className="h-3.5 w-3.5" />
+              Alerts
+              {alertCount > 0 && (
+                <Badge variant="destructive" className="text-[10px] px-1.5 py-0 ml-1">
+                  {alertCount}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="cases" className="text-xs gap-1">
+              <IconAlertTriangle className="h-3.5 w-3.5" />
+              Urgent
+              {urgentCount > 0 && (
+                <Badge variant="destructive" className="text-[10px] px-1.5 py-0 ml-1">
+                  {urgentCount}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="risk" className="text-xs gap-1">
+              <IconTrendingUp className="h-3.5 w-3.5" />
+              Risk
+              {movementCount > 0 && (
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 ml-1">
+                  {movementCount}
+                </Badge>
+              )}
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="alerts" className="mt-3">
+            <ScrollArea className="h-[340px]">
+              <AlertsTabContent />
+            </ScrollArea>
+          </TabsContent>
+
+          <TabsContent value="cases" className="mt-3">
+            <ScrollArea className="h-[340px]">
+              <UrgentCasesTabContent />
+            </ScrollArea>
+          </TabsContent>
+
+          <TabsContent value="risk" className="mt-3">
+            <ScrollArea className="h-[340px]">
+              <RiskMovementsTabContent />
+            </ScrollArea>
+          </TabsContent>
+        </Tabs>
+      </CardContent>
+    </Card>
+  );
+}
+
+function AlertsTabContent() {
+  const queryClient = useQueryClient();
+  const { data: alerts, isLoading } = useQuery<Alert[]>({
+    queryKey: ["alerts"],
+    queryFn: () => fetchAlerts(true, 10),
+    refetchInterval: 60000,
+  });
+
+  const markReadMutation = useMutation({
+    mutationFn: (alertId: string) => markAlertRead(alertId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["alerts"] });
+    },
+  });
+
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        <Skeleton className="h-16 w-full" />
+        <Skeleton className="h-16 w-full" />
+      </div>
+    );
+  }
+
+  const activeAlerts = alerts || [];
+  if (activeAlerts.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
+        <IconCheck className="w-10 h-10 text-green-300 mb-2" />
+        <p className="font-medium text-sm">All caught up!</p>
+        <p className="text-xs">No active alerts.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      {activeAlerts.map((alert) => (
+        <div
+          key={alert.id}
+          className="p-3 rounded-lg border hover:bg-muted/30 transition-colors flex gap-3 group"
+        >
+          <div className="mt-0.5 shrink-0">
+            {alert.severity === "high" ? (
+              <IconAlertCircle className="w-4 h-4 text-red-500" />
+            ) : alert.severity === "medium" ? (
+              <IconAlertCircle className="w-4 h-4 text-orange-500" />
+            ) : (
+              <IconInfoCircle className="w-4 h-4 text-blue-500" />
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-2">
+              <Link
+                href={`/suppliers/${alert.supplierId}`}
+                className="font-medium text-sm hover:underline truncate"
+              >
+                {alert.title}
+              </Link>
+              <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                {new Date(alert.createdAt).toLocaleDateString()}
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+              {alert.message}
+            </p>
+            <div className="mt-2 flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 text-xs px-2"
+                onClick={() => markReadMutation.mutate(alert.id)}
+                disabled={markReadMutation.isPending}
+              >
+                <IconCheck className="w-3 h-3 mr-1" />
+                Acknowledge
+              </Button>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function UrgentCasesTabContent() {
+  const { viewMode, currentBrandId, currentSupplierId } = useView();
+  const { data: briefing, isLoading } = useQuery<MetricsBriefing>({
+    queryKey: ["briefing"],
+    queryFn: () => fetchBriefing(),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Also fetch high-severity cases as fallback
+  const { data: casesRes } = useQuery({
+    queryKey: ["urgent-cases", viewMode, currentBrandId, currentSupplierId],
+    queryFn: () =>
+      fetchCases({
+        severity: "high",
+        perPage: 5,
+        ...(viewMode === "brand" && currentBrandId ? { parentCompanyId: currentBrandId } : {}),
+        ...(viewMode === "supplier" && currentSupplierId ? { supplierId: currentSupplierId } : {}),
+      }),
+  });
+
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        <Skeleton className="h-16 w-full" />
+        <Skeleton className="h-16 w-full" />
+      </div>
+    );
+  }
+
+  // Prefer briefing urgent cases, fall back to fetched high-severity cases
+  const urgentCases = briefing?.urgentCases && briefing.urgentCases.length > 0
+    ? briefing.urgentCases
+    : (casesRes?.data || []).map((c) => ({
+        id: c.id,
+        supplierId: c.supplierId,
+        supplierName: c.supplierName,
+        topic: c.topic,
+        severity: c.severity,
+        status: c.status,
+        aiSummary: c.aiSummary,
+        createdAt: c.createdAt,
+        ageDays: Math.floor((Date.now() - new Date(c.createdAt).getTime()) / (1000 * 60 * 60 * 24)),
+      }));
+
+  if (urgentCases.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
+        <IconCheck className="w-10 h-10 text-green-300 mb-2" />
+        <p className="font-medium text-sm">No urgent cases</p>
+        <p className="text-xs">All high-severity cases are being handled.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      {urgentCases.map((c) => (
+        <Link
+          key={c.id}
+          href={`/connect/${c.id}`}
+          className="block p-3 rounded-lg border hover:bg-muted/30 transition-colors group"
+        >
+          <div className="flex items-center justify-between gap-2 mb-1">
+            <div className="flex items-center gap-2">
+              <span className="font-medium text-sm group-hover:text-primary transition-colors">
+                {c.id}
+              </span>
+              <Badge variant="destructive" className="text-[10px]">
+                {c.severity}
+              </Badge>
+              <Badge variant="outline" className="text-[10px]">
+                {c.status.replace("_", " ")}
+              </Badge>
+            </div>
+            <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+              {c.ageDays}d ago
+            </span>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {c.topic} &bull; {c.supplierName}
+          </p>
+          {c.aiSummary && (
+            <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{c.aiSummary}</p>
+          )}
+        </Link>
+      ))}
+    </div>
+  );
+}
+
+function RiskMovementsTabContent() {
+  const { data: briefing, isLoading } = useQuery<MetricsBriefing>({
+    queryKey: ["briefing"],
+    queryFn: () => fetchBriefing(),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        <Skeleton className="h-16 w-full" />
+        <Skeleton className="h-16 w-full" />
+      </div>
+    );
+  }
+
+  const movements = briefing?.riskMovements || [];
+
+  if (movements.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
+        <IconCheck className="w-10 h-10 text-green-300 mb-2" />
+        <p className="font-medium text-sm">No significant movements</p>
+        <p className="text-xs">Supplier risk scores are stable.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      {movements.map((m) => (
+        <Link
+          key={m.supplierId}
+          href={`/suppliers/${m.supplierId}`}
+          className="block p-3 rounded-lg border hover:bg-muted/30 transition-colors group"
+        >
+          <div className="flex items-center justify-between gap-2">
+            <span className="font-medium text-sm group-hover:text-primary transition-colors truncate">
+              {m.supplierName}
+            </span>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <span className="text-xs text-muted-foreground">{m.previousScore}</span>
+              <IconArrowRight className="h-3 w-3 text-muted-foreground" />
+              <span
+                className={`text-xs font-bold ${
+                  m.direction === "worsened" ? "text-red-600" : "text-green-600"
+                }`}
+              >
+                {m.currentScore}
+              </span>
+              {m.direction === "worsened" ? (
+                <IconTrendingUp className="h-3.5 w-3.5 text-red-500" />
+              ) : (
+                <IconTrendingDown className="h-3.5 w-3.5 text-green-500" />
+              )}
+            </div>
+          </div>
+          {m.crossedThreshold && (
+            <Badge
+              variant={m.direction === "worsened" ? "destructive" : "secondary"}
+              className="text-[10px] mt-1"
+            >
+              {m.direction === "worsened" ? "Entered high risk" : "Left high risk"}
+            </Badge>
+          )}
+        </Link>
+      ))}
+    </div>
+  );
+}
