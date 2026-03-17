@@ -27,7 +27,7 @@ export async function GET(request: Request) {
       > = {};
       if (supplierId) {
         caseParams.supplierId = {
-          type: mssql.Int,
+          type: mssql.Int(),
           value: parseInt(supplierId),
         };
       }

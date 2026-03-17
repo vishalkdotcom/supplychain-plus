@@ -126,7 +126,7 @@ export function CrossModulePanel({
                         {s.responses.toLocaleString()} responses • Risk Score:{" "}
                         <span
                           className={
-                            s.riskScore > 50
+                            s.riskScore > 70
                               ? "text-red-600 font-medium"
                               : "text-green-600 font-medium"
                           }

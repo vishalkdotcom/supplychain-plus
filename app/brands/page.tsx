@@ -96,7 +96,7 @@ export default function BrandsPage() {
 
       {brands?.length === 0 && (
         <div className="text-center py-12 text-muted-foreground">
-          No brands found. Run the risk calculation job to populate brand data.
+          No brands found. No parent company relationships are configured.
         </div>
       )}
     </div>

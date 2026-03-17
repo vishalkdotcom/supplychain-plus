@@ -29,25 +29,25 @@ export async function GET(request: NextRequest) {
       string,
       { type: (() => mssql.ISqlType) | mssql.ISqlType; value: unknown }
     > = {
-      offset: { type: mssql.Int, value: offset },
-      perPage: { type: mssql.Int, value: perPage },
+      offset: { type: mssql.Int(), value: offset },
+      perPage: { type: mssql.Int(), value: perPage },
     };
 
     if (search) {
       conditions.push("(c.Name LIKE @search OR ctct.Name LIKE @search)");
-      params.search = { type: mssql.NVarChar, value: `%${search}%` };
+      params.search = { type: mssql.NVarChar(), value: `%${search}%` };
     }
     if (supplier !== "all") {
       conditions.push("co.Name = @supplier");
-      params.supplier = { type: mssql.NVarChar, value: supplier };
+      params.supplier = { type: mssql.NVarChar(), value: supplier };
     }
     if (supplierId) {
       conditions.push("co.Id = @supplierId");
-      params.supplierId = { type: mssql.Int, value: parseInt(supplierId) };
+      params.supplierId = { type: mssql.Int(), value: parseInt(supplierId) };
     }
     if (parentCompanyId) {
       conditions.push("co.ParentCompanyId = @parentCompanyId");
-      params.parentCompanyId = { type: mssql.Int, value: parseInt(parentCompanyId) };
+      params.parentCompanyId = { type: mssql.Int(), value: parseInt(parentCompanyId) };
     }
     if (severity !== "all") {
       const priorityMap: Record<string, number> = {
@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
       };
       if (priorityMap[severity]) {
         conditions.push("c.Priority = @priority");
-        params.priority = { type: mssql.Int, value: priorityMap[severity] };
+        params.priority = { type: mssql.Int(), value: priorityMap[severity] };
       }
     }
 

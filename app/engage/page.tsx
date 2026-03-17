@@ -385,7 +385,7 @@ export default function EngagePage() {
                   <Badge variant="outline">{survey.status}</Badge>
                   <Badge
                     variant={
-                      survey.riskScore > 50 ? "destructive" : "secondary"
+                      survey.riskScore > 70 ? "destructive" : "secondary"
                     }
                   >
                     Risk: {survey.riskScore}

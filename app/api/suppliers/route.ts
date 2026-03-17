@@ -79,6 +79,22 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Also get brand IDs from authoritative source (clients_clientrelation)
+    // This ensures brands are excluded even before risk scores are calculated
+    try {
+      const brandResult = await query(
+        `SELECT ci.client_key FROM clients_clientrelation cr
+         JOIN clients_clientinfo ci ON ci.id = cr.relation_id
+         WHERE cr.relation_type = 0 AND ci.is_deleted = false`,
+        [],
+      );
+      for (const row of brandResult.rows) {
+        brandIds.add(String(row.client_key));
+      }
+    } catch {
+      // relation table query failed — rely on risk score brand detection only
+    }
+
     interface MergedRow extends ClientRow {
       risk_score: number;
       case_score: number;

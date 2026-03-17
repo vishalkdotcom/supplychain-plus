@@ -120,6 +120,16 @@ function assignCountries(): string[] {
   return countries.sort(() => seededRandom() - 0.5);
 }
 
+// Country name → ISO 3166-1 alpha-2 code (for MySQL mdl_company.country which is varchar(2))
+const COUNTRY_ISO2: Record<string, string> = {
+  Vietnam: "VN", Bangladesh: "BD", Cambodia: "KH", China: "CN",
+  India: "IN", Indonesia: "ID", Thailand: "TH", Myanmar: "MM",
+  Ethiopia: "ET", "Sri Lanka": "LK", Pakistan: "PK", Philippines: "PH",
+  "United States": "US", Germany: "DE", Sweden: "SE", Spain: "ES",
+  Ireland: "IE", France: "FR", "Hong Kong": "HK", Denmark: "DK",
+  Japan: "JP",
+};
+
 // Brand headquarters countries (indexed by brand position in brandNames array)
 const BRAND_COUNTRIES = [
   "United States",  // Nike Inc.
@@ -793,7 +803,7 @@ function buildMySQLSeed(): string {
     const brandId = SUPPLIER_COUNT + 1 + i;
     const name = esc(brandNamesMySQL[i]);
     const shortname = esc(brandNamesMySQL[i].substring(0, 30));
-    const country = BRAND_COUNTRIES[i] || "US";
+    const country = COUNTRY_ISO2[BRAND_COUNTRIES[i]] || "US";
     lines.push(
       `INSERT INTO mdl_company (id, name, shortname, city, country, parentid, suspended) VALUES (${brandId}, '${name}', '${shortname}', '', '${country}', 0, 0);`,
     );
@@ -803,7 +813,7 @@ function buildMySQLSeed(): string {
   for (let i = 0; i < SUPPLIER_COUNT; i++) {
     const name = esc(factoryNamesMySQL[i]);
     const shortname = esc(factoryNamesMySQL[i].substring(0, 30));
-    const country = supplierCountriesMySQL[i];
+    const country = COUNTRY_ISO2[supplierCountriesMySQL[i]] || supplierCountriesMySQL[i].substring(0, 2).toUpperCase();
     const parentId = SUPPLIER_COUNT + 1 + brandAssignmentsMySQL[i];
     lines.push(
       `INSERT INTO mdl_company (id, name, shortname, city, country, parentid, suspended) VALUES (${i + 1}, '${name}', '${shortname}', '', '${country}', ${parentId}, 0);`,
@@ -840,23 +850,6 @@ function buildMySQLSeed(): string {
       courseIds.push(courseId);
       courseId++;
     }
-  }
-  lines.push("");
-
-  // ── Companies (mdl_company) ──
-  // Map supplier IDs 1-200 to Moodle companies so mdl_company_course can link them
-  lines.push("-- Companies (IOMAD)");
-  const factoryNames = content.factoryNames.length >= SUPPLIER_COUNT
-    ? content.factoryNames
-    : [...content.factoryNames, ...Array.from({ length: SUPPLIER_COUNT - content.factoryNames.length }, (_, i) => `Factory ${i + 201}`)];
-  const supplierCountries = assignCountries();
-  for (let i = 1; i <= SUPPLIER_COUNT; i++) {
-    const name = esc(factoryNames[i - 1]);
-    const shortname = esc(factoryNames[i - 1].substring(0, 30));
-    const country = supplierCountries[i - 1].substring(0, 2).toUpperCase();
-    lines.push(
-      `INSERT INTO mdl_company (id, name, shortname, city, country) VALUES (${i}, '${name}', '${shortname}', '', '${country}');`,
-    );
   }
   lines.push("");
 

@@ -73,12 +73,12 @@ export const queryCases = tool({
       string,
       { type: (() => mssql.ISqlType) | mssql.ISqlType; value: unknown }
     > = {
-      limit: { type: mssql.Int, value: limit },
+      limit: { type: mssql.Int(), value: limit },
     };
 
     if (supplierId) {
       conditions.push("co.Id = @supplierId");
-      params.supplierId = { type: mssql.Int, value: parseInt(supplierId) };
+      params.supplierId = { type: mssql.Int(), value: parseInt(supplierId) };
     }
     if (severity) {
       const priorityMap: Record<string, number> = {
@@ -87,7 +87,7 @@ export const queryCases = tool({
         low: 3,
       };
       conditions.push("c.Priority = @priority");
-      params.priority = { type: mssql.Int, value: priorityMap[severity] };
+      params.priority = { type: mssql.Int(), value: priorityMap[severity] };
     }
 
     const whereClause = "WHERE " + conditions.join(" AND ");

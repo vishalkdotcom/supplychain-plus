@@ -36,14 +36,14 @@ export const getSeverityVariant = getRiskBadgeVariant;
 /** Numeric risk score → indicator color (Tailwind CSS class). */
 export function getScoreColor(score: number): string {
   if (score > 70) return "bg-red-500";
-  if (score > 40) return "bg-orange-500";
+  if (score > 30) return "bg-orange-500";
   return "bg-green-500";
 }
 
 /** Numeric risk score → hex color (for chart fills, map markers). */
 export function getScoreHex(score: number): string {
   if (score > 70) return "#ef4444";
-  if (score > 40) return "#f59e0b";
+  if (score > 30) return "#f59e0b";
   return "#10b981";
 }
 

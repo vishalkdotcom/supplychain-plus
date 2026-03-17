@@ -68,6 +68,23 @@ export async function POST(request: Request) {
       logger.warn("jobs/calculate-risk", "Geo data unavailable from SQL Server", e);
     }
 
+    // --- Batch: parentCompanyId from PostgreSQL relation tables (authoritative source) ---
+    const parentCompanyMap = new Map<number, number>();
+    try {
+      const relationResult = await pgQuery(`
+        SELECT m.clientinfo_id as supplier_id, ci.client_key as brand_client_key
+        FROM clients_clientinfotorelationmapping m
+        JOIN clients_clientrelation cr ON cr.id = m.clientrelation_id
+        JOIN clients_clientinfo ci ON ci.id = cr.relation_id
+        WHERE cr.relation_type = 0 AND ci.is_deleted = false
+      `);
+      for (const row of relationResult.rows) {
+        parentCompanyMap.set(row.supplier_id, row.brand_client_key);
+      }
+    } catch (e) {
+      logger.warn("jobs/calculate-risk", "Relation table query failed for parentCompanyId", e);
+    }
+
     // --- Batch: Case stats from SQL Server (avoid N+1) ---
     interface CaseStats { CompanyId: number; total: number; high_priority: number; open_cases: number }
     const caseStatsMap = new Map<number, CaseStats>();
@@ -241,9 +258,13 @@ export async function POST(request: Request) {
       const country = geo?.MailingCountry || null;
       const latitude = geo?.Latitude || null;
       const longitude = geo?.Longitude || null;
-      const parentCompanyId = geo?.ParentCompanyId
-        ? String(geo.ParentCompanyId)
-        : null;
+      // Prefer PostgreSQL relation tables (authoritative), fall back to SQL Server geo data
+      const parentFromRelation = parentCompanyMap.get(supplier.id);
+      const parentCompanyId = parentFromRelation
+        ? String(parentFromRelation)
+        : geo?.ParentCompanyId
+          ? String(geo.ParentCompanyId)
+          : null;
       // Derive region from country
       const regionMap: Record<string, string> = {
         Vietnam: "Southeast Asia",

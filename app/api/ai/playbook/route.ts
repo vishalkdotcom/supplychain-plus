@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
         AND c.ResolvedDate IS NOT NULL
         AND c.CaseTypeId = @caseTypeId
       ORDER BY DATEDIFF(day, c.Created, c.ResolvedDate) ASC`,
-      { caseTypeId: { type: mssql.Int, value: parseInt(caseTypeId) } },
+      { caseTypeId: { type: mssql.Int(), value: parseInt(caseTypeId) } },
     );
 
     const resolvedCases = casesResult.recordset || [];
@@ -96,7 +96,7 @@ export async function GET(request: NextRequest) {
           { type: (() => mssql.ISqlType) | mssql.ISqlType; value: unknown }
         > = {};
         const placeholders = fastestCaseIds.map((id: number, i: number) => {
-          noteParams[`cid${i}`] = { type: mssql.Int, value: id };
+          noteParams[`cid${i}`] = { type: mssql.Int(), value: id };
           return `@cid${i}`;
         });
         const notesResult = await mssqlParamQuery(
