@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { fetchActivities } from "@/lib/api";
+import { fetchActivities, fetchMLInsights } from "@/lib/api";
+import { MLInsightsSummary } from "@/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -17,10 +18,58 @@ import {
 } from "@tabler/icons-react";
 import { getModuleColors } from "@/lib/risk-utils";
 
+function getDynamicInsight(insights: MLInsightsSummary | undefined): { text: string; href: string } {
+  if (!insights) {
+    return {
+      text: "Suppliers with high case volume also show declining survey sentiment — consider deploying targeted training to address root causes.",
+      href: "",
+    };
+  }
+  const criticalCount = insights.criticalClusters?.length ?? 0;
+  if (criticalCount > 0) {
+    const totalSuppliers = insights.criticalClusters.reduce((sum, c) => sum + (c.supplierCount || 0), 0);
+    return {
+      text: `Detected ${criticalCount} critical systemic patterns affecting ${totalSuppliers} suppliers. Review clusters to identify root causes.`,
+      href: "/connect/clusters",
+    };
+  }
+  const risingCount = insights.risingForecastSuppliers?.length ?? 0;
+  if (risingCount > 0) {
+    return {
+      text: `${risingCount} supplier${risingCount > 1 ? "s" : ""} predicted to enter high-risk zone in the next 60 days based on trend analysis.`,
+      href: "/suppliers",
+    };
+  }
+  const totalAnomalies = (insights.unresolvedAnomalies?.critical ?? 0) + (insights.unresolvedAnomalies?.warning ?? 0) + (insights.unresolvedAnomalies?.info ?? 0);
+  if (totalAnomalies > 0) {
+    return {
+      text: `${totalAnomalies} unresolved wage anomalies detected across your supply chain. ${insights.unresolvedAnomalies.critical} are critical severity.`,
+      href: "/connect/payslip-anomalies",
+    };
+  }
+  if (insights.globalSentimentShift !== 0) {
+    const direction = insights.globalSentimentShift > 0 ? "improved" : "declined";
+    return {
+      text: `Global worker sentiment has ${direction} by ${Math.abs(insights.globalSentimentShift).toFixed(1)} points this month.${insights.topEmergingTopic ? ` Top emerging topic: "${insights.topEmergingTopic.name}".` : ""}`,
+      href: "/engage/voice-trends",
+    };
+  }
+  return {
+    text: "Suppliers with high case volume also show declining survey sentiment — consider deploying targeted training to address root causes.",
+    href: "",
+  };
+}
+
 export function AICopilotFeed() {
   const { data: activities, isLoading } = useQuery({
     queryKey: ["activities"],
     queryFn: fetchActivities,
+  });
+
+  const { data: mlInsights } = useQuery<MLInsightsSummary>({
+    queryKey: ["ml-insights"],
+    queryFn: fetchMLInsights,
+    staleTime: 5 * 60 * 1000,
   });
 
   return (
@@ -43,18 +92,25 @@ export function AICopilotFeed() {
           ) : (
             <div className="px-4 pb-4">
               {/* Cross-Module Insight Highlight */}
-              <div className="mb-4 p-3 rounded-lg border border-primary/20 bg-primary/5">
-                <div className="flex items-center gap-2 mb-1.5">
-                  <IconSparkles className="h-3.5 w-3.5 text-primary" />
-                  <span className="text-xs font-semibold text-primary uppercase tracking-wider">
-                    Cross-Module Insight
-                  </span>
-                </div>
-                <p className="text-sm text-foreground">
-                  Suppliers with high case volume also show declining survey sentiment — consider
-                  deploying targeted training to address root causes.
-                </p>
-              </div>
+              {(() => {
+                const insight = getDynamicInsight(mlInsights);
+                return (
+                  <div className="mb-4 p-3 rounded-lg border border-primary/20 bg-primary/5">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <IconSparkles className="h-3.5 w-3.5 text-primary" />
+                      <span className="text-xs font-semibold text-primary uppercase tracking-wider">
+                        Cross-Module Insight
+                      </span>
+                    </div>
+                    <p className="text-sm text-foreground">{insight.text}</p>
+                    {insight.href && (
+                      <Link href={insight.href} className="text-xs text-primary hover:underline mt-1 inline-block">
+                        View details →
+                      </Link>
+                    )}
+                  </div>
+                );
+              })()}
 
               <Separator className="mb-3" />
 

@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { useQueryState, parseAsString } from "nuqs";
-import { fetchAlerts, fetchBriefing, fetchCases } from "@/lib/api";
-import { Alert, MetricsBriefing } from "@/types";
+import { fetchAlerts, fetchBriefing, fetchCases, fetchMLInsights } from "@/lib/api";
+import { Alert, MetricsBriefing, MLInsightsSummary } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -43,9 +43,16 @@ export function NeedsAttentionTabs() {
     staleTime: 5 * 60 * 1000,
   });
 
+  const { data: mlInsights } = useQuery<MLInsightsSummary>({
+    queryKey: ["ml-insights"],
+    queryFn: fetchMLInsights,
+    staleTime: 5 * 60 * 1000,
+  });
+
   const alertCount = alerts?.length ?? 0;
   const urgentCount = briefing?.urgentCases?.length ?? 0;
   const movementCount = briefing?.riskMovements?.length ?? 0;
+  const forecastCount = mlInsights?.risingForecastSuppliers?.length ?? 0;
 
   return (
     <Card className="flex flex-col">
@@ -54,7 +61,7 @@ export function NeedsAttentionTabs() {
       </CardHeader>
       <CardContent className="pt-4">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="w-full grid grid-cols-3">
+          <TabsList className="w-full grid grid-cols-4">
             <TabsTrigger value="alerts" className="text-xs gap-1">
               <IconBell className="h-3.5 w-3.5" />
               Alerts
@@ -82,6 +89,15 @@ export function NeedsAttentionTabs() {
                 </Badge>
               )}
             </TabsTrigger>
+            <TabsTrigger value="forecasts" className="text-xs gap-1">
+              <IconTrendingUp className="h-3.5 w-3.5" />
+              Forecasts
+              {forecastCount > 0 && (
+                <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px]">
+                  {forecastCount}
+                </Badge>
+              )}
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="alerts" className="mt-3">
@@ -99,6 +115,38 @@ export function NeedsAttentionTabs() {
           <TabsContent value="risk" className="mt-3">
             <ScrollArea className="h-[340px]">
               <RiskMovementsTabContent />
+            </ScrollArea>
+          </TabsContent>
+
+          <TabsContent value="forecasts">
+            <ScrollArea className="h-[340px]">
+              {forecastCount === 0 ? (
+                <div className="flex flex-col items-center justify-center h-[200px] text-muted-foreground">
+                  <IconCheck className="h-8 w-8 mb-2" />
+                  <p className="text-sm">No rising risk forecasts</p>
+                </div>
+              ) : (
+                <div className="space-y-2 p-1">
+                  {mlInsights?.risingForecastSuppliers.map((f) => (
+                    <Link key={f.supplierId} href={`/suppliers/${f.supplierId}`} className="block">
+                      <div className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors">
+                        <div className="flex items-center gap-3">
+                          <IconTrendingUp className="h-4 w-4 text-red-500" />
+                          <div>
+                            <p className="text-sm font-medium">{f.supplierName}</p>
+                            <p className="text-xs text-muted-foreground">
+                              Current: {f.currentRiskScore} → Predicted: {f.predictedRiskScore}
+                            </p>
+                          </div>
+                        </div>
+                        <Badge variant="destructive" className="text-[10px]">
+                          {f.trendDirection}
+                        </Badge>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
             </ScrollArea>
           </TabsContent>
         </Tabs>

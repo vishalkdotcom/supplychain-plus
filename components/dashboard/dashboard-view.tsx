@@ -14,6 +14,7 @@ import { useView } from "@/components/view-context";
 
 import { AIBriefingBar } from "@/components/dashboard/ai-briefing-bar";
 import { MetricCard } from "@/components/dashboard/metric-card";
+import { MLInsightCards } from "@/components/dashboard/ml-insight-cards";
 import { NeedsAttentionTabs } from "@/components/dashboard/needs-attention-tabs";
 import { AICopilotFeed } from "@/components/dashboard/ai-copilot-feed";
 
@@ -150,6 +151,9 @@ export function DashboardView() {
           progress={metrics.trainingCompletion}
         />
       </div>
+
+      {/* Row 1.5: ML Intelligence Signals */}
+      <MLInsightCards />
 
       {/* Row 2: Needs Attention (2/3) + AI Co-Pilot (1/3) */}
       <div className="grid gap-6 lg:grid-cols-3">
