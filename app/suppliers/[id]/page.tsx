@@ -16,6 +16,10 @@ const EngagementHealthScore = dynamic(
   () => import("@/components/suppliers/engagement-health-score").then(m => ({ default: m.EngagementHealthScore })),
   { ssr: false, loading: () => <div className="h-[400px] w-full rounded-lg bg-muted animate-pulse" /> },
 );
+const ForecastBreakdownCard = dynamic(
+  () => import("@/components/suppliers/forecast-breakdown-card").then((m) => ({ default: m.ForecastBreakdownCard })),
+  { ssr: false, loading: () => <div className="h-[200px] animate-pulse rounded-xl bg-muted" /> }
+);
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -246,6 +250,9 @@ export default function SupplierDetailPage({
         </div>
       </div>
       
+      {/* Forecast Breakdown */}
+      <ForecastBreakdownCard supplierId={supplier.id} />
+
       {/* Engagement Health & Recommendations */}
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-1">
