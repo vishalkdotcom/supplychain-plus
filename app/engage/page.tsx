@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
+import Link from "next/link";
 import { useView } from "@/components/view-context";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,6 +15,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
   Pagination,
   PaginationContent,
   PaginationItem,
@@ -24,7 +31,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   IconArrowRight,
   IconCheck,
+  IconChevronDown,
   IconLoader,
+  IconMessageCircle,
   IconSparkles,
   IconWand,
 } from "@tabler/icons-react";
@@ -34,6 +43,11 @@ import { toast } from "sonner";
 import { useQueryStates, parseAsInteger, parseAsString } from "nuqs";
 import { useAISettings } from "@/hooks/use-ai-settings";
 import { SearchInput } from "@/components/search-input";
+
+const SentimentDonut = dynamic(
+  () => import("@/components/engage/sentiment-donut").then((m) => m.SentimentDonut),
+  { ssr: false }
+);
 
 interface GeneratedQuestion {
   id: number;
@@ -228,6 +242,15 @@ export default function EngagePage() {
         </p>
       </div>
 
+      <div className="flex gap-2">
+        <Button variant="secondary" size="sm" asChild>
+          <Link href="/engage/voice-trends">
+            <IconMessageCircle className="w-4 h-4 mr-1" />
+            Voice Trends
+          </Link>
+        </Button>
+      </div>
+
       {/* AI Designer Card */}
       <Card className="border-indigo-200 bg-linear-to-br from-indigo-50/50 to-purple-50/50">
         <CardHeader>
@@ -374,64 +397,99 @@ export default function EngagePage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          {surveys.map((survey) => (
-            <div
-              key={survey.id}
-              className="flex items-start justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors"
-            >
-              <div className="flex-1 min-w-0 space-y-2">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-medium">{survey.title}</span>
-                  <Badge variant="outline">{survey.status}</Badge>
-                  <Badge
-                    variant={
-                      survey.riskScore > 70 ? "destructive" : "secondary"
-                    }
-                  >
-                    Risk: {survey.riskScore}
-                  </Badge>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  {survey.supplierName} • {survey.responses.toLocaleString()}{" "}
-                  responses
-                </p>
-                <div className="flex items-start gap-2">
-                  <IconSparkles className="w-4 h-4 mt-0.5 text-purple-500 shrink-0" />
-                  <span className="text-sm text-muted-foreground">
-                    {survey.aiInsight}
-                  </span>
-                </div>
-                {survey.themes.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {survey.themes.slice(0, 4).map((theme) => (
-                      <Badge
-                        key={theme.name}
-                        variant={
-                          theme.sentiment === "negative"
-                            ? "destructive"
-                            : theme.sentiment === "positive"
-                              ? "secondary"
-                              : "outline"
-                        }
-                        className="text-xs"
-                      >
-                        {theme.name}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={analyzingId === survey.id}
-                onClick={() => handleAnalyze(survey.id)}
+          {surveys.map((survey) => {
+            const hasSentiment =
+              (survey.sentimentPositive ?? 0) > 0 ||
+              (survey.sentimentNegative ?? 0) > 0 ||
+              (survey.sentimentNeutral ?? 0) > 0;
+            return (
+              <div
+                key={survey.id}
+                className="flex items-start justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors"
               >
-                {analyzingId === survey.id ? "Analyzing..." : "Analyze"}
-                <IconArrowRight className="w-4 h-4 ml-1" />
-              </Button>
-            </div>
-          ))}
+                <div className="flex-1 min-w-0 space-y-2">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-1 space-y-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-medium">{survey.title}</span>
+                        <Badge variant="outline">{survey.status}</Badge>
+                        <Badge
+                          variant={
+                            survey.riskScore > 70 ? "destructive" : "secondary"
+                          }
+                        >
+                          Risk: {survey.riskScore}
+                        </Badge>
+                        <Badge variant="secondary">
+                          {survey.responses.toLocaleString()} responses
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {survey.supplierName}
+                      </p>
+                      <Collapsible>
+                        <div className="flex items-start gap-2">
+                          <IconSparkles className="w-4 h-4 mt-0.5 text-purple-500 shrink-0" />
+                          <span className="text-sm text-muted-foreground line-clamp-2">
+                            {survey.aiInsight}
+                          </span>
+                          {survey.aiInsight && survey.aiInsight.length > 80 && (
+                            <CollapsibleTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-5 px-1 text-xs shrink-0">
+                                <IconChevronDown className="w-3 h-3" />
+                              </Button>
+                            </CollapsibleTrigger>
+                          )}
+                        </div>
+                        <CollapsibleContent>
+                          <div className="mt-1 ml-6 text-sm text-muted-foreground">
+                            {survey.aiInsight}
+                          </div>
+                        </CollapsibleContent>
+                      </Collapsible>
+                      {survey.themes.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {survey.themes.slice(0, 4).map((theme) => (
+                            <Badge
+                              key={theme.name}
+                              variant={
+                                theme.sentiment === "negative"
+                                  ? "destructive"
+                                  : theme.sentiment === "positive"
+                                    ? "secondary"
+                                    : "outline"
+                              }
+                              className="text-xs"
+                            >
+                              {theme.name}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    {hasSentiment && (
+                      <div className="shrink-0">
+                        <SentimentDonut
+                          positive={survey.sentimentPositive ?? 0}
+                          negative={survey.sentimentNegative ?? 0}
+                          neutral={survey.sentimentNeutral ?? 0}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={analyzingId === survey.id}
+                  onClick={() => handleAnalyze(survey.id)}
+                >
+                  {analyzingId === survey.id ? "Analyzing..." : "Analyze"}
+                  <IconArrowRight className="w-4 h-4 ml-1" />
+                </Button>
+              </div>
+            );
+          })}
 
           {totalPages > 1 && (
             <div className="pt-4 border-t">

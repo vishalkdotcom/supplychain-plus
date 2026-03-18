@@ -139,6 +139,9 @@ export async function GET(request: NextRequest) {
           closedAt: row.to_date
             ? new Date(row.to_date).toISOString().split("T")[0]
             : undefined,
+          sentimentPositive: analysis?.sentimentPositive ?? undefined,
+          sentimentNegative: analysis?.sentimentNegative ?? undefined,
+          sentimentNeutral: analysis?.sentimentNeutral ?? undefined,
         };
       },
     );

@@ -24,7 +24,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { IconArrowRight, IconRobot, IconClock } from "@tabler/icons-react";
+import { Button } from "@/components/ui/button";
+import { IconArrowRight, IconCurrencyDollar, IconNetwork, IconRobot, IconClock } from "@tabler/icons-react";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { fetchCases } from "@/lib/api";
 import { useView } from "@/components/view-context";
@@ -111,6 +112,21 @@ export default function ConnectPage() {
         <p className="text-muted-foreground">
           AI-powered case management and triage.
         </p>
+      </div>
+
+      <div className="flex gap-2">
+        <Button variant="secondary" size="sm" asChild>
+          <Link href="/connect/clusters">
+            <IconNetwork className="w-4 h-4 mr-1" />
+            Systemic Patterns
+          </Link>
+        </Button>
+        <Button variant="secondary" size="sm" asChild>
+          <Link href="/connect/payslip-anomalies">
+            <IconCurrencyDollar className="w-4 h-4 mr-1" />
+            Wage Anomalies
+          </Link>
+        </Button>
       </div>
 
       {/* Filters */}

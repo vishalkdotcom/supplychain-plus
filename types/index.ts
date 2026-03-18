@@ -126,6 +126,9 @@ export interface Survey {
   themes: SurveyTheme[];
   createdAt: string;
   closedAt?: string;
+  sentimentPositive?: number;
+  sentimentNegative?: number;
+  sentimentNeutral?: number;
 }
 
 export interface SurveyTheme {
