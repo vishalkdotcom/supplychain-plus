@@ -352,6 +352,8 @@ export const aiChatHistory = pgTable(
     role: varchar("role", { length: 20 }).notNull(), // user, assistant, system, tool
     content: text("content").notNull(),
     metadata: jsonb("metadata").$type<Record<string, unknown>>().default({}),
+    sessionTitle: text("session_title"), // AI-generated session title (set on first row per session)
+    isPinned: boolean("is_pinned").default(false),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -361,3 +363,30 @@ export const aiChatHistory = pgTable(
     index("idx_chat_created").on(table.createdAt),
   ],
 );
+
+// ===============================
+// BRIEFING LAYER
+// ===============================
+
+// Intelligence Briefing (pre-computed daily digest for AI page landing)
+export interface BriefingAttentionItem {
+  severity: "critical" | "watch" | "positive";
+  title: string;
+  description: string;
+  metric?: string; // e.g., "14 cases"
+  region?: string;
+  supplierCount?: number;
+  query: string; // pre-formatted query to send to AI when clicked
+}
+
+export const intelligenceBriefing = pgTable("intelligence_briefing", {
+  id: serial("id").primaryKey(),
+  attentionItems: jsonb("attention_items")
+    .$type<BriefingAttentionItem[]>()
+    .notNull()
+    .default([]),
+  generatedAt: timestamp("generated_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+});

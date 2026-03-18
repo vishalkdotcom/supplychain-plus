@@ -39,7 +39,7 @@ export const querySupplierRisk = tool({
       .orderBy(desc(supplierRiskScores.riskScore))
       .limit(limit);
 
-    return results.map((r) => ({
+    const suppliers = results.map((r) => ({
       supplierId: r.supplierId,
       name: r.supplierName,
       riskScore: r.riskScore,
@@ -53,6 +53,32 @@ export const querySupplierRisk = tool({
           2,
         ) || [],
     }));
+
+    return {
+      _card: {
+        type: "chart" as const,
+        title: "Supplier Risk Scores",
+        chartType: "bar" as const,
+        data: results.map((r) => ({
+          name: r.supplierName || r.supplierId,
+          value: r.riskScore,
+          color:
+            r.riskScore >= 70
+              ? "#ef4444"
+              : r.riskScore >= 50
+                ? "#f59e0b"
+                : "#22c55e",
+        })),
+        columns: [
+          { key: "name", label: "Supplier" },
+          { key: "riskScore", label: "Risk", format: "score" },
+          { key: "caseScore", label: "Cases" },
+          { key: "surveyScore", label: "Survey" },
+          { key: "trainingScore", label: "Training" },
+        ],
+      },
+      suppliers,
+    };
   },
 });
 
@@ -108,7 +134,7 @@ export const queryCases = tool({
       params,
     );
 
-    return result.recordset.map(
+    const items = result.recordset.map(
       (row: {
         Id: number;
         Title: string;
@@ -130,6 +156,21 @@ export const queryCases = tool({
         summary: row.FirstMessage?.substring(0, 200) || "No content",
       }),
     );
+
+    return {
+      _card: {
+        type: "table" as const,
+        title: "Grievance Cases",
+        columns: [
+          { key: "id", label: "ID" },
+          { key: "company", label: "Supplier" },
+          { key: "type", label: "Type" },
+          { key: "severity", label: "Severity", format: "badge" },
+          { key: "status", label: "Status" },
+        ],
+      },
+      items,
+    };
   },
 });
 
@@ -189,7 +230,7 @@ export const querySurveys = tool({
 
     const analysisMap = new Map(analyses.map((a) => [a.surveyId, a]));
 
-    return result.rows.map(
+    const items = result.rows.map(
       (row: {
         id: number;
         name: string;
@@ -210,6 +251,21 @@ export const querySurveys = tool({
         };
       },
     );
+
+    return {
+      _card: {
+        type: "table" as const,
+        title: "Survey Analysis",
+        columns: [
+          { key: "title", label: "Survey" },
+          { key: "supplier", label: "Supplier" },
+          { key: "responseCount", label: "Responses" },
+          { key: "riskScore", label: "Risk", format: "score" },
+          { key: "status", label: "Status" },
+        ],
+      },
+      items,
+    };
   },
 });
 
@@ -268,7 +324,7 @@ export const getAlerts = tool({
       .orderBy(desc(alerts.createdAt))
       .limit(limit);
 
-    return results.map((a) => ({
+    const items = results.map((a) => ({
       id: a.id,
       supplier: a.supplierName,
       type: a.alertType,
@@ -277,6 +333,20 @@ export const getAlerts = tool({
       message: a.message,
       createdAt: a.createdAt,
     }));
+
+    return {
+      _card: {
+        type: "table" as const,
+        title: "Active Alerts",
+        columns: [
+          { key: "supplier", label: "Supplier" },
+          { key: "type", label: "Alert Type" },
+          { key: "severity", label: "Severity", format: "badge" },
+          { key: "title", label: "Title" },
+        ],
+      },
+      items,
+    };
   },
 });
 
@@ -365,6 +435,16 @@ export const triggerRiskRecalculation = tool({
       });
       const data = (await res.json()) as { count?: number };
       return {
+        _card: {
+          type: "action" as const,
+          title: "Risk Recalculation",
+          actions: [
+            {
+              label: "View Updated Scores",
+              query: "Show me the updated risk scores",
+            },
+          ],
+        },
         success: true,
         message: supplierId
           ? `Risk scores recalculated for supplier ${supplierId}.`
