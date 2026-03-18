@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     let newAlerts = 0;
     try {
       const alertRes = await db.execute(
-        sql`SELECT COUNT(*) as count FROM proactive_alerts WHERE created_at >= ${since.toISOString()} AND is_read = false`
+        sql`SELECT COUNT(*) as count FROM alerts WHERE created_at >= ${since.toISOString()} AND is_read = false`
       );
       newAlerts = parseInt(String(alertRes[0]?.count ?? 0));
     } catch (e) {
@@ -89,18 +89,18 @@ export async function GET(request: NextRequest) {
       const caseRes = await sqlQuery(`
         SELECT TOP 5
           c.Id, c.CompanyId, comp.Name as SupplierName,
-          ct.Name as Topic, c.CreatedDate,
-          CASE c.PriorityId WHEN 1 THEN 'high' WHEN 2 THEN 'medium' ELSE 'low' END as severity,
+          ct.Name as Topic, c.Created,
+          CASE c.Priority WHEN 1 THEN 'high' WHEN 2 THEN 'medium' ELSE 'low' END as severity,
           CASE c.CaseStatusId WHEN 1 THEN 'new' WHEN 2 THEN 'in_progress' ELSE 'new' END as status
         FROM [Case] c
         LEFT JOIN Company comp ON c.CompanyId = comp.Id
-        LEFT JOIN CaseTypeCultureText ct ON c.CaseTypeId = ct.CaseTypeId AND ct.CultureId = 1
-        WHERE c.Deleted = 0 AND c.CaseStatusId = 1 AND c.PriorityId = 1
-        ORDER BY c.CreatedDate DESC
+        LEFT JOIN CaseTypeCultureText ct ON c.CaseTypeId = ct.CaseTypeId AND ct.CultureCodeId = 1
+        WHERE c.Deleted = 0 AND c.CaseStatusId = 1 AND c.Priority = 1
+        ORDER BY c.Created DESC
       `);
 
       for (const row of caseRes.recordset) {
-        const createdDate = new Date(row.CreatedDate);
+        const createdDate = new Date(row.Created);
         const ageDays = Math.floor((Date.now() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
         urgentCases.push({
           id: `CASE-${row.Id}`,
@@ -124,7 +124,7 @@ export async function GET(request: NextRequest) {
       const resolvedRes = await sqlQuery(`
         SELECT COUNT(*) as count FROM [Case]
         WHERE Deleted = 0 AND CaseStatusId = 3
-        AND ModifiedDate >= '${since.toISOString()}'
+        AND Modified >= '${since.toISOString()}'
       `);
       resolvedCases = resolvedRes.recordset[0]?.count ?? 0;
     } catch (e) {

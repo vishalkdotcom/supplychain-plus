@@ -139,7 +139,8 @@ async function pollQueue(): Promise<void> {
       .where(eq(jobQueue.id, item.queue_id));
 
     // Execute the job by calling its API route
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const port = process.env.PORT || "3000";
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `http://127.0.0.1:${port}`;
     const jobUrl = `${baseUrl}/api/jobs/${item.job_type}`;
 
     logger.info("jobs/queue", `Starting ${item.job_type} (run #${item.job_run_id})`);
