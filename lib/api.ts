@@ -13,6 +13,11 @@ import {
   RiskHistoryEntry,
   MetricsBriefing,
   CaseContext,
+  CaseCluster,
+  PayslipAnomaly,
+  SupplierForecast,
+  VoiceTrend,
+  MLInsightsSummary,
 } from "@/types";
 
 const API_BASE = "/api";
@@ -222,5 +227,104 @@ export async function advanceCaseStatus(caseId: string): Promise<{ newStatus: st
     headers: { "Content-Type": "application/json" },
   });
   if (!res.ok) throw new Error("Failed to advance case status");
+  return res.json();
+}
+
+// ===============================
+// ML Batch Job Data
+// ===============================
+
+interface ClusterParams extends PaginationParams {
+  severity?: string;
+}
+
+interface AnomalyParams extends PaginationParams {
+  supplierId?: string;
+  severity?: string;
+  anomalyType?: string;
+  isResolved?: string;
+}
+
+interface ForecastParams {
+  supplierId: string;
+  limit?: number;
+}
+
+interface VoiceTrendParams {
+  supplierId?: string;
+  monthFrom?: string;
+  monthTo?: string;
+}
+
+export async function fetchClusters(
+  params: ClusterParams = {},
+): Promise<PaginatedResponse<CaseCluster>> {
+  const qs = buildQueryString({
+    page: params.page,
+    perPage: params.perPage,
+    severity: params.severity,
+  });
+  const res = await fetch(`${API_BASE}/clusters${qs}`);
+  if (!res.ok) throw new Error("Failed to fetch clusters");
+  return res.json();
+}
+
+export async function fetchPayslipAnomalies(
+  params: AnomalyParams = {},
+): Promise<PaginatedResponse<PayslipAnomaly>> {
+  const qs = buildQueryString({
+    page: params.page,
+    perPage: params.perPage,
+    search: params.search,
+    supplierId: params.supplierId,
+    severity: params.severity,
+    anomalyType: params.anomalyType,
+    isResolved: params.isResolved,
+  });
+  const res = await fetch(`${API_BASE}/payslip-anomalies${qs}`);
+  if (!res.ok) throw new Error("Failed to fetch payslip anomalies");
+  return res.json();
+}
+
+export async function toggleAnomalyResolved(
+  id: number,
+  isResolved: boolean,
+): Promise<void> {
+  const res = await fetch(`${API_BASE}/payslip-anomalies`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id, isResolved }),
+  });
+  if (!res.ok) throw new Error("Failed to update anomaly");
+}
+
+export async function fetchForecasts(
+  params: ForecastParams,
+): Promise<SupplierForecast[]> {
+  const qs = buildQueryString({
+    supplierId: params.supplierId,
+    limit: params.limit,
+  });
+  const res = await fetch(`${API_BASE}/forecasts${qs}`);
+  if (!res.ok) throw new Error("Failed to fetch forecasts");
+  return res.json();
+}
+
+export async function fetchVoiceTrends(
+  params: VoiceTrendParams = {},
+): Promise<VoiceTrend[]> {
+  const qs = buildQueryString({
+    supplierId: params.supplierId,
+    monthFrom: params.monthFrom,
+    monthTo: params.monthTo,
+  });
+  const res = await fetch(`${API_BASE}/voice-trends${qs}`);
+  if (!res.ok) throw new Error("Failed to fetch voice trends");
+  return res.json();
+}
+
+export async function fetchMLInsights(): Promise<MLInsightsSummary> {
+  const res = await fetch(`${API_BASE}/ml-insights`);
+  if (!res.ok) throw new Error("Failed to fetch ML insights");
   return res.json();
 }

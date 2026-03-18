@@ -126,6 +126,9 @@ export interface Survey {
   themes: SurveyTheme[];
   createdAt: string;
   closedAt?: string;
+  sentimentPositive?: number;
+  sentimentNegative?: number;
+  sentimentNeutral?: number;
 }
 
 export interface SurveyTheme {
@@ -303,4 +306,88 @@ export interface CaseContext {
     severity: string;
     status: string;
   }>;
+}
+
+// ===============================
+// ML Batch Job Output Types
+// ===============================
+
+export interface VoiceTopic {
+  name: string;
+  mentions: number;
+  sentiment: "positive" | "negative" | "neutral";
+  delta: number;
+}
+
+export interface CaseCluster {
+  id: number;
+  clusterLabel: string;
+  caseCount: number;
+  supplierCount: number;
+  regions: string[];
+  caseTypes: string[];
+  representativeMessages: string[];
+  aiSummary: string;
+  severity: "critical" | "warning" | "info";
+  detectedAt: string;
+}
+
+export interface PayslipAnomalyDetails {
+  expected: number;
+  actual: number;
+  currency: string;
+  country: string;
+  employeeCount: number;
+}
+
+export interface PayslipAnomaly {
+  id: number;
+  supplierId: string;
+  supplierName: string;
+  anomalyType: "below_minimum" | "sudden_drop" | "inconsistency";
+  severity: "critical" | "warning" | "info";
+  details: PayslipAnomalyDetails;
+  aiInterpretation: string;
+  isResolved: boolean;
+  detectedAt: string;
+}
+
+export interface SupplierForecast {
+  id: number;
+  supplierId: string;
+  forecastDate: string;
+  predictedRiskScore: number;
+  predictedCaseScore: number;
+  predictedSurveyScore: number;
+  predictedTrainingScore: number;
+  confidence: number;
+  trendDirection: "rising" | "falling" | "stable";
+  aiReasoning: string;
+  generatedAt: string;
+}
+
+export interface VoiceTrend {
+  id: number;
+  supplierId: string | null;
+  month: string;
+  emergingTopics: VoiceTopic[];
+  decliningTopics: VoiceTopic[];
+  sentimentShift: number;
+  topThemes: VoiceTopic[];
+  analyzedAt: string;
+}
+
+export interface MLInsightsSummary {
+  clusterCount: number;
+  criticalClusters: CaseCluster[];
+  unresolvedAnomalies: { critical: number; warning: number; info: number };
+  risingForecastSuppliers: Array<{
+    supplierId: string;
+    supplierName: string;
+    predictedRiskScore: number;
+    currentRiskScore: number;
+    trendDirection: string;
+  }>;
+  globalSentimentShift: number;
+  topEmergingTopic: VoiceTopic | null;
 }
