@@ -7,8 +7,12 @@ import {
   IconBuilding,
   IconBuildingSkyscraper,
   IconChartBar,
+  IconChevronRight,
+  IconCurrencyDollar,
   IconDashboard,
   IconMessage,
+  IconMessageCircle,
+  IconNetwork,
   IconPlayerPlay,
   IconSchool,
   IconSettings,
@@ -25,9 +29,17 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   SidebarRail,
   SidebarSeparator,
 } from "@/components/ui/sidebar";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -59,11 +71,20 @@ const moduleNav = [
     title: "Connect (Cases)",
     url: "/connect",
     icon: IconMessage,
+    children: [
+      { title: "Case Inbox", url: "/connect" },
+      { title: "Systemic Patterns", url: "/connect/clusters" },
+      { title: "Wage Anomalies", url: "/connect/payslip-anomalies" },
+    ],
   },
   {
     title: "Engage (Surveys)",
     url: "/engage",
     icon: IconChartBar,
+    children: [
+      { title: "Surveys", url: "/engage" },
+      { title: "Voice Trends", url: "/engage/voice-trends" },
+    ],
   },
   {
     title: "Educate (Training)",
@@ -123,23 +144,59 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarGroupLabel>Modules</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {moduleNav.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={
-                      pathname === item.url ||
-                      pathname.startsWith(item.url + "/")
-                    }
-                    tooltip={item.title}
+              {moduleNav.map((item) =>
+                item.children ? (
+                  <Collapsible
+                    key={item.title}
+                    defaultOpen={pathname.startsWith(item.url)}
+                    className="group/collapsible"
                   >
-                    <Link href={item.url}>
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+                    <SidebarMenuItem>
+                      <CollapsibleTrigger asChild>
+                        <SidebarMenuButton
+                          tooltip={item.title}
+                          isActive={pathname.startsWith(item.url)}
+                        >
+                          <item.icon />
+                          <span>{item.title}</span>
+                          <IconChevronRight className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-90" />
+                        </SidebarMenuButton>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <SidebarMenuSub>
+                          {item.children.map((child) => (
+                            <SidebarMenuSubItem key={child.url}>
+                              <SidebarMenuSubButton
+                                asChild
+                                isActive={pathname === child.url}
+                                size="sm"
+                              >
+                                <Link href={child.url}>{child.title}</Link>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          ))}
+                        </SidebarMenuSub>
+                      </CollapsibleContent>
+                    </SidebarMenuItem>
+                  </Collapsible>
+                ) : (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={
+                        pathname === item.url ||
+                        pathname.startsWith(item.url + "/")
+                      }
+                      tooltip={item.title}
+                    >
+                      <Link href={item.url}>
+                        <item.icon />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ),
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
