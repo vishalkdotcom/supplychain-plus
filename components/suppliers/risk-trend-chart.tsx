@@ -59,7 +59,7 @@ export function RiskTrendChart({ supplierId }: RiskTrendChartProps) {
   // Format historical data
   const historicalChartData = history.map((entry: { snapshotDate: string; riskScore: number; caseScore: number; surveyScore: number; }) => ({
     date: new Date(entry.snapshotDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-    riskScore: entry.riskScore,
+    riskScore: entry.riskScore as number | null,
     caseScore: entry.caseScore,
     surveyScore: entry.surveyScore,
     forecastScore: null as number | null,
@@ -105,8 +105,8 @@ export function RiskTrendChart({ supplierId }: RiskTrendChartProps) {
   }
 
   // Calculate trend
-  const latestScore = historicalChartData[historicalChartData.length - 1].riskScore;
-  const firstScore = historicalChartData[0].riskScore;
+  const latestScore = historicalChartData[historicalChartData.length - 1].riskScore ?? 0;
+  const firstScore = historicalChartData[0].riskScore ?? 0;
   const scoreDiff = latestScore - firstScore;
 
   // Also check forecast trend

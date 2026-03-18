@@ -134,7 +134,7 @@ export default function PayslipAnomaliesPage() {
         isResolved:
           params.isResolved === "all"
             ? undefined
-            : params.isResolved === "true",
+            : params.isResolved,
       }),
     placeholderData: keepPreviousData,
   });

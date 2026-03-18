@@ -39,7 +39,7 @@ export function MLInsightCards() {
 
   const clusterCount = insights?.clusterCount ?? 0;
   const topCriticalLabel =
-    insights?.criticalClusters?.[0]?.label ?? "No critical patterns";
+    insights?.criticalClusters?.[0]?.clusterLabel ?? "No critical patterns";
 
   const forecastCount = insights?.risingForecastSuppliers?.length ?? 0;
 
