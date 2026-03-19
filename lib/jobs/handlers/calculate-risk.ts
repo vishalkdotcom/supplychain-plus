@@ -16,8 +16,8 @@ import { computeMonitoringSignals } from "@/lib/jobs/monitoring-signals";
 import type { JobResult, JobParams } from "./types";
 
 interface SupplierRow {
-  id: number;
-  client_key: string;
+  id: number | string; // bigint → string at runtime from pg
+  client_key: number; // integer → number at runtime; maps to SQL Server Company.Id
   name: string;
 }
 
@@ -74,14 +74,16 @@ export async function calculateRisk(params?: JobParams): Promise<JobResult> {
   const parentCompanyMap = new Map<number, number>();
   try {
     const relationResult = await pgQuery(`
-      SELECT m.clientinfo_id as supplier_id, ci.client_key as brand_client_key
+      SELECT ci_supplier.client_key as supplier_client_key,
+             ci.client_key as brand_client_key
       FROM clients_clientinfotorelationmapping m
       JOIN clients_clientrelation cr ON cr.id = m.clientrelation_id
       JOIN clients_clientinfo ci ON ci.id = cr.relation_id
+      JOIN clients_clientinfo ci_supplier ON ci_supplier.id = m.clientinfo_id
       WHERE cr.relation_type = 0 AND ci.is_deleted = false
     `);
     for (const row of relationResult.rows) {
-      parentCompanyMap.set(row.supplier_id, row.brand_client_key);
+      parentCompanyMap.set(row.supplier_client_key, row.brand_client_key);
     }
   } catch (e) {
     logger.warn("jobs/calculate-risk", "Relation table query failed for parentCompanyId", e);
@@ -164,7 +166,7 @@ export async function calculateRisk(params?: JobParams): Promise<JobResult> {
 
     // --- Case Score (from batched SQL Server data) ---
     let caseScore = 0;
-    const caseRow = caseStatsMap.get(supplier.id);
+    const caseRow = caseStatsMap.get(supplier.client_key);
     if (caseRow) {
       const total = caseRow.total || 0;
       const highPriority = caseRow.high_priority || 0;
@@ -196,7 +198,7 @@ export async function calculateRisk(params?: JobParams): Promise<JobResult> {
 
     // --- Survey Score (from batched PostgreSQL data) ---
     let surveyScore = 0;
-    const surveyRow = surveyStatsMap.get(supplier.id);
+    const surveyRow = surveyStatsMap.get(supplier.client_key);
     if (!surveyRow) {
       surveyScore = 60; // No engagement = moderate risk
       reasons.push({
@@ -256,12 +258,12 @@ export async function calculateRisk(params?: JobParams): Promise<JobResult> {
 
 
     // Lookup cached geo/hierarchy data for this supplier
-    const geo = companyGeoMap.get(supplier.id);
+    const geo = companyGeoMap.get(supplier.client_key);
     const country = geo?.MailingCountry || null;
     const latitude = geo?.Latitude || null;
     const longitude = geo?.Longitude || null;
     // Prefer PostgreSQL relation tables (authoritative), fall back to SQL Server geo data
-    const parentFromRelation = parentCompanyMap.get(supplier.id);
+    const parentFromRelation = parentCompanyMap.get(supplier.client_key);
     const parentCompanyId = parentFromRelation
       ? String(parentFromRelation)
       : geo?.ParentCompanyId

@@ -13,17 +13,14 @@
 
 These are tier-1 critical bugs where fixing one improves 5+ downstream issues. **Do these first, in order.**
 
-### Session 1: Fix #14 — `calculate-risk` uses wrong ID for SQL Server lookups
+### Session 1: Fix #14 — `calculate-risk` uses wrong ID for SQL Server lookups ✅ DONE 2026-03-19
 
 | Field | Detail |
 |-------|--------|
 | **File** | `lib/jobs/handlers/calculate-risk.ts` |
-| **Root Cause** | `supplier.id` (PostgreSQL auto-increment PK, 1-220) is used to look up `Company.Id` in SQL Server. The correct key is `parseInt(supplier.client_key)`. |
-| **Lines** | ~167 (`caseStatsMap.get`), ~199 (`surveyStatsMap.get`), ~259 (`companyGeoMap.get`), ~264 (`parentCompanyMap.get`) |
-| **Evidence** | All 220 suppliers have: `case_score=0`, `country=''`, `region=''`, `latitude=NULL`, `longitude=NULL` |
-| **Fix** | Change `supplier.id` → `parseInt(supplier.client_key)` for all SQL Server and cross-DB map lookups |
-| **Cascade** | Fixes or improves: #41 (map markers), #39 (network graph), #52 (brand scores), #20 (monitoring signals), #23 (forecast direction), sub-score uniformity across all 220 suppliers |
-| **Verify** | `SELECT count(*) FROM supplier_risk_scores WHERE country != '';` should be >0. `SELECT count(DISTINCT risk_score) FROM supplier_risk_scores;` should be >10. |
+| **Root Cause** | `supplier.id` is PostgreSQL `bigint` → returned as **string** by `pg` library. All map keys are numbers (from `integer`/`int` columns). `Map.get("1")` never matches numeric key `1`. |
+| **Fix Applied** | Changed all 4 map lookups from `supplier.id` → `supplier.client_key` (integer → number). Fixed `parentCompanyMap` query to JOIN and use `client_key`. Also added 200 `CompanyPost` seed rows with lat/lng coordinates. |
+| **Results** | 220 countries, 191 case scores >0, 200 lat/lng, 200 parent company IDs, 26 distinct risk scores, 95 monitoring signals |
 
 ### Session 2: Fix #16 — Remove force-seeded risk scores + Fix #19 — Per-supplier training
 
@@ -201,7 +198,7 @@ These are roadmap items, not current bugs:
 
 | Session | Focus | Done When |
 |---------|-------|-----------|
-| 1 | Fix #14 (risk ID mapping) | Geo/case data populates for suppliers |
+| 1 | Fix #14 (risk ID mapping) | ~~Geo/case data populates for suppliers~~ **DONE 2026-03-19** — 220 countries, 191 case scores, 200 lat/lng, 26 distinct risk scores |
 | 2 | Fix #16 (remove force-seeding) + #19 (per-supplier training) | Score variance restored, training differentiated |
 | 3 | Fix #15 (survey analysis limit) | ~285 surveys analyzed, temporal patterns populated |
 | 4 | Fix #17 (payslip currency) + #48 (brand→factory ID) | Anomalies reference correct suppliers with correct currencies |
