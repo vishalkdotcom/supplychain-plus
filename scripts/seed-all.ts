@@ -6,9 +6,10 @@
  * This script orchestrates all seed/job steps in the correct order:
  *   1. Push Drizzle schema (ensures wovo_ai tables exist)
  *   2. Seed payslips into SQL Server
- *   3. Calculate risk scores (queries all 3 source DBs → wovo_ai)
+ *   3. Calculate risk scores + monitoring signals (queries all 3 source DBs → wovo_ai)
  *   4. Backfill 30 days of risk history
- *   5. Run AI jobs sequentially (case-clustering, worker-voice, surveys, payslip-anomaly, risk-forecast)
+ *   5. Run AI jobs sequentially (surveys, clustering, anomaly, forecast, voice)
+ *   6. Generate intelligence briefing (aggregates all ML outputs)
  *
  * Prerequisites:
  *   - All 3 Docker containers running (mysql, postgres, sqlserver)
@@ -107,16 +108,24 @@ async function main() {
   });
 
   // 5. AI jobs — run sequentially to avoid Ollama VRAM thrashing
+  //    Order matches RUN_ALL_ORDER from lib/jobs/constants.ts
+  //    (calculate-risk already ran in step 3)
   const aiJobs = [
+    { name: "Survey analysis", path: "/api/jobs/analyze-surveys" },
     { name: "Case clustering", path: "/api/jobs/case-clustering" },
-    { name: "Worker voice analytics", path: "/api/jobs/worker-voice-analytics" },
     { name: "Payslip anomaly detection", path: "/api/jobs/payslip-anomaly" },
     { name: "Risk forecast", path: "/api/jobs/risk-forecast" },
+    { name: "Worker voice analytics", path: "/api/jobs/worker-voice-analytics" },
   ];
 
   for (const job of aiJobs) {
     await run(job.name, () => callJob(job.path));
   }
+
+  // 6. Generate intelligence briefing (aggregates all ML outputs)
+  await run("Generate intelligence briefing", () =>
+    callJob("/api/jobs/generate-briefing"),
+  );
 
   // Summary
   console.log("\n=== Summary ===");
