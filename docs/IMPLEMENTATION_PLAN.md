@@ -22,16 +22,16 @@ These are tier-1 critical bugs where fixing one improves 5+ downstream issues. *
 | **Fix Applied** | Changed all 4 map lookups from `supplier.id` → `supplier.client_key` (integer → number). Fixed `parentCompanyMap` query to JOIN and use `client_key`. Also added 200 `CompanyPost` seed rows with lat/lng coordinates. |
 | **Results** | 220 countries, 191 case scores >0, 200 lat/lng, 200 parent company IDs, 26 distinct risk scores, 95 monitoring signals |
 
-### Session 2: Fix #16 — Remove force-seeded risk scores + Fix #19 — Per-supplier training
+### Session 2: Fix #16 — Remove force-seeded risk scores + Fix #19 — Per-supplier training ✅ DONE 2026-03-20
 
 | Field | Detail |
 |-------|--------|
 | **File** | `lib/jobs/handlers/calculate-risk.ts` |
-| **#16 Root Cause** | Lines 251-255 hardcode first 4 suppliers to scores 92/85/81/78. These happen to be **brands** (Nike, Adidas, etc.), not factories. Added 2026-03-18, broke previously working variance (14 distinct scores on 03-17 → 5 on 03-18). |
-| **#16 Fix** | Delete lines 251-255 entirely. |
-| **#19 Root Cause** | Lines 129-157 fetch a single global training completion rate from MySQL and apply it identically to all 220 suppliers (line 225: `const trainingScore = globalTrainingScore`). |
-| **#19 Fix** | Query MySQL `mdl_user_enrolments` grouped by company/supplier mapping. If no per-supplier mapping exists in Moodle, use enrollment data per course category as a proxy. |
-| **Verify** | After re-running pipeline: `SELECT count(DISTINCT training_score) FROM supplier_risk_scores;` should be >1. No supplier should have a hardcoded 92/85/81/78 score. |
+| **#16 Root Cause** | Lines 253-257 hardcode first 4 suppliers to scores 92/85/81/78. These happen to be **brands** (Nike, Adidas, etc.), not factories. Added 2026-03-18, broke previously working variance (14 distinct scores on 03-17 → 5 on 03-18). |
+| **#16 Fix Applied** | Deleted hardcoded overrides entirely. Changed `riskScore` from `let` to `const`. |
+| **#19 Root Cause** | Lines 131-159 fetch a single global training completion rate from MySQL and apply it identically to all 220 suppliers (line 227: `const trainingScore = globalTrainingScore`). |
+| **#19 Fix Applied** | Replaced global query with per-supplier batch using `mdl_company_course` JOIN to compute per-company course completion rates. Suppliers without Moodle data get default score 70 with "No training data" reason. |
+| **Results** | 23 distinct risk scores (was 5), 7 distinct training scores (was 1), no hardcoded overrides. Brands (companyid 201-220) correctly get default score; factories (1-200) get per-supplier scores 93-98. |
 
 ### Session 3: Fix #15 — `analyze-surveys` LIMIT 500 bug
 
@@ -199,7 +199,7 @@ These are roadmap items, not current bugs:
 | Session | Focus | Done When |
 |---------|-------|-----------|
 | 1 | Fix #14 (risk ID mapping) | ~~Geo/case data populates for suppliers~~ **DONE 2026-03-19** — 220 countries, 191 case scores, 200 lat/lng, 26 distinct risk scores |
-| 2 | Fix #16 (remove force-seeding) + #19 (per-supplier training) | Score variance restored, training differentiated |
+| 2 | Fix #16 (remove force-seeding) + #19 (per-supplier training) | ~~Score variance restored, training differentiated~~ **DONE 2026-03-20** — 23 distinct risk scores, 7 distinct training scores, no hardcoded overrides |
 | 3 | Fix #15 (survey analysis limit) | ~285 surveys analyzed, temporal patterns populated |
 | 4 | Fix #17 (payslip currency) + #48 (brand→factory ID) | Anomalies reference correct suppliers with correct currencies |
 | 5 | Re-run full pipeline, audit results, close resolved issues | Updated screenshots, issues triaged |

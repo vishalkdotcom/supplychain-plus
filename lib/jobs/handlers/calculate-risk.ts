@@ -128,34 +128,30 @@ export async function calculateRisk(params?: JobParams): Promise<JobResult> {
     logger.warn("jobs/calculate-risk", "PostgreSQL survey stats batch query failed", e);
   }
 
-  // --- Batch: Training stats from MySQL (global, not per-supplier) ---
-  let globalTrainingScore = 0;
-  let globalCompletionRate = 0;
-  let hasTrainingData = false;
+  // --- Batch: Per-supplier training stats from MySQL ---
+  const trainingStatsMap = new Map<number, { enrolled: number; completed: number }>();
   try {
     const trainingResult = (await mysqlQuery(`
       SELECT
-        (SELECT COUNT(*) FROM mdl_user_enrolments ue
-         JOIN mdl_enrol e ON ue.enrolid = e.id
-         JOIN mdl_course c ON e.courseid = c.id
-         WHERE c.id > 1) as total_enrolled,
-        (SELECT COUNT(*) FROM mdl_course_completions cc
-         WHERE cc.timecompleted IS NOT NULL) as total_completed
-    `)) as Array<{ total_enrolled: number; total_completed: number }>;
+        cc_map.companyid,
+        COUNT(DISTINCT ue.userid) as enrolled,
+        COUNT(DISTINCT CASE WHEN ccomp.timecompleted IS NOT NULL THEN ccomp.userid END) as completed
+      FROM mdl_company_course cc_map
+      JOIN mdl_course c ON c.id = cc_map.courseid
+      JOIN mdl_enrol e ON e.courseid = c.id
+      JOIN mdl_user_enrolments ue ON ue.enrolid = e.id
+      LEFT JOIN mdl_course_completions ccomp ON ccomp.course = c.id AND ccomp.userid = ue.userid
+      GROUP BY cc_map.companyid
+    `)) as Array<{ companyid: number; enrolled: number; completed: number }>;
 
-    const tRow = trainingResult[0];
-    const enrolled = tRow?.total_enrolled || 0;
-    const completed = tRow?.total_completed || 0;
-
-    if (enrolled > 0) {
-      globalCompletionRate = (completed / enrolled) * 100;
-      globalTrainingScore = Math.max(0, Math.round(100 - globalCompletionRate));
-      hasTrainingData = true;
-    } else {
-      globalTrainingScore = 70;
+    for (const row of trainingResult) {
+      trainingStatsMap.set(row.companyid, {
+        enrolled: row.enrolled,
+        completed: row.completed,
+      });
     }
   } catch (e) {
-    logger.warn("jobs/calculate-risk", "MySQL training stats query failed", e);
+    logger.warn("jobs/calculate-risk", "MySQL per-supplier training query failed", e);
   }
 
   let processedCount = 0;
@@ -223,13 +219,25 @@ export async function calculateRisk(params?: JobParams): Promise<JobResult> {
       }
     }
 
-    // --- Training Score (from batched MySQL data — global, same for all) ---
-    const trainingScore = globalTrainingScore;
-    if (hasTrainingData && globalCompletionRate < 50) {
+    // --- Training Score (from per-supplier MySQL data) ---
+    let trainingScore = 70; // default: no data = moderate risk
+    const trainingRow = trainingStatsMap.get(supplier.client_key);
+    if (trainingRow && trainingRow.enrolled > 0) {
+      const completionRate = (trainingRow.completed / trainingRow.enrolled) * 100;
+      trainingScore = Math.max(0, Math.round(100 - completionRate));
+      if (completionRate < 50) {
+        reasons.push({
+          factor: `Low training completion (${Math.round(completionRate)}%)`,
+          impact: completionRate < 25 ? "high" : "medium",
+          description: `Only ${Math.round(completionRate)}% of enrolled workers completed training`,
+          module: "educate",
+        });
+      }
+    } else {
       reasons.push({
-        factor: `Low training completion (${Math.round(globalCompletionRate)}%)`,
-        impact: globalCompletionRate < 25 ? "high" : "medium",
-        description: `Only ${Math.round(globalCompletionRate)}% of enrolled workers completed training`,
+        factor: "No training data",
+        impact: "medium",
+        description: "No Moodle enrollment data available for this supplier",
         module: "educate",
       });
     }
@@ -240,7 +248,7 @@ export async function calculateRisk(params?: JobParams): Promise<JobResult> {
     );
 
     // --- Overall Risk Score ---
-    let riskScore = Math.min(
+    const riskScore = Math.min(
       100,
       Math.round(
         caseScore * 0.35 +
@@ -249,13 +257,6 @@ export async function calculateRisk(params?: JobParams): Promise<JobResult> {
           engagementScore * 0.15,
       ),
     );
-
-    // FORCE HIGH RISK FOR SEEDING: Ensure the first 4 suppliers have scores > 70
-    if (processedCount === 0) riskScore = 92;
-    if (processedCount === 1) riskScore = 85;
-    if (processedCount === 2) riskScore = 81;
-    if (processedCount === 3) riskScore = 78;
-
 
     // Lookup cached geo/hierarchy data for this supplier
     const geo = companyGeoMap.get(supplier.client_key);
