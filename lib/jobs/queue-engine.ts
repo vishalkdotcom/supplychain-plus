@@ -8,6 +8,7 @@ import {
   OLLAMA_JOBS,
   RUN_ALL_ORDER,
 } from "./constants";
+import { JOB_REGISTRY } from "./handlers";
 
 const POLL_INTERVAL_MS = 10_000; // 10 seconds
 const SCHEDULE_CHECK_INTERVAL_MS = 60_000; // 60 seconds
@@ -138,34 +139,43 @@ async function pollQueue(): Promise<void> {
       .set({ status: "processing", lockedAt: new Date() })
       .where(eq(jobQueue.id, item.queue_id));
 
-    // Execute the job by calling its API route
-    const port = process.env.PORT || "3000";
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `http://127.0.0.1:${port}`;
-    const jobUrl = `${baseUrl}/api/jobs/${item.job_type}`;
+    // Execute the job directly via the handler registry (no HTTP fetch)
+    const handler = JOB_REGISTRY[item.job_type as JobType];
+    if (!handler) {
+      logger.error("jobs/queue", `No handler registered for job type: ${item.job_type}`);
+      await db.update(jobRuns)
+        .set({ status: "failed", completedAt: new Date(), error: `Unknown job type: ${item.job_type}` })
+        .where(eq(jobRuns.id, item.job_run_id));
+      await db.update(jobQueue).set({ status: "done" }).where(eq(jobQueue.id, item.queue_id));
+      return;
+    }
 
     logger.info("jobs/queue", `Starting ${item.job_type} (run #${item.job_run_id})`);
 
-    // Fire the job — don't await (let it run in background)
-    fetch(jobUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ _jobRunId: item.job_run_id }),
-    }).catch((err) => {
-      logger.error("jobs/queue", `Failed to call ${jobUrl}`, err);
-      // Mark as failed
-      db.update(jobRuns)
-        .set({
-          status: "failed",
-          completedAt: new Date(),
-          error: `Failed to invoke job endpoint: ${err.message}`,
-        })
-        .where(eq(jobRuns.id, item.job_run_id))
-        .then(() =>
-          db
-            .update(jobQueue)
-            .set({ status: "done" })
-            .where(eq(jobQueue.id, item.queue_id)),
-        );
+    // Update run to "running"
+    await db.update(jobRuns)
+      .set({ status: "running", startedAt: new Date() })
+      .where(eq(jobRuns.id, item.job_run_id));
+
+    const startTime = Date.now();
+
+    // Fire the job in background — don't block the poller
+    handler().then(async (result) => {
+      const durationMs = Date.now() - startTime;
+      const { success, ...resultSummary } = result;
+      await db.update(jobRuns)
+        .set({ status: "completed", completedAt: new Date(), durationMs, resultSummary })
+        .where(eq(jobRuns.id, item.job_run_id));
+      await db.update(jobQueue).set({ status: "done" }).where(eq(jobQueue.id, item.queue_id));
+      logger.info("jobs/queue", `Completed ${item.job_type} (run #${item.job_run_id}) in ${(durationMs / 1000).toFixed(1)}s`);
+    }).catch(async (err) => {
+      const durationMs = Date.now() - startTime;
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      logger.error("jobs/queue", `Failed ${item.job_type} (run #${item.job_run_id})`, err);
+      await db.update(jobRuns)
+        .set({ status: "failed", completedAt: new Date(), durationMs, error: errorMessage })
+        .where(eq(jobRuns.id, item.job_run_id));
+      await db.update(jobQueue).set({ status: "done" }).where(eq(jobQueue.id, item.queue_id));
     });
   } catch (error) {
     logger.error("jobs/queue", "Queue poll error", error);
