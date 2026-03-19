@@ -6,6 +6,8 @@ import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { ollama as ollamaProvider } from "ai-sdk-ollama";
+import { createGroq } from "@ai-sdk/groq";
+import { createCerebras } from "@ai-sdk/cerebras";
 
 // Middleware to extract <think>...</think> reasoning from NIM models
 // into a separate `reasoning` field, keeping `text` clean.
@@ -154,14 +156,53 @@ export function getModelFromRequest(
   return type === "strong" ? strongModel : model;
 }
 
-// ─── Ollama helpers for batch jobs (Phase 4) ───────────────
+// ─── Batch job model resolver ────────────────────────────────
+// Controlled by JOB_AI_PROVIDER env var. Defaults to "ollama".
+// Valid: "ollama" | "groq" | "cerebras" | "nim"
 
-/** Get a specific Ollama model for batch processing (think disabled). */
+const jobProvider = process.env.JOB_AI_PROVIDER ?? "ollama";
+
+/**
+ * Resolve a language model for pipeline batch jobs.
+ * Reads JOB_AI_PROVIDER to pick the cloud/local backend.
+ * Embeddings always use Ollama (no free cloud embedding API at volume).
+ */
+export function getJobModel() {
+  switch (jobProvider) {
+    case "groq": {
+      const groq = createGroq({
+        apiKey: process.env.GROQ_API_KEY ?? "",
+      });
+      return groq("llama-3.3-70b-versatile");
+    }
+    case "cerebras": {
+      const cerebras = createCerebras({
+        apiKey: process.env.CEREBRAS_API_KEY ?? "",
+      });
+      return cerebras("llama-3.3-70b");
+    }
+    case "nim": {
+      const nim = createOpenAICompatible({
+        name: "nim",
+        baseURL: "https://integrate.api.nvidia.com/v1",
+        apiKey: process.env.NIM_API_KEY,
+      });
+      return nim.chatModel("deepseek-ai/deepseek-v3.1");
+    }
+    case "ollama":
+    default: {
+      const modelName = process.env.OLLAMA_JOB_MODEL ?? "qwen3:4b";
+      return ollamaProvider(modelName, { think: false });
+    }
+  }
+}
+
+/** @deprecated Use getJobModel() for pipeline jobs. Kept for backwards compat. */
 export function getOllamaModel(modelName: string) {
   return ollamaProvider(modelName, { think: false });
 }
 
-/** Get an Ollama embedding model (e.g. bge-m3). */
+/** Get an Ollama embedding model (e.g. bge-m3). Always uses Ollama. */
 export function getOllamaEmbedding(modelName: string = "bge-m3") {
   return ollamaProvider.embedding(modelName);
 }

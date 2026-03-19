@@ -1,5 +1,5 @@
 import { generateText, embed, Output } from "ai";
-import { getOllamaModel, getOllamaEmbedding } from "@/lib/ai/provider";
+import { getJobModel, getOllamaEmbedding } from "@/lib/ai/provider";
 import { query as mssqlQuery } from "@/lib/db/sql-server";
 import { db } from "@/lib/db/drizzle";
 import { caseEmbeddings, caseClusters } from "@/lib/db/schema";
@@ -16,7 +16,7 @@ const clusterLabelSchema = z.object({
 
 export async function caseClustering(): Promise<JobResult> {
   const embeddingModel = getOllamaEmbedding("bge-m3");
-  const labelModel = getOllamaModel("qwen3:4b");
+  const labelModel = getJobModel();
 
   // Step 1: Query case messages from SQL Server
   const result = await mssqlQuery(`

@@ -1,5 +1,5 @@
 import { generateText, Output } from "ai";
-import { getOllamaModel } from "@/lib/ai/provider";
+import { getJobModel } from "@/lib/ai/provider";
 import { query as mssqlQuery } from "@/lib/db/sql-server";
 import { db } from "@/lib/db/drizzle";
 import { payslipAnomalies, alerts } from "@/lib/db/schema";
@@ -36,7 +36,7 @@ const interpretationSchema = z.object({
 });
 
 export async function payslipAnomaly(): Promise<JobResult> {
-  const model = getOllamaModel("gemma3:1b");
+  const model = getJobModel();
 
   const result = await mssqlQuery(`
     SELECT

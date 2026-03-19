@@ -1,5 +1,5 @@
 import { generateText } from "ai";
-import { getOllamaModel } from "@/lib/ai/provider";
+import { getJobModel } from "@/lib/ai/provider";
 import { db } from "@/lib/db/drizzle";
 import {
   supplierRiskScores,
@@ -98,7 +98,7 @@ function predictScore(
 }
 
 export async function riskForecast(): Promise<JobResult> {
-  const model = getOllamaModel("qwen3:4b");
+  const model = getJobModel();
 
   const suppliers = await db
     .select()

@@ -1,5 +1,5 @@
 import { generateText } from "ai";
-import { getOllamaModel } from "@/lib/ai/provider";
+import { getJobModel } from "@/lib/ai/provider";
 import { stripThinkingTags } from "@/lib/ai/utils";
 import { db } from "@/lib/db/drizzle";
 import { surveyAnalysis, surveyTemporalPatterns, type SurveyTheme } from "@/lib/db/schema";
@@ -67,8 +67,7 @@ export async function analyzeSurveys(params?: JobParams): Promise<JobResult> {
 
   let processedCount = 0;
 
-  // When called from queue engine, use default Ollama model
-  const model = getOllamaModel("qwen3:4b");
+  const model = getJobModel();
 
   for (const [surveyId, data] of surveyResponses) {
     if (data.responses.length === 0) continue;

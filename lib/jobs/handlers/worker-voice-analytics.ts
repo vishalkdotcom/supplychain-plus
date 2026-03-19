@@ -1,5 +1,5 @@
 import { generateText, Output } from "ai";
-import { getOllamaModel } from "@/lib/ai/provider";
+import { getJobModel } from "@/lib/ai/provider";
 import { query as pgQuery } from "@/lib/db/postgres";
 import { db } from "@/lib/db/drizzle";
 import { workerVoiceTrends } from "@/lib/db/schema";
@@ -20,7 +20,7 @@ const topicSchema = z.object({
 });
 
 export async function workerVoiceAnalytics(): Promise<JobResult> {
-  const model = getOllamaModel("qwen3:4b");
+  const model = getJobModel();
   const now = new Date();
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
 
