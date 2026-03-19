@@ -26,43 +26,46 @@ const surveyAnalysisSchema = z.object({
 export async function analyzeSurveys(params?: JobParams): Promise<JobResult> {
   const targetSurveyId = params?.surveyId as string | undefined;
 
-  // Get surveys to analyze
-  let surveyQuery = `
-    SELECT s.id, s.name, q.title as question_text,
-           r.text_response as response_text,
-           opt.label as option_label
-    FROM survey_mdlsurvey s
-    JOIN survey_mdlsurvey_questions sq ON sq.mdlsurvey_id = s.id
-    JOIN survey_mdlsurveyquestions q ON q.id = sq.mdlsurveyquestions_id
-    LEFT JOIN survey_mdlsurveyquestionresponses r ON r.survey_question_id = q.id AND r.survey_id = s.id
-    LEFT JOIN survey_mdlsurveyquestionoptions opt ON opt.id = r.question_option_id
-  `;
-  const queryParams: unknown[] = [];
+  // Step 1: Fetch distinct survey IDs
+  let surveyListQuery = `SELECT DISTINCT s.id, s.name FROM survey_mdlsurvey s`;
+  const listParams: unknown[] = [];
   if (targetSurveyId) {
-    queryParams.push(targetSurveyId);
-    surveyQuery += ` WHERE s.id = $${queryParams.length}`;
+    listParams.push(targetSurveyId);
+    surveyListQuery += ` WHERE s.id = $${listParams.length}`;
   }
-  surveyQuery += ` ORDER BY s.id, q.id LIMIT 500`;
+  surveyListQuery += ` ORDER BY s.id`;
 
-  const result = await pgQuery(surveyQuery, queryParams);
+  const surveyList = await pgQuery(surveyListQuery, listParams);
+  const totalSurveys = surveyList.rows.length;
+  logger.info("jobs/analyze-surveys", `Found ${totalSurveys} surveys to analyze`);
 
-  // Group responses by survey
+  // Step 2: For each survey, fetch its responses separately
   const surveyResponses = new Map<
     string,
     { name: string; responses: string[] }
   >();
-  for (const row of result.rows) {
-    if (!surveyResponses.has(row.id)) {
-      surveyResponses.set(row.id, { name: row.name, responses: [] });
+  for (const survey of surveyList.rows) {
+    const respResult = await pgQuery(
+      `SELECT q.title as question_text,
+              r.text_response as response_text,
+              opt.label as option_label
+       FROM survey_mdlsurvey_questions sq
+       JOIN survey_mdlsurveyquestions q ON q.id = sq.mdlsurveyquestions_id
+       LEFT JOIN survey_mdlsurveyquestionresponses r ON r.survey_question_id = q.id AND r.survey_id = $1
+       LEFT JOIN survey_mdlsurveyquestionoptions opt ON opt.id = r.question_option_id
+       WHERE sq.mdlsurvey_id = $1
+       ORDER BY q.id`,
+      [survey.id],
+    );
+
+    const responses: string[] = [];
+    for (const row of respResult.rows) {
+      const answerText = row.response_text?.trim() || row.option_label || null;
+      if (answerText) {
+        responses.push(`Q: ${row.question_text || "Question"}\nA: ${answerText}`);
+      }
     }
-    const answerText = row.response_text?.trim() || row.option_label || null;
-    if (answerText) {
-      surveyResponses
-        .get(row.id)!
-        .responses.push(
-          `Q: ${row.question_text || "Question"}\nA: ${answerText}`,
-        );
-    }
+    surveyResponses.set(survey.id, { name: survey.name, responses });
   }
 
   let processedCount = 0;
@@ -105,6 +108,10 @@ ${responseText}`,
     }
 
     const parsed = surveyAnalysisSchema.safeParse(jsonObj);
+
+    if (processedCount > 0 && processedCount % 10 === 0) {
+      logger.info("jobs/analyze-surveys", `Progress: ${processedCount}/${totalSurveys} surveys analyzed`);
+    }
 
     if (parsed.success) {
       const output = parsed.data;

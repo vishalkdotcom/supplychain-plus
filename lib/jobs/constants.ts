@@ -11,6 +11,7 @@ export type JobType = (typeof JOB_TYPES)[number];
 
 /** Jobs that require Ollama and must be serialized to avoid VRAM thrashing */
 export const OLLAMA_JOBS: Set<JobType> = new Set([
+  "analyze-surveys",
   "case-clustering",
   "payslip-anomaly",
   "risk-forecast",
