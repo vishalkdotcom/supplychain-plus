@@ -1,4 +1,4 @@
-import { generateText, Output } from "ai";
+import { generateText } from "ai";
 import { getOllamaModel } from "@/lib/ai/provider";
 import { db } from "@/lib/db/drizzle";
 import {
@@ -7,23 +7,95 @@ import {
   supplierRiskForecast,
 } from "@/lib/db/schema";
 import { desc, eq } from "drizzle-orm";
-import { z } from "zod";
 import { logger } from "@/lib/logger";
 import type { JobResult } from "./types";
 
-const forecastSchema = z.object({
-  predictedRiskScore: z
-    .number()
-    .describe("Predicted risk score 60 days from now, integer 0-100"),
-  predictedCaseScore: z.number().describe("Predicted case score, integer 0-100"),
-  predictedSurveyScore: z.number().describe("Predicted survey score, integer 0-100"),
-  predictedTrainingScore: z.number().describe("Predicted training score, integer 0-100"),
-  confidence: z
-    .number()
-    .describe("Confidence in prediction (0-1)"),
-  trendDirection: z.enum(["rising", "falling", "stable"]),
-  reasoning: z.string().describe("Brief explanation of the prediction"),
-});
+// ===============================
+// Statistical Forecasting Utilities
+// ===============================
+
+interface RegressionResult {
+  slope: number;
+  intercept: number;
+  rSquared: number;
+}
+
+/** Ordinary least-squares linear regression */
+function linearRegression(
+  points: Array<{ x: number; y: number }>,
+): RegressionResult {
+  const n = points.length;
+  if (n < 2) return { slope: 0, intercept: points[0]?.y ?? 0, rSquared: 0 };
+
+  let sumX = 0,
+    sumY = 0,
+    sumXY = 0,
+    sumXX = 0;
+  for (const p of points) {
+    sumX += p.x;
+    sumY += p.y;
+    sumXY += p.x * p.y;
+    sumXX += p.x * p.x;
+  }
+
+  const denom = n * sumXX - sumX * sumX;
+  if (denom === 0) return { slope: 0, intercept: sumY / n, rSquared: 0 };
+
+  const slope = (n * sumXY - sumX * sumY) / denom;
+  const intercept = (sumY - slope * sumX) / n;
+
+  // R² (coefficient of determination)
+  const meanY = sumY / n;
+  let ssRes = 0,
+    ssTot = 0;
+  for (const p of points) {
+    const predicted = slope * p.x + intercept;
+    ssRes += (p.y - predicted) ** 2;
+    ssTot += (p.y - meanY) ** 2;
+  }
+  const rSquared = ssTot === 0 ? 0 : 1 - ssRes / ssTot;
+
+  return { slope, intercept, rSquared };
+}
+
+interface ScorePrediction {
+  predicted: number;
+  confidence: number;
+  trend: "rising" | "falling" | "stable";
+}
+
+/**
+ * Predict a score using linear regression + mean-reversion damping.
+ * - Extrapolates the trend forward by `daysForward` days
+ * - Applies damping: 70% extrapolation + 30% historical average
+ * - Clamps result to 0-100
+ * - Confidence based on R² and data density
+ */
+function predictScore(
+  values: number[],
+  daysForward: number,
+): ScorePrediction {
+  const points = values.map((y, i) => ({ x: i, y }));
+  const { slope, rSquared } = linearRegression(points);
+
+  const lastValue = values[values.length - 1];
+  const extrapolated = lastValue + slope * daysForward;
+
+  // Mean-reversion damping: blend extrapolation with historical average
+  const historicalAvg = values.reduce((a, b) => a + b, 0) / values.length;
+  const dampened = extrapolated * 0.7 + historicalAvg * 0.3;
+
+  const predicted = Math.round(Math.max(0, Math.min(100, dampened)));
+
+  const dataDensityBonus = Math.min(values.length / 30, 1) * 0.3;
+  const fitBonus = Math.max(0, rSquared) * 0.7;
+  const confidence = Math.round((dataDensityBonus + fitBonus) * 100) / 100;
+
+  const trend: "rising" | "falling" | "stable" =
+    slope > 0.15 ? "rising" : slope < -0.15 ? "falling" : "stable";
+
+  return { predicted, confidence, trend };
+}
 
 export async function riskForecast(): Promise<JobResult> {
   const model = getOllamaModel("qwen3:4b");
@@ -53,83 +125,110 @@ export async function riskForecast(): Promise<JobResult> {
 
     if (history.length < 3) continue;
 
-    const recent = history.slice(0, 30);
-    const older = history.slice(Math.max(0, history.length - 30));
+    // Reverse to chronological order (oldest first) for regression
+    const chronological = [...history].reverse();
 
-    const avgRecent = {
-      risk: avg(recent.map((h) => h.riskScore)),
-      cases: avg(recent.map((h) => h.caseScore ?? 0)),
-      surveys: avg(recent.map((h) => h.surveyScore ?? 0)),
-      training: avg(recent.map((h) => h.trainingScore ?? 0)),
-    };
+    // Statistical predictions for each score dimension
+    const riskPred = predictScore(
+      chronological.map((h) => h.riskScore),
+      60,
+    );
+    const casePred = predictScore(
+      chronological.map((h) => h.caseScore ?? 0),
+      60,
+    );
+    const surveyPred = predictScore(
+      chronological.map((h) => h.surveyScore ?? 0),
+      60,
+    );
+    const trainingPred = predictScore(
+      chronological.map((h) => h.trainingScore ?? 0),
+      60,
+    );
 
-    const avgOlder = {
-      risk: avg(older.map((h) => h.riskScore)),
-      cases: avg(older.map((h) => h.caseScore ?? 0)),
-      surveys: avg(older.map((h) => h.surveyScore ?? 0)),
-      training: avg(older.map((h) => h.trainingScore ?? 0)),
-    };
+    // Average confidence across dimensions
+    const confidence =
+      Math.round(
+        ((riskPred.confidence +
+          casePred.confidence +
+          surveyPred.confidence +
+          trainingPred.confidence) /
+          4) *
+          100,
+      ) / 100;
+
+    const trendDirection = riskPred.trend;
+
+    // Generate narrative reasoning with LLM (text only, no structured output)
+    let aiReasoning = `Risk score predicted to ${trendDirection === "rising" ? "increase" : trendDirection === "falling" ? "decrease" : "remain stable"} from ${supplier.riskScore} to ${riskPred.predicted} over 60 days (confidence: ${Math.round(confidence * 100)}%).`;
 
     try {
       const result = await generateText({
         model,
-        maxRetries: 3,
+        maxRetries: 2,
         system:
-          "You are an expert supply chain risk analyst. Given historical risk score trends, predict the risk score 60 days from now. Be precise and data-driven. You MUST respond with valid JSON only — no markdown, no explanation, no extra text.",
-        prompt: `Predict risk scores for supplier "${supplier.supplierName}" 60 days from now.
+          "You are an expert supply chain risk analyst. Explain a statistical risk forecast in 2-3 sentences. Be concise and actionable. Do not use markdown. /no_think",
+        prompt: `Explain this forecast for supplier "${supplier.supplierName}":
 
-Current scores:
-- Overall Risk: ${supplier.riskScore}/100
-- Cases: ${supplier.caseScore}/100
-- Surveys: ${supplier.surveyScore}/100
-- Training: ${supplier.trainingScore}/100
-- Engagement: ${supplier.engagementScore}/100
+Current scores → Predicted (60 days):
+- Overall Risk: ${supplier.riskScore} → ${riskPred.predicted} (${trendDirection})
+- Cases: ${supplier.caseScore} → ${casePred.predicted} (${casePred.trend})
+- Surveys: ${supplier.surveyScore} → ${surveyPred.predicted} (${surveyPred.trend})
+- Training: ${supplier.trainingScore} → ${trainingPred.predicted} (${trainingPred.trend})
 
-30-day average vs historical average:
-- Risk: ${avgRecent.risk.toFixed(1)} → was ${avgOlder.risk.toFixed(1)} (${avgRecent.risk > avgOlder.risk ? "worsening" : "improving"})
-- Cases: ${avgRecent.cases.toFixed(1)} → was ${avgOlder.cases.toFixed(1)}
-- Surveys: ${avgRecent.surveys.toFixed(1)} → was ${avgOlder.surveys.toFixed(1)}
-- Training: ${avgRecent.training.toFixed(1)} → was ${avgOlder.training.toFixed(1)}
-
-Data points available: ${history.length} days of history`,
-        output: Output.object({ schema: forecastSchema }),
+Confidence: ${Math.round(confidence * 100)}% based on ${history.length} days of data.
+Why might this trend continue or reverse?`,
       });
 
-      if (result.output) {
-        await db
-          .insert(supplierRiskForecast)
-          .values({
-            supplierId: supplier.supplierId,
-            forecastDate: forecastDateStr,
-            predictedRiskScore: Math.round(result.output.predictedRiskScore),
-            predictedCaseScore: Math.round(result.output.predictedCaseScore),
-            predictedSurveyScore: Math.round(result.output.predictedSurveyScore),
-            predictedTrainingScore: Math.round(result.output.predictedTrainingScore),
-            confidence: result.output.confidence,
-            trendDirection: result.output.trendDirection,
-            aiReasoning: result.output.reasoning,
-          })
-          .onConflictDoUpdate({
-            target: [
-              supplierRiskForecast.supplierId,
-              supplierRiskForecast.forecastDate,
-            ],
-            set: {
-              predictedRiskScore: Math.round(result.output.predictedRiskScore),
-              predictedCaseScore: Math.round(result.output.predictedCaseScore),
-              predictedSurveyScore: Math.round(result.output.predictedSurveyScore),
-              predictedTrainingScore: Math.round(result.output.predictedTrainingScore),
-              confidence: result.output.confidence,
-              trendDirection: result.output.trendDirection,
-              aiReasoning: result.output.reasoning,
-              generatedAt: new Date(),
-            },
-          });
-
-        processed++;
+      if (result.text) {
+        aiReasoning = result.text.trim();
       }
     } catch (e) {
-      logger.error("jobs/risk-forecast", `Forecast failed for supplier ${supplier.supplierId}`, e);
+      logger.warn(
+        "jobs/risk-forecast",
+        `LLM reasoning failed for ${supplier.supplierId}, using fallback`,
+        e,
+      );
+    }
+
+    try {
+      await db
+        .insert(supplierRiskForecast)
+        .values({
+          supplierId: supplier.supplierId,
+          forecastDate: forecastDateStr,
+          predictedRiskScore: riskPred.predicted,
+          predictedCaseScore: casePred.predicted,
+          predictedSurveyScore: surveyPred.predicted,
+          predictedTrainingScore: trainingPred.predicted,
+          confidence,
+          trendDirection,
+          aiReasoning,
+        })
+        .onConflictDoUpdate({
+          target: [
+            supplierRiskForecast.supplierId,
+            supplierRiskForecast.forecastDate,
+          ],
+          set: {
+            predictedRiskScore: riskPred.predicted,
+            predictedCaseScore: casePred.predicted,
+            predictedSurveyScore: surveyPred.predicted,
+            predictedTrainingScore: trainingPred.predicted,
+            confidence,
+            trendDirection,
+            aiReasoning,
+            generatedAt: new Date(),
+          },
+        });
+
+      processed++;
+    } catch (e) {
+      logger.error(
+        "jobs/risk-forecast",
+        `DB write failed for supplier ${supplier.supplierId}`,
+        e,
+      );
     }
   }
 
@@ -139,9 +238,4 @@ Data points available: ${history.length} days of history`,
     totalSuppliers: suppliers.length,
     forecastDate: forecastDateStr,
   };
-}
-
-function avg(nums: number[]): number {
-  if (nums.length === 0) return 0;
-  return nums.reduce((a, b) => a + b, 0) / nums.length;
 }

@@ -287,6 +287,7 @@ export const caseClusters = pgTable("case_clusters", {
     .default([]),
   aiSummary: text("ai_summary"),
   severity: varchar("severity", { length: 20 }), // critical, warning, info
+  supplierIds: jsonb("supplier_ids").$type<string[]>().default([]),
   detectedAt: timestamp("detected_at", { withTimezone: true })
     .defaultNow()
     .notNull(),
@@ -313,6 +314,116 @@ export const courseTranslations = pgTable(
       table.courseId,
       table.language,
     ),
+  ],
+);
+
+// ===============================
+// MONITORING LAYER
+// ===============================
+
+// Supplier Monitoring Signals (silence, engagement decay, regional contagion)
+export const supplierMonitoringSignals = pgTable(
+  "supplier_monitoring_signals",
+  {
+    id: serial("id").primaryKey(),
+    supplierId: varchar("supplier_id", { length: 50 }).notNull(),
+    signalType: varchar("signal_type", { length: 50 }).notNull(), // silence, engagement_decay, regional_contagion
+    severity: varchar("severity", { length: 20 }).notNull(), // critical, warning, info
+    title: varchar("title", { length: 500 }).notNull(),
+    description: text("description").notNull(),
+    metadata: jsonb("metadata").$type<Record<string, unknown>>().default({}),
+    detectedAt: timestamp("detected_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+  },
+  (table) => [
+    uniqueIndex("idx_monitoring_supplier_type").on(
+      table.supplierId,
+      table.signalType,
+    ),
+    index("idx_monitoring_type").on(table.signalType),
+  ],
+);
+
+// Survey Temporal Patterns (cross-survey theme trends)
+export const surveyTemporalPatterns = pgTable(
+  "survey_temporal_patterns",
+  {
+    id: serial("id").primaryKey(),
+    themeName: varchar("theme_name", { length: 255 }).notNull(),
+    trendDirection: varchar("trend_direction", { length: 20 }), // rising, falling, stable
+    mentionsByMonth: jsonb("mentions_by_month")
+      .$type<Record<string, number>>()
+      .default({}),
+    affectedSuppliers: jsonb("affected_suppliers")
+      .$type<string[]>()
+      .default([]),
+    firstSeen: date("first_seen"),
+    lastSeen: date("last_seen"),
+    analyzedAt: timestamp("analyzed_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("idx_temporal_theme").on(table.themeName),
+  ],
+);
+
+// ===============================
+// REMEDIATION LAYER
+// ===============================
+
+// Remediation Plans — tracks lifecycle of detected issues
+export const remediationPlans = pgTable(
+  "remediation_plans",
+  {
+    id: serial("id").primaryKey(),
+    supplierId: varchar("supplier_id", { length: 50 }).notNull(),
+    title: varchar("title", { length: 500 }).notNull(),
+    status: varchar("status", { length: 30 }).notNull().default("detected"),
+    // detected -> root_cause -> action_plan -> implementing -> verifying -> closed
+    sourceType: varchar("source_type", { length: 50 }).notNull(),
+    // cluster, anomaly, monitoring_signal, manual
+    sourceId: integer("source_id"),
+    rootCause: text("root_cause"),
+    actionPlan: text("action_plan"),
+    assignedTo: varchar("assigned_to", { length: 255 }),
+    targetDate: date("target_date"),
+    closedAt: timestamp("closed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("idx_remediation_supplier").on(table.supplierId),
+    index("idx_remediation_status").on(table.status),
+  ],
+);
+
+// Remediation Evidence — links to supporting data
+export const remediationEvidence = pgTable(
+  "remediation_evidence",
+  {
+    id: serial("id").primaryKey(),
+    remediationId: integer("remediation_id")
+      .notNull()
+      .references(() => remediationPlans.id),
+    evidenceType: varchar("evidence_type", { length: 50 }).notNull(),
+    // case_resolved, survey_improvement, training_completed, risk_score_drop, anomaly_resolved, manual_note
+    referenceId: varchar("reference_id", { length: 100 }),
+    title: varchar("title", { length: 500 }).notNull(),
+    description: text("description"),
+    date: date("date").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("idx_evidence_remediation").on(table.remediationId),
   ],
 );
 

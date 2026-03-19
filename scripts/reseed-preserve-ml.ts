@@ -97,7 +97,8 @@ function writeBackup(name: string, data: unknown[]) {
 // Timestamp fields that need Date reconversion after JSON.parse
 const TIMESTAMP_FIELDS = new Set([
   "calculatedAt", "analyzedAt", "generatedAt", "detectedAt",
-  "createdAt", "resolvedAt", "translatedAt",
+  "createdAt", "resolvedAt", "translatedAt", "closedAt",
+  "updatedAt", "lockedAt", "startedAt", "completedAt",
 ]);
 
 function readBackup<T>(name: string): T[] {
@@ -193,6 +194,22 @@ async function exportMlData() {
       mlAlerts.map(({ id: _, isRead: __, resolvedAt: ___, ...rest }) => rest),
     );
 
+    // Monitoring signals
+    const monitoringSignals = await db.select().from(schema.supplierMonitoringSignals);
+    writeBackup("supplier_monitoring_signals", stripId(monitoringSignals));
+
+    // Survey temporal patterns
+    const temporalPatterns = await db.select().from(schema.surveyTemporalPatterns);
+    writeBackup("survey_temporal_patterns", stripId(temporalPatterns));
+
+    // Remediation plans (keep IDs for evidence references)
+    const remediations = await db.select().from(schema.remediationPlans);
+    writeBackup("remediation_plans", remediations);
+
+    // Remediation evidence
+    const evidence = await db.select().from(schema.remediationEvidence);
+    writeBackup("remediation_evidence", stripId(evidence));
+
     const totalRows =
       clusters.length +
       embeddings.length +
@@ -200,7 +217,11 @@ async function exportMlData() {
       forecasts.length +
       anomalies.length +
       surveys.length +
-      mlAlerts.length;
+      mlAlerts.length +
+      monitoringSignals.length +
+      temporalPatterns.length +
+      remediations.length +
+      evidence.length;
 
     if (totalRows === 0) {
       console.log("\n   ⚠ No ML data found — continuing with fresh seed");
@@ -334,6 +355,16 @@ async function restoreMlData() {
         file: "survey_analysis",
       },
       { name: "ml_alerts", table: schema.alerts, file: "ml_alerts" },
+      {
+        name: "supplier_monitoring_signals",
+        table: schema.supplierMonitoringSignals,
+        file: "supplier_monitoring_signals",
+      },
+      {
+        name: "survey_temporal_patterns",
+        table: schema.surveyTemporalPatterns,
+        file: "survey_temporal_patterns",
+      },
     ] as const;
 
     for (const { name, table, file } of simpleTables) {
@@ -350,6 +381,44 @@ async function restoreMlData() {
         return `${rows.length} rows restored`;
       });
     }
+    // Restore remediation plans (keep IDs for evidence FK)
+    const remediationIdMap = new Map<number, number>();
+
+    await run("Restore remediation_plans", async () => {
+      const rows = readBackup<(typeof schema.remediationPlans.$inferInsert) & { id: number }>(
+        "remediation_plans",
+      );
+      if (rows.length === 0) return "no data to restore";
+
+      for (const { id: originalId, ...row } of rows) {
+        const [inserted] = await db
+          .insert(schema.remediationPlans)
+          .values(row)
+          .returning({ id: schema.remediationPlans.id });
+        remediationIdMap.set(originalId, inserted.id);
+      }
+      return `${rows.length} plans restored`;
+    });
+
+    await run("Restore remediation_evidence", async () => {
+      const rows = readBackup<Record<string, unknown>>("remediation_evidence");
+      if (rows.length === 0) return "no data to restore";
+
+      const mapped = rows.map((row) => ({
+        ...row,
+        remediationId: row.remediationId
+          ? (remediationIdMap.get(row.remediationId as number) ?? row.remediationId)
+          : row.remediationId,
+      }));
+
+      for (let i = 0; i < mapped.length; i += 500) {
+        await db
+          .insert(schema.remediationEvidence)
+          .values(mapped.slice(i, i + 500) as never)
+          .onConflictDoNothing();
+      }
+      return `${mapped.length} evidence items restored`;
+    });
   } finally {
     await client.end();
   }

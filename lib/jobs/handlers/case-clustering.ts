@@ -57,6 +57,7 @@ export async function caseClustering(): Promise<JobResult> {
     messageId: string;
     embedding: number[];
     text: string;
+    companyId: string;
     companyName: string;
     caseType: string;
   }> = [];
@@ -73,6 +74,7 @@ export async function caseClustering(): Promise<JobResult> {
         messageId: String(msg.MessageId),
         embedding: Array.from(vec),
         text: msg.MessageText.substring(0, 300),
+        companyId: String(msg.CompanyId),
         companyName: msg.CompanyName,
         caseType: msg.CaseTypeName,
       });
@@ -139,6 +141,7 @@ export async function caseClustering(): Promise<JobResult> {
     const caseTypes = [
       ...new Set(members.map((m) => m.caseType).filter(Boolean)),
     ];
+    const supplierIds = [...new Set(members.map((m) => m.companyId).filter(Boolean))];
 
     try {
       const labelResult = await generateText({
@@ -171,6 +174,7 @@ Respond with ONLY this JSON structure:
             representativeMessages: sampleTexts,
             aiSummary: labelResult.output.summary,
             severity: labelResult.output.severity,
+            supplierIds,
           })
           .returning({ id: caseClusters.id });
 

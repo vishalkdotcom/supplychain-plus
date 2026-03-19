@@ -4,9 +4,13 @@ import {
   supplierRiskHistory,
   caseClusters,
   intelligenceBriefing,
+  payslipAnomalies,
+  workerVoiceTrends,
+  supplierRiskForecast,
+  supplierMonitoringSignals,
 } from "@/lib/db/schema";
 import type { BriefingAttentionItem } from "@/lib/db/schema";
-import { gte, sql, and, desc } from "drizzle-orm";
+import { gte, eq, and, desc, isNull, lt, sql, count } from "drizzle-orm";
 import { logger } from "@/lib/logger";
 import type { JobResult } from "./types";
 
@@ -140,6 +144,135 @@ export async function generateBriefing(): Promise<JobResult> {
       metric: `avg -${Math.round(avgDrop)} pts`,
       supplierCount: improvingCount,
       query: `Which suppliers have improved their risk scores recently and what changed?`,
+    });
+  }
+
+  // 4. UNRESOLVED CRITICAL ANOMALIES
+  const anomalyCounts = await db
+    .select({
+      severity: payslipAnomalies.severity,
+      count: count(),
+    })
+    .from(payslipAnomalies)
+    .where(eq(payslipAnomalies.isResolved, false))
+    .groupBy(payslipAnomalies.severity);
+
+  const criticalAnomalies =
+    anomalyCounts.find((a) => a.severity === "critical")?.count ?? 0;
+  const totalUnresolved = anomalyCounts.reduce((s, a) => s + a.count, 0);
+
+  if (totalUnresolved > 0) {
+    attentionItems.push({
+      severity: criticalAnomalies > 0 ? "critical" : "watch",
+      title: `${totalUnresolved} unresolved wage anomalies${criticalAnomalies > 0 ? ` (${criticalAnomalies} critical)` : ""}`,
+      description: `Payslip anomalies including below-minimum wages, sudden pay drops, or deduction inconsistencies require investigation.`,
+      metric: `${totalUnresolved} anomalies`,
+      query: `Show me the unresolved payslip anomalies and which suppliers are affected`,
+    });
+  }
+
+  // 5. NEGATIVE VOICE SENTIMENT SHIFT
+  const globalVoice = await db
+    .select()
+    .from(workerVoiceTrends)
+    .where(isNull(workerVoiceTrends.supplierId))
+    .orderBy(desc(workerVoiceTrends.month))
+    .limit(1);
+
+  const latestVoice = globalVoice[0];
+  if (latestVoice && latestVoice.sentimentShift != null && latestVoice.sentimentShift < -5) {
+    const topNegativeTopic = (
+      latestVoice.emergingTopics as Array<{ name: string; sentiment: string }> | null
+    )?.find((t) => t.sentiment === "negative");
+
+    attentionItems.push({
+      severity: latestVoice.sentimentShift < -15 ? "critical" : "watch",
+      title: `Worker sentiment declining (${latestVoice.sentimentShift.toFixed(0)} shift)`,
+      description: `Global worker voice sentiment has shifted negatively${topNegativeTopic ? `. Top concern: "${topNegativeTopic.name}"` : ""}.`,
+      metric: `${latestVoice.sentimentShift.toFixed(0)} shift`,
+      query: `What are the emerging negative topics in worker voice feedback?`,
+    });
+  }
+
+  // 6. RISING FORECAST WARNINGS (crossing risk threshold)
+  const risingForecasts = await db
+    .select({
+      supplierId: supplierRiskForecast.supplierId,
+      predictedRiskScore: supplierRiskForecast.predictedRiskScore,
+      currentRiskScore: supplierRiskScores.riskScore,
+      supplierName: supplierRiskScores.supplierName,
+    })
+    .from(supplierRiskForecast)
+    .innerJoin(
+      supplierRiskScores,
+      eq(supplierRiskForecast.supplierId, supplierRiskScores.supplierId),
+    )
+    .where(
+      and(
+        lt(supplierRiskScores.riskScore, 70),
+        gte(supplierRiskForecast.predictedRiskScore, 70),
+        eq(supplierRiskForecast.trendDirection, "rising"),
+      ),
+    )
+    .orderBy(desc(supplierRiskForecast.predictedRiskScore))
+    .limit(10);
+
+  if (risingForecasts.length > 0) {
+    const topSupplier = risingForecasts[0];
+    attentionItems.push({
+      severity: "watch",
+      title: `${risingForecasts.length} supplier${risingForecasts.length > 1 ? "s" : ""} predicted to cross high-risk threshold`,
+      description: `Risk forecasts predict ${risingForecasts.length} currently-safe supplier${risingForecasts.length > 1 ? "s" : ""} will exceed risk score 70 within 60 days${topSupplier.supplierName ? `. Highest: ${topSupplier.supplierName} (${topSupplier.currentRiskScore} → ${topSupplier.predictedRiskScore})` : ""}.`,
+      metric: `${risingForecasts.length} suppliers`,
+      supplierCount: risingForecasts.length,
+      query: `Which suppliers are predicted to become high-risk in the next 60 days?`,
+    });
+  }
+
+  // 7. MONITORING SIGNALS (silence, engagement decay, contagion)
+  const activeSignals = await db
+    .select({
+      signalType: supplierMonitoringSignals.signalType,
+      severity: supplierMonitoringSignals.severity,
+      count: count(),
+    })
+    .from(supplierMonitoringSignals)
+    .where(sql`${supplierMonitoringSignals.resolvedAt} IS NULL`)
+    .groupBy(
+      supplierMonitoringSignals.signalType,
+      supplierMonitoringSignals.severity,
+    );
+
+  const silenceCount = activeSignals
+    .filter((s) => s.signalType === "silence")
+    .reduce((sum, s) => sum + s.count, 0);
+
+  const contagionCount = activeSignals
+    .filter((s) => s.signalType === "regional_contagion")
+    .reduce((sum, s) => sum + s.count, 0);
+
+  if (silenceCount > 0) {
+    const criticalSilence = activeSignals.find(
+      (s) => s.signalType === "silence" && s.severity === "critical",
+    );
+    attentionItems.push({
+      severity: criticalSilence ? "critical" : "watch",
+      title: `${silenceCount} supplier${silenceCount > 1 ? "s" : ""} have gone silent`,
+      description: `No case or survey activity detected for 60+ days. Silence may indicate suppressed worker voice or disengaged grievance channels.`,
+      metric: `${silenceCount} silent`,
+      supplierCount: silenceCount,
+      query: `Which suppliers have gone silent and need engagement outreach?`,
+    });
+  }
+
+  if (contagionCount > 0) {
+    attentionItems.push({
+      severity: "watch",
+      title: `Regional risk contagion detected`,
+      description: `${contagionCount} supplier${contagionCount > 1 ? "s" : ""} in the same region${contagionCount > 1 ? "s" : ""} share common risk factors, suggesting systemic regional issues.`,
+      metric: `${contagionCount} affected`,
+      supplierCount: contagionCount,
+      query: `Show me the regional contagion patterns and affected suppliers`,
     });
   }
 
