@@ -1,5 +1,6 @@
 import { generateText } from "ai";
 import { getOllamaModel } from "@/lib/ai/provider";
+import { stripThinkingTags } from "@/lib/ai/utils";
 import { db } from "@/lib/db/drizzle";
 import { surveyAnalysis, surveyTemporalPatterns, type SurveyTheme } from "@/lib/db/schema";
 import { query as pgQuery } from "@/lib/db/postgres";
@@ -76,7 +77,7 @@ export async function analyzeSurveys(params?: JobParams): Promise<JobResult> {
 
     const { text } = await generateText({
       model,
-      prompt: `Analyze these factory worker survey responses and provide a structured analysis.
+      prompt: `Analyze these factory worker survey responses and provide a structured analysis. /no_think
 Return ONLY valid JSON with exactly this shape (no markdown, no explanation):
 {
   "sentimentPositive": <number 0-100>,
@@ -91,11 +92,20 @@ Survey: "${data.name}"
 ${responseText}`,
     });
 
-    const jsonStr = text
+    const jsonStr = stripThinkingTags(text)
       .replace(/```(?:json)?\s*/g, "")
       .replace(/```/g, "")
       .trim();
-    const parsed = surveyAnalysisSchema.safeParse(JSON.parse(jsonStr));
+
+    let jsonObj: unknown;
+    try {
+      jsonObj = JSON.parse(jsonStr);
+    } catch {
+      logger.warn("jobs/analyze-surveys", `LLM returned non-JSON for survey ${surveyId}, skipping`, { text: text.slice(0, 200) });
+      continue;
+    }
+
+    const parsed = surveyAnalysisSchema.safeParse(jsonObj);
 
     if (parsed.success) {
       const output = parsed.data;
@@ -192,8 +202,8 @@ ${responseText}`,
           trendDirection,
           mentionsByMonth,
           affectedSuppliers: [...data.suppliers],
-          firstSeen: sortedMonths[0],
-          lastSeen: sortedMonths[sortedMonths.length - 1],
+          firstSeen: `${sortedMonths[0]}-01`,
+          lastSeen: `${sortedMonths[sortedMonths.length - 1]}-01`,
         })
         .onConflictDoUpdate({
           target: surveyTemporalPatterns.themeName,
@@ -201,8 +211,8 @@ ${responseText}`,
             trendDirection,
             mentionsByMonth,
             affectedSuppliers: [...data.suppliers],
-            firstSeen: sortedMonths[0],
-            lastSeen: sortedMonths[sortedMonths.length - 1],
+            firstSeen: `${sortedMonths[0]}-01`,
+            lastSeen: `${sortedMonths[sortedMonths.length - 1]}-01`,
             analyzedAt: new Date(),
           },
         });

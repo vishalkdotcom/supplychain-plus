@@ -146,10 +146,10 @@ async function detectSilence(
     const surveyResult = await pgQuery(`
       SELECT
         ci.client_key,
-        MAX(r.modified) as latest_survey_activity
+        MAX(r.created_date) as latest_survey_activity
       FROM survey_mdlsurveyquestionresponses r
       JOIN survey_mdlsurvey s ON r.survey_id = s.id
-      JOIN clients_clientinfo ci ON s.client_key_id = ci.id
+      JOIN clients_clientinfo ci ON s.client_id = ci.id
       GROUP BY ci.client_key
     `);
 

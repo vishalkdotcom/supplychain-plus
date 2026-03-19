@@ -12,7 +12,7 @@ import { JOB_REGISTRY } from "./handlers";
 
 const POLL_INTERVAL_MS = 10_000; // 10 seconds
 const SCHEDULE_CHECK_INTERVAL_MS = 60_000; // 60 seconds
-const STALE_LOCK_THRESHOLD_MS = 15 * 60 * 1000; // 15 minutes
+const STALE_LOCK_THRESHOLD_MS = 30 * 60 * 1000; // 30 minutes
 
 let pollerInterval: ReturnType<typeof setInterval> | null = null;
 let scheduleInterval: ReturnType<typeof setInterval> | null = null;
