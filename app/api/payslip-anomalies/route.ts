@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db/drizzle";
-import { payslipAnomalies } from "@/lib/db/schema";
+import { payslipAnomalies, type PayslipAnomalyDetails } from "@/lib/db/schema";
 import { desc, eq, and, count, ilike } from "drizzle-orm";
 import { logger } from "@/lib/logger";
+import { getAnomalyAction } from "@/lib/action-suggestions";
 
 export async function GET(request: Request) {
   try {
@@ -52,8 +53,18 @@ export async function GET(request: Request) {
 
     const total = totalResult[0]?.count ?? 0;
 
+    // Enrich with action suggestions
+    const enriched = results.map((anomaly: typeof results[number]) => ({
+      ...anomaly,
+      suggestedAction: getAnomalyAction({
+        anomalyType: anomaly.anomalyType,
+        severity: anomaly.severity,
+        details: anomaly.details as PayslipAnomalyDetails | null,
+      }),
+    }));
+
     return NextResponse.json({
-      data: results,
+      data: enriched,
       total,
       page,
       perPage,

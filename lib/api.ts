@@ -236,6 +236,7 @@ export async function advanceCaseStatus(caseId: string): Promise<{ newStatus: st
 
 interface ClusterParams extends PaginationParams {
   severity?: string;
+  supplierId?: string;
 }
 
 interface AnomalyParams extends PaginationParams {
@@ -263,6 +264,7 @@ export async function fetchClusters(
     page: params.page,
     perPage: params.perPage,
     severity: params.severity,
+    supplierId: params.supplierId,
   });
   const res = await fetch(`${API_BASE}/clusters${qs}`);
   if (!res.ok) throw new Error("Failed to fetch clusters");
@@ -326,5 +328,37 @@ export async function fetchVoiceTrends(
 export async function fetchMLInsights(): Promise<MLInsightsSummary> {
   const res = await fetch(`${API_BASE}/ml-insights`);
   if (!res.ok) throw new Error("Failed to fetch ML insights");
+  return res.json();
+}
+
+interface MonitoringSignalParams {
+  supplierId?: string;
+  signalType?: string;
+  activeOnly?: boolean;
+}
+
+export interface MonitoringSignal {
+  id: number;
+  supplierId: string;
+  signalType: string;
+  severity: string;
+  title: string;
+  description: string;
+  metadata: Record<string, unknown>;
+  detectedAt: string;
+  resolvedAt: string | null;
+  suggestedAction?: { action: string; urgency: string; module: string };
+}
+
+export async function fetchMonitoringSignals(
+  params: MonitoringSignalParams = {},
+): Promise<MonitoringSignal[]> {
+  const qs = buildQueryString({
+    supplierId: params.supplierId,
+    signalType: params.signalType,
+    activeOnly: params.activeOnly !== false ? "true" : "false",
+  });
+  const res = await fetch(`${API_BASE}/monitoring-signals${qs}`);
+  if (!res.ok) throw new Error("Failed to fetch monitoring signals");
   return res.json();
 }

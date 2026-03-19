@@ -1,7 +1,7 @@
 import { generateText } from "ai";
 import { getOllamaModel } from "@/lib/ai/provider";
 import { db } from "@/lib/db/drizzle";
-import { surveyAnalysis } from "@/lib/db/schema";
+import { surveyAnalysis, surveyTemporalPatterns, type SurveyTheme } from "@/lib/db/schema";
 import { query as pgQuery } from "@/lib/db/postgres";
 import { z } from "zod";
 import { logger } from "@/lib/logger";
@@ -131,9 +131,92 @@ ${responseText}`,
     }
   }
 
+  // -------------------------------------------------------
+  // Cross-survey temporal analysis: detect theme trends
+  // -------------------------------------------------------
+  let temporalPatternsCount = 0;
+  try {
+    const allAnalyses = await db
+      .select()
+      .from(surveyAnalysis);
+
+    // Aggregate themes across all surveys
+    const themeMap = new Map<
+      string,
+      { mentions: number; months: Set<string>; suppliers: Set<string> }
+    >();
+
+    for (const analysis of allAnalyses) {
+      const themes = analysis.themes as SurveyTheme[] | null;
+      if (!themes) continue;
+
+      const month = new Date(analysis.analyzedAt).toISOString().slice(0, 7);
+
+      for (const theme of themes) {
+        const existing = themeMap.get(theme.name) ?? {
+          mentions: 0,
+          months: new Set(),
+          suppliers: new Set(),
+        };
+        existing.mentions += theme.mentionCount;
+        existing.months.add(month);
+        existing.suppliers.add(analysis.surveyId);
+        themeMap.set(theme.name, existing);
+      }
+    }
+
+    for (const [themeName, data] of themeMap) {
+      if (data.mentions < 3) continue;
+
+      const sortedMonths = [...data.months].sort();
+      const mentionsByMonth: Record<string, number> = {};
+      for (const m of sortedMonths) {
+        mentionsByMonth[m] = (mentionsByMonth[m] ?? 0) + 1;
+      }
+
+      const midpoint = Math.floor(sortedMonths.length / 2);
+      const olderMonths = sortedMonths.slice(0, midpoint);
+      const recentMonths = sortedMonths.slice(midpoint);
+
+      const trendDirection =
+        recentMonths.length > olderMonths.length
+          ? "rising"
+          : recentMonths.length < olderMonths.length
+            ? "falling"
+            : "stable";
+
+      await db
+        .insert(surveyTemporalPatterns)
+        .values({
+          themeName,
+          trendDirection,
+          mentionsByMonth,
+          affectedSuppliers: [...data.suppliers],
+          firstSeen: sortedMonths[0],
+          lastSeen: sortedMonths[sortedMonths.length - 1],
+        })
+        .onConflictDoUpdate({
+          target: surveyTemporalPatterns.themeName,
+          set: {
+            trendDirection,
+            mentionsByMonth,
+            affectedSuppliers: [...data.suppliers],
+            firstSeen: sortedMonths[0],
+            lastSeen: sortedMonths[sortedMonths.length - 1],
+            analyzedAt: new Date(),
+          },
+        });
+
+      temporalPatternsCount++;
+    }
+  } catch (e) {
+    logger.error("jobs/analyze-surveys", "Temporal analysis failed", e);
+  }
+
   return {
     success: true,
     count: processedCount,
-    message: `Analyzed ${processedCount} surveys`,
+    temporalPatterns: temporalPatternsCount,
+    message: `Analyzed ${processedCount} surveys, detected ${temporalPatternsCount} theme patterns`,
   };
 }

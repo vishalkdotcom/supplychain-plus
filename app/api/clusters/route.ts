@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db/drizzle";
 import { caseClusters } from "@/lib/db/schema";
-import { desc, eq, and, count } from "drizzle-orm";
+import { desc, eq, and, count, sql } from "drizzle-orm";
 import { logger } from "@/lib/logger";
+import { getClusterActions } from "@/lib/action-suggestions";
 
 export async function GET(request: Request) {
   try {
@@ -10,10 +11,17 @@ export async function GET(request: Request) {
     const page = parseInt(searchParams.get("page") || "1");
     const perPage = parseInt(searchParams.get("perPage") || "10");
     const severity = searchParams.get("severity");
+    const supplierId = searchParams.get("supplierId");
 
     const conditions = [];
     if (severity && severity !== "all") {
       conditions.push(eq(caseClusters.severity, severity));
+    }
+    if (supplierId) {
+      // Filter clusters that contain this supplier (JSONB array contains check)
+      conditions.push(
+        sql`${caseClusters.supplierIds}::jsonb @> ${JSON.stringify([supplierId])}::jsonb`,
+      );
     }
 
     const where = conditions.length > 0 ? and(...conditions) : undefined;
@@ -34,8 +42,19 @@ export async function GET(request: Request) {
 
     const total = totalResult[0]?.count ?? 0;
 
+    // Enrich with action suggestions
+    const enriched = results.map((cluster: typeof results[number]) => ({
+      ...cluster,
+      suggestedActions: getClusterActions({
+        severity: cluster.severity,
+        caseTypes: (cluster.caseTypes as string[]) || [],
+        supplierCount: cluster.supplierCount,
+        caseCount: cluster.caseCount,
+      }),
+    }));
+
     return NextResponse.json({
-      data: results,
+      data: enriched,
       total,
       page,
       perPage,

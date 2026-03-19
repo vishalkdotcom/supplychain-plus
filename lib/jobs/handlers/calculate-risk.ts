@@ -3,12 +3,16 @@ import {
   supplierRiskScores,
   supplierRiskHistory,
   alerts,
+  remediationPlans,
+  remediationEvidence,
 } from "@/lib/db/schema";
 import type { RiskReason } from "@/lib/db/schema";
 import { query as pgQuery } from "@/lib/db/postgres";
 import { query as mssqlQuery } from "@/lib/db/sql-server";
 import { query as mysqlQuery } from "@/lib/db/mysql";
+import { eq, and, lt, desc } from "drizzle-orm";
 import { logger } from "@/lib/logger";
+import { computeMonitoringSignals } from "@/lib/jobs/monitoring-signals";
 import type { JobResult, JobParams } from "./types";
 
 interface SupplierRow {
@@ -355,9 +359,59 @@ export async function calculateRisk(params?: JobParams): Promise<JobResult> {
     processedCount++;
   }
 
+  // Compute monitoring signals after risk scores are updated
+  const monitoringResult = await computeMonitoringSignals();
+
+  // Auto-link evidence: if a supplier's risk dropped while a remediation is in "implementing" status
+  try {
+    const activeRemediations = await db
+      .select()
+      .from(remediationPlans)
+      .where(eq(remediationPlans.status, "implementing"));
+
+    for (const remediation of activeRemediations) {
+      const supplierScore = await db
+        .select()
+        .from(supplierRiskScores)
+        .where(eq(supplierRiskScores.supplierId, remediation.supplierId))
+        .limit(1);
+
+      if (supplierScore.length > 0) {
+        const currentScore = supplierScore[0].riskScore;
+        const historicalScore = await db
+          .select()
+          .from(supplierRiskHistory)
+          .where(
+            and(
+              eq(supplierRiskHistory.supplierId, remediation.supplierId),
+              lt(supplierRiskHistory.snapshotDate, remediation.createdAt.toISOString().slice(0, 10)),
+            ),
+          )
+          .orderBy(desc(supplierRiskHistory.snapshotDate))
+          .limit(1);
+
+        if (historicalScore.length > 0 && currentScore < historicalScore[0].riskScore - 5) {
+          await db
+            .insert(remediationEvidence)
+            .values({
+              remediationId: remediation.id,
+              evidenceType: "risk_score_drop",
+              title: `Risk score improved: ${historicalScore[0].riskScore} → ${currentScore}`,
+              description: `Risk score dropped by ${historicalScore[0].riskScore - currentScore} points since remediation started.`,
+              date: new Date().toISOString().slice(0, 10),
+            })
+            .onConflictDoNothing();
+        }
+      }
+    }
+  } catch (e) {
+    logger.warn("jobs/calculate-risk", "Auto-evidence linking failed (non-fatal)", e);
+  }
+
   return {
     success: true,
     count: processedCount,
     message: `Risk scores calculated for ${processedCount} suppliers`,
+    monitoring: monitoringResult,
   };
 }

@@ -20,6 +20,14 @@ const ForecastBreakdownCard = dynamic(
   () => import("@/components/suppliers/forecast-breakdown-card").then((m) => ({ default: m.ForecastBreakdownCard })),
   { ssr: false, loading: () => <div className="h-[200px] animate-pulse rounded-xl bg-muted" /> }
 );
+const MLSignalsPanel = dynamic(
+  () => import("@/components/suppliers/ml-signals-panel").then((m) => ({ default: m.MLSignalsPanel })),
+  { ssr: false, loading: () => <div className="h-[300px] animate-pulse rounded-xl bg-muted" /> }
+);
+const RemediationTracker = dynamic(
+  () => import("@/components/suppliers/remediation-tracker").then((m) => ({ default: m.RemediationTracker })),
+  { ssr: false, loading: () => <div className="h-[200px] animate-pulse rounded-xl bg-muted" /> }
+);
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -252,6 +260,12 @@ export default function SupplierDetailPage({
       
       {/* Forecast Breakdown */}
       <ForecastBreakdownCard supplierId={supplier.id} />
+
+      {/* ML Intelligence Signals */}
+      <MLSignalsPanel supplierId={supplier.id} />
+
+      {/* Remediation Tracker */}
+      <RemediationTracker supplierId={supplier.id} />
 
       {/* Engagement Health & Recommendations */}
       <div className="grid gap-6 lg:grid-cols-3">
