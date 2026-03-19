@@ -14,7 +14,7 @@ import {
   IconMapPin,
   IconAlertTriangle,
 } from "@tabler/icons-react";
-import { getRiskColor, getRiskBadgeVariant, getImpactClasses } from "@/lib/risk-utils";
+import { getRiskColor, getRiskBadgeVariant } from "@/lib/risk-utils";
 
 interface SupplierCardProps {
   supplier: Supplier;

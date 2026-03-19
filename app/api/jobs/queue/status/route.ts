@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db/drizzle";
 import { jobQueue, jobRuns } from "@/lib/db/schema";
-import { eq, inArray } from "drizzle-orm";
+import { inArray } from "drizzle-orm";
 
 export async function GET() {
   // Get all active queue items (waiting or processing)

@@ -183,10 +183,10 @@ export function MLSignalsPanel({ supplierId }: MLSignalsPanelProps) {
                       </div>
                     </div>
                   </div>
-                  {(cluster as Record<string, unknown>).suggestedActions && (
+                  {cluster.suggestedActions && (
                     <div className="mt-2 pt-2 border-t border-current/10">
                       <p className="text-xs font-medium mb-1">Suggested Actions:</p>
-                      {((cluster as Record<string, unknown>).suggestedActions as Array<{ action: string; urgency: string }>)
+                      {cluster.suggestedActions
                         .slice(0, 2)
                         .map((action, i) => (
                           <p key={i} className="text-xs text-muted-foreground flex items-center gap-1">
@@ -231,20 +231,20 @@ export function MLSignalsPanel({ supplierId }: MLSignalsPanelProps) {
                   {anomaly.details && (
                     <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
                       <span>
-                        Expected: {(anomaly.details as Record<string, unknown>).currency}{" "}
-                        {(anomaly.details as Record<string, unknown>).expected}
+                        Expected: {anomaly.details.currency}{" "}
+                        {anomaly.details.expected}
                       </span>
                       <span>
-                        Actual: {(anomaly.details as Record<string, unknown>).currency}{" "}
-                        {(anomaly.details as Record<string, unknown>).actual}
+                        Actual: {anomaly.details.currency}{" "}
+                        {anomaly.details.actual}
                       </span>
                     </div>
                   )}
-                  {(anomaly as Record<string, unknown>).suggestedAction && (
+                  {anomaly.suggestedAction && (
                     <div className="mt-2 pt-2 border-t border-current/10">
                       <p className="text-xs flex items-center gap-1">
                         <IconAlertTriangle className="h-3 w-3 text-amber-500 shrink-0" />
-                        {((anomaly as Record<string, unknown>).suggestedAction as { action: string }).action}
+                        {anomaly.suggestedAction.action}
                       </p>
                     </div>
                   )}

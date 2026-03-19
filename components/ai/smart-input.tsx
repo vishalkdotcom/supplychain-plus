@@ -28,8 +28,9 @@ interface SmartInputProps {
 }
 
 export function SmartInput({ value, onChange, onSubmit, isLoading }: SmartInputProps) {
-  const [showCommands, setShowCommands] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [dismissed, setDismissed] = useState(false);
+  const [prevValue, setPrevValue] = useState(value);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   // Filter commands based on input
@@ -40,10 +41,14 @@ export function SmartInput({ value, onChange, onSubmit, isLoading }: SmartInputP
       )
     : [];
 
-  useEffect(() => {
-    setShowCommands(isSlashTyping && filteredCommands.length > 0);
+  // Reset dismissed state and selectedIndex when value changes
+  if (prevValue !== value) {
+    setPrevValue(value);
+    setDismissed(false);
     setSelectedIndex(0);
-  }, [value, isSlashTyping, filteredCommands.length]);
+  }
+
+  const showCommands = !dismissed && isSlashTyping && filteredCommands.length > 0;
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (showCommands) {
@@ -57,7 +62,7 @@ export function SmartInput({ value, onChange, onSubmit, isLoading }: SmartInputP
         e.preventDefault();
         selectCommand(filteredCommands[selectedIndex]);
       } else if (e.key === "Escape") {
-        setShowCommands(false);
+        setDismissed(true);
       }
       return;
     }
@@ -71,7 +76,7 @@ export function SmartInput({ value, onChange, onSubmit, isLoading }: SmartInputP
   const selectCommand = (cmd: SlashCommand) => {
     onSubmit(cmd.query);
     onChange("");
-    setShowCommands(false);
+    setDismissed(true);
   };
 
   const handleSubmit = () => {

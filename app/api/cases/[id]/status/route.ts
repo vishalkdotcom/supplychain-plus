@@ -9,12 +9,6 @@ const STATUS_FLOW: Array<{ key: string; label: string; sqlStatusId: number }> = 
   { key: "resolved", label: "Resolved", sqlStatusId: 3 },
 ];
 
-// Maps SQL Server CaseStatusId back to our status key
-function mapStatusId(sqlStatusId: number): string {
-  const match = STATUS_FLOW.find((s) => s.sqlStatusId === sqlStatusId);
-  return match?.key ?? "new";
-}
-
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> },

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useQuery } from "@tanstack/react-query";
 import {

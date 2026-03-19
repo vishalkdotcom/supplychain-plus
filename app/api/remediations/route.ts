@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db/drizzle";
 import { remediationPlans } from "@/lib/db/schema";
-import { desc, eq, and, count, sql } from "drizzle-orm";
+import { desc, eq, and, count } from "drizzle-orm";
 import { logger } from "@/lib/logger";
 
 export async function GET(request: Request) {

@@ -19,7 +19,6 @@ import {
   IconProgress,
   IconEye,
   IconCircleCheckFilled,
-  IconPlus,
 } from "@tabler/icons-react";
 
 interface RemediationPlan {
@@ -209,7 +208,6 @@ function RemediationCard({
       <div className="flex items-center gap-0.5">
         {STATUS_STEPS.map((step, idx) => {
           const isComplete = idx <= currentIdx;
-          const isCurrent = idx === currentIdx;
           return (
             <div key={step.key} className="flex items-center gap-0.5 flex-1">
               <div

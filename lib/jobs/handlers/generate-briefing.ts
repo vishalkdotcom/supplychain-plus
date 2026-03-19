@@ -1,7 +1,6 @@
 import { db } from "@/lib/db/drizzle";
 import {
   supplierRiskScores,
-  supplierRiskHistory,
   caseClusters,
   intelligenceBriefing,
   payslipAnomalies,

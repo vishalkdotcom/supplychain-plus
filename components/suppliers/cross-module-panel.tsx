@@ -19,7 +19,7 @@ import {
   IconRobot,
   IconSparkles,
 } from "@tabler/icons-react";
-import { getSeverityVariant, getScoreColor } from "@/lib/risk-utils";
+import { getSeverityVariant } from "@/lib/risk-utils";
 
 interface CrossModulePanelProps {
   cases: Case[];

@@ -47,15 +47,6 @@ export async function GET(request: NextRequest) {
     }
 
     // 3. Also count suppliers via the relation mapping tables (authoritative supplier count)
-    const supplierCountResult = await query(
-      `SELECT cr.id as relation_id, COUNT(m.clientinfo_id)::int as supplier_count
-       FROM clients_clientrelation cr
-       LEFT JOIN clients_clientinfotorelationmapping m ON m.clientrelation_id = cr.id
-       WHERE cr.relation_type = 0
-       GROUP BY cr.id`,
-      [],
-    );
-
     // Map relation_id -> supplier_count. We need to join this back to brands.
     // clients_clientrelation.id is the relation_id, and relation_id (column) points to clientinfo.id
     // We need a way to map relation table id -> client_key

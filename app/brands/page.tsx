@@ -18,7 +18,7 @@ import {
   IconSearch,
 } from "@tabler/icons-react";
 import { useState } from "react";
-import { getScoreBadgeClasses, getRiskLevel, getRiskBadgeVariant } from "@/lib/risk-utils";
+import { getRiskLevel, getRiskBadgeVariant } from "@/lib/risk-utils";
 
 export default function BrandsPage() {
   const [search, setSearch] = useState("");

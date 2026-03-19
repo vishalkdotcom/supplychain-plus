@@ -248,8 +248,8 @@ function UrgentCasesTabContent() {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Also fetch high-severity cases as fallback
-  const { data: casesRes } = useQuery({
+  // Also fetch high-severity cases as fallback, pre-computing ageDays at fetch time
+  const { data: fallbackCases } = useQuery({
     queryKey: ["urgent-cases", viewMode, currentBrandId, currentSupplierId],
     queryFn: () =>
       fetchCases({
@@ -258,6 +258,20 @@ function UrgentCasesTabContent() {
         ...(viewMode === "brand" && currentBrandId ? { parentCompanyId: currentBrandId } : {}),
         ...(viewMode === "supplier" && currentSupplierId ? { supplierId: currentSupplierId } : {}),
       }),
+    select: (res) => {
+      const now = Date.now();
+      return (res?.data || []).map((c) => ({
+        id: c.id,
+        supplierId: c.supplierId,
+        supplierName: c.supplierName,
+        topic: c.topic,
+        severity: c.severity,
+        status: c.status,
+        aiSummary: c.aiSummary,
+        createdAt: c.createdAt,
+        ageDays: Math.floor((now - new Date(c.createdAt).getTime()) / (1000 * 60 * 60 * 24)),
+      }));
+    },
   });
 
   if (isLoading) {
@@ -272,17 +286,7 @@ function UrgentCasesTabContent() {
   // Prefer briefing urgent cases, fall back to fetched high-severity cases
   const urgentCases = briefing?.urgentCases && briefing.urgentCases.length > 0
     ? briefing.urgentCases
-    : (casesRes?.data || []).map((c) => ({
-        id: c.id,
-        supplierId: c.supplierId,
-        supplierName: c.supplierName,
-        topic: c.topic,
-        severity: c.severity,
-        status: c.status,
-        aiSummary: c.aiSummary,
-        createdAt: c.createdAt,
-        ageDays: Math.floor((Date.now() - new Date(c.createdAt).getTime()) / (1000 * 60 * 60 * 24)),
-      }));
+    : (fallbackCases || []);
 
   if (urgentCases.length === 0) {
     return (

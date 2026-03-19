@@ -1,7 +1,7 @@
 import { db } from "@/lib/db/drizzle";
 import { client } from "@/lib/db/drizzle";
 import { jobRuns, jobQueue, jobSchedules } from "@/lib/db/schema";
-import { eq, and, lte, sql } from "drizzle-orm";
+import { eq, and, lte } from "drizzle-orm";
 import { logger } from "@/lib/logger";
 import {
   type JobType,
@@ -162,7 +162,7 @@ async function pollQueue(): Promise<void> {
     // Fire the job in background — don't block the poller
     handler().then(async (result) => {
       const durationMs = Date.now() - startTime;
-      const { success, ...resultSummary } = result;
+      const { success: _, ...resultSummary } = result;
       await db.update(jobRuns)
         .set({ status: "completed", completedAt: new Date(), durationMs, resultSummary })
         .where(eq(jobRuns.id, item.job_run_id));

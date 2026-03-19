@@ -22,7 +22,6 @@ import {
   JOB_LABELS,
   JOB_DESCRIPTIONS,
   OLLAMA_JOBS,
-  type JobType,
 } from "@/lib/jobs/constants";
 import { formatDistanceToNow } from "date-fns";
 

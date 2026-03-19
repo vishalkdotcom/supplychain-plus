@@ -19,11 +19,9 @@ function setLastVisit() {
 }
 
 export function AIBriefingBar() {
-  const [since, setSince] = useState<string | undefined>(undefined);
+  const [since] = useState<string | undefined>(() => getLastVisit());
 
   useEffect(() => {
-    const lastVisit = getLastVisit();
-    setSince(lastVisit);
     // Update the timestamp after reading it so next visit sees changes
     const timeout = setTimeout(() => setLastVisit(), 2000);
     return () => clearTimeout(timeout);

@@ -20,7 +20,7 @@ interface CrossModuleContextProps {
   supplierId: string;
 }
 
-export function CrossModuleContext({ caseId, supplierId }: CrossModuleContextProps) {
+export function CrossModuleContext({ caseId, supplierId: _supplierId }: CrossModuleContextProps) {
   const { data: context, isLoading } = useQuery({
     queryKey: ["case-context", caseId],
     queryFn: () => fetchCaseContext(caseId),

@@ -330,6 +330,7 @@ export interface CaseCluster {
   aiSummary: string;
   severity: "critical" | "warning" | "info";
   detectedAt: string;
+  suggestedActions?: { action: string; urgency: "immediate" | "soon" | "routine" }[];
 }
 
 export interface PayslipAnomalyDetails {
@@ -350,6 +351,7 @@ export interface PayslipAnomaly {
   aiInterpretation: string;
   isResolved: boolean;
   detectedAt: string;
+  suggestedAction?: { action: string; urgency: "immediate" | "soon" | "routine" };
 }
 
 export interface SupplierForecast {

@@ -58,7 +58,7 @@ export function withJobTracking(
         const responseClone = response.clone();
         const responseBody = await responseClone.json();
         // Remove generic fields, keep job-specific data
-        const { success, error, ...rest } = responseBody;
+        const { success: _success, error: _error, ...rest } = responseBody;
         resultSummary = rest;
       } catch {
         // Response wasn't JSON — that's ok

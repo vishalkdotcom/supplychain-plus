@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db/drizzle";
 import { supplierMonitoringSignals } from "@/lib/db/schema";
-import { desc, eq, and, sql, count } from "drizzle-orm";
+import { desc, eq, and, sql } from "drizzle-orm";
 import { logger } from "@/lib/logger";
 import { getMonitoringSignalAction } from "@/lib/action-suggestions";
 
