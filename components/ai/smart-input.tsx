@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, type KeyboardEvent } from "react";
+import { useState, useRef, useEffect, useImperativeHandle, forwardRef, type KeyboardEvent, type Ref } from "react";
 import { IconArrowUp } from "@tabler/icons-react";
 
 export interface SlashCommand {
@@ -20,6 +20,73 @@ const SLASH_COMMANDS: SlashCommand[] = [
   { command: "/recalculate", label: "Recalculate", description: "Trigger risk recalculation", query: "Recalculate all supplier risk scores" },
 ];
 
+// Handle exposed by CommandMenu so the parent can forward keyboard events
+interface CommandMenuHandle {
+  handleKeyDown: (e: KeyboardEvent<HTMLTextAreaElement>) => boolean;
+}
+
+interface CommandMenuProps {
+  commands: SlashCommand[];
+  onSelect: (cmd: SlashCommand) => void;
+}
+
+// CommandMenu owns selectedIndex and dismissed — both reset automatically
+// when the parent changes the `key` prop (driven by input value).
+const CommandMenu = forwardRef(function CommandMenu(
+  { commands, onSelect }: CommandMenuProps,
+  ref: Ref<CommandMenuHandle>,
+) {
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [dismissed, setDismissed] = useState(false);
+
+  useImperativeHandle(ref, () => ({
+    handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
+      if (dismissed) return false;
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setSelectedIndex((i) => Math.min(i + 1, commands.length - 1));
+        return true;
+      }
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setSelectedIndex((i) => Math.max(i - 1, 0));
+        return true;
+      }
+      if (e.key === "Enter" || e.key === "Tab") {
+        e.preventDefault();
+        onSelect(commands[selectedIndex]);
+        return true;
+      }
+      if (e.key === "Escape") {
+        setDismissed(true);
+        return true;
+      }
+      return false;
+    },
+  }));
+
+  if (dismissed || commands.length === 0) return null;
+
+  return (
+    <div className="absolute bottom-full left-0 right-0 mb-2 bg-popover border border-border rounded-xl shadow-xl overflow-hidden z-50">
+      {commands.map((cmd, i) => (
+        <button
+          key={cmd.command}
+          onClick={() => onSelect(cmd)}
+          className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors cursor-pointer ${
+            i === selectedIndex ? "bg-accent" : "hover:bg-accent/50"
+          }`}
+        >
+          <span className="text-xs font-mono text-indigo-400 w-24">
+            {cmd.command}
+          </span>
+          <span className="text-xs text-foreground">{cmd.description}</span>
+        </button>
+      ))}
+    </div>
+  );
+});
+
 interface SmartInputProps {
   value: string;
   onChange: (value: string) => void;
@@ -28,10 +95,8 @@ interface SmartInputProps {
 }
 
 export function SmartInput({ value, onChange, onSubmit, isLoading }: SmartInputProps) {
-  const [selectedIndex, setSelectedIndex] = useState(0);
-  const [dismissed, setDismissed] = useState(false);
-  const [prevValue, setPrevValue] = useState(value);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const menuRef = useRef<CommandMenuHandle>(null);
 
   // Filter commands based on input
   const isSlashTyping = value.startsWith("/");
@@ -41,42 +106,11 @@ export function SmartInput({ value, onChange, onSubmit, isLoading }: SmartInputP
       )
     : [];
 
-  // Reset dismissed state and selectedIndex when value changes
-  if (prevValue !== value) {
-    setPrevValue(value);
-    setDismissed(false);
-    setSelectedIndex(0);
-  }
-
-  const showCommands = !dismissed && isSlashTyping && filteredCommands.length > 0;
-
-  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (showCommands) {
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        setSelectedIndex((i) => Math.min(i + 1, filteredCommands.length - 1));
-      } else if (e.key === "ArrowUp") {
-        e.preventDefault();
-        setSelectedIndex((i) => Math.max(i - 1, 0));
-      } else if (e.key === "Enter" || e.key === "Tab") {
-        e.preventDefault();
-        selectCommand(filteredCommands[selectedIndex]);
-      } else if (e.key === "Escape") {
-        setDismissed(true);
-      }
-      return;
-    }
-
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSubmit();
-    }
-  };
+  const showMenu = isSlashTyping && filteredCommands.length > 0;
 
   const selectCommand = (cmd: SlashCommand) => {
     onSubmit(cmd.query);
     onChange("");
-    setDismissed(true);
   };
 
   const handleSubmit = () => {
@@ -84,6 +118,16 @@ export function SmartInput({ value, onChange, onSubmit, isLoading }: SmartInputP
     if (!trimmed || isLoading) return;
     onSubmit(trimmed);
     onChange("");
+  };
+
+  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    // Let the menu handle navigation/selection keys first
+    if (menuRef.current?.handleKeyDown(e)) return;
+
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit();
+    }
   };
 
   // Auto-resize textarea
@@ -97,24 +141,14 @@ export function SmartInput({ value, onChange, onSubmit, isLoading }: SmartInputP
 
   return (
     <div className="relative">
-      {/* Slash command menu */}
-      {showCommands && (
-        <div className="absolute bottom-full left-0 right-0 mb-2 bg-popover border border-border rounded-xl shadow-xl overflow-hidden z-50">
-          {filteredCommands.map((cmd, i) => (
-            <button
-              key={cmd.command}
-              onClick={() => selectCommand(cmd)}
-              className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors cursor-pointer ${
-                i === selectedIndex ? "bg-accent" : "hover:bg-accent/50"
-              }`}
-            >
-              <span className="text-xs font-mono text-indigo-400 w-24">
-                {cmd.command}
-              </span>
-              <span className="text-xs text-foreground">{cmd.description}</span>
-            </button>
-          ))}
-        </div>
+      {/* key={value} resets selectedIndex and dismissed on every keystroke */}
+      {showMenu && (
+        <CommandMenu
+          key={value}
+          ref={menuRef}
+          commands={filteredCommands}
+          onSelect={selectCommand}
+        />
       )}
 
       {/* Input bar */}
