@@ -420,14 +420,17 @@ export class RateLimiter {
    * Peek at how long acquire() would wait, without deducting tokens.
    * Note: calls refill() which advances bucket clocks (not a pure read),
    * but this is benign — refill would happen on the next acquire() anyway.
+   * Includes active retry-after timers from 429 responses.
    */
   async estimateWaitMs(estimatedTokens: number): Promise<number> {
     await this.ensureDbInit();
+    const retryWait = Math.max(this.retryAfterUntil - Date.now(), 0);
     this.tpm.refill();
     this.rpm.refill();
     this.tpd.refill();
     this.rpd.refill();
     return Math.max(
+      retryWait,
       this.tpm.waitMs(estimatedTokens),
       this.rpm.waitMs(1),
       this.tpd.waitMs(estimatedTokens),

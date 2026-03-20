@@ -394,7 +394,12 @@ export const generateTextWithFallback: typeof aiGenerateText = async (
     } catch (err) {
       lastError = err;
       const retryAfter = extractRetryAfter(err);
-      if (retryAfter) limiter.reportRetryAfter(retryAfter);
+      // Always set a cooldown on 429 — use provider's retry-after or default 30s
+      if (retryAfter) {
+        limiter.reportRetryAfter(retryAfter);
+      } else if (isRetryableError(err)) {
+        limiter.reportRetryAfter(30);
+      }
 
       if (isRetryableError(err)) {
         const status = (err as { statusCode?: number }).statusCode ?? "network";
