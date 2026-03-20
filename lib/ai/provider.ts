@@ -171,22 +171,35 @@ export function getModelFromRequest(
 // Valid: "groq" | "cerebras" | "nim" | "ollama"
 // JOB_AI_FALLBACK specifies a fallback provider for rate-limit / error recovery.
 
+import {
+  getRateLimiter,
+  estimateParamTokens,
+  extractRetryAfter,
+} from "@/lib/ai/rate-limiter";
+
 const jobProvider = process.env.JOB_AI_PROVIDER ?? "groq";
 const jobFallback = process.env.JOB_AI_FALLBACK ?? "";
 
-function buildJobModel(provider: string): LanguageModelV3 {
+interface JobModelResult {
+  model: LanguageModelV3;
+  modelId: string;
+}
+
+function buildJobModel(provider: string): JobModelResult {
   switch (provider) {
     case "groq": {
       const groq = createGroq({
         apiKey: process.env.GROQ_API_KEY ?? "",
       });
-      return groq("llama-3.3-70b-versatile");
+      const modelId = "llama-3.3-70b-versatile";
+      return { model: groq(modelId), modelId };
     }
     case "cerebras": {
       const cerebras = createCerebras({
         apiKey: process.env.CEREBRAS_API_KEY ?? "",
       });
-      return cerebras("llama-3.3-70b");
+      const modelId = "llama-3.3-70b";
+      return { model: cerebras(modelId), modelId };
     }
     case "nim": {
       const nim = createOpenAICompatible({
@@ -194,12 +207,13 @@ function buildJobModel(provider: string): LanguageModelV3 {
         baseURL: "https://integrate.api.nvidia.com/v1",
         apiKey: process.env.NIM_API_KEY,
       });
-      return nim.chatModel("deepseek-ai/deepseek-v3.1");
+      const modelId = "deepseek-ai/deepseek-v3.1";
+      return { model: nim.chatModel(modelId), modelId };
     }
     case "ollama":
     default: {
-      const modelName = process.env.OLLAMA_JOB_MODEL ?? "qwen3:4b";
-      return ollamaProvider(modelName, { think: false });
+      const modelId = process.env.OLLAMA_JOB_MODEL ?? "qwen3:4b";
+      return { model: ollamaProvider(modelId, { think: false }), modelId };
     }
   }
 }
@@ -209,7 +223,7 @@ function buildJobModel(provider: string): LanguageModelV3 {
  * Reads JOB_AI_PROVIDER to pick the backend (default: groq).
  */
 export function getJobModel(): LanguageModelV3 {
-  return buildJobModel(jobProvider);
+  return buildJobModel(jobProvider).model;
 }
 
 /** HTTP status codes that trigger fallback to the secondary provider. */
@@ -227,22 +241,53 @@ function isRetryableError(err: unknown): boolean {
   return false;
 }
 
+// Pre-resolve primary/fallback model info for rate limiter lookups
+const primaryJob = buildJobModel(jobProvider);
+const fallbackJob = jobFallback && jobFallback !== jobProvider
+  ? buildJobModel(jobFallback)
+  : null;
+
 /**
- * Drop-in replacement for `generateText` with automatic fallback to
- * JOB_AI_FALLBACK on rate-limit (429) or server errors (5xx).
+ * Drop-in replacement for `generateText` with rate limiting and
+ * automatic fallback to JOB_AI_FALLBACK on rate-limit (429) or server errors (5xx).
  */
 export const generateTextWithFallback: typeof aiGenerateText = async (
   params,
 ) => {
+  const estimatedTokens = estimateParamTokens(params as Record<string, unknown>);
+  const limiter = getRateLimiter(jobProvider, primaryJob.modelId);
+
+  await limiter.acquire(estimatedTokens);
+
   try {
-    return await aiGenerateText(params);
+    const result = await aiGenerateText(params);
+    // Correct the bucket with actual usage from the response
+    const actual = (result.usage?.totalTokens ?? 0) || estimatedTokens;
+    limiter.reportActualUsage(actual, estimatedTokens);
+    return result;
   } catch (err) {
-    if (jobFallback && jobFallback !== jobProvider && isRetryableError(err)) {
-      const fallbackModel = buildJobModel(jobFallback);
+    // Report retry-after so other concurrent jobs also wait
+    const retryAfter = extractRetryAfter(err);
+    if (retryAfter) limiter.reportRetryAfter(retryAfter);
+
+    if (fallbackJob && isRetryableError(err)) {
+      const fbLimiter = getRateLimiter(jobFallback, fallbackJob.modelId);
+      await fbLimiter.acquire(estimatedTokens);
+
       console.warn(
         `[ai/provider] ${jobProvider} failed (${(err as { statusCode?: number }).statusCode ?? "network"}), falling back to ${jobFallback}`,
       );
-      return await aiGenerateText({ ...params, model: fallbackModel });
+
+      try {
+        const result = await aiGenerateText({ ...params, model: fallbackJob.model });
+        const actual = (result.usage?.totalTokens ?? 0) || estimatedTokens;
+        fbLimiter.reportActualUsage(actual, estimatedTokens);
+        return result;
+      } catch (fbErr) {
+        const fbRetryAfter = extractRetryAfter(fbErr);
+        if (fbRetryAfter) fbLimiter.reportRetryAfter(fbRetryAfter);
+        throw fbErr;
+      }
     }
     throw err;
   }
