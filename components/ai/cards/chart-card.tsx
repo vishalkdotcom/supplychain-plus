@@ -76,7 +76,7 @@ export function ChartCard({ title, data, onSave, onExpand }: ChartCardProps) {
               color: "var(--foreground)",
             }}
           />
-          <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+          <Bar dataKey="value" radius={[4, 4, 0, 0]} isAnimationActive={false}>
             {data.map((entry, index) => (
               <Cell key={index} fill={entry.color || defaultColor} />
             ))}

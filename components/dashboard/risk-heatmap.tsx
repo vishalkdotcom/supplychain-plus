@@ -55,7 +55,7 @@ export function RiskHeatmap({ data }: { data: readonly HeatmapItem[] }) {
               cursor={{ fill: "transparent" }}
               contentStyle={{ borderRadius: "8px" }}
             />
-            <Bar dataKey="score" radius={[4, 4, 0, 0]}>
+            <Bar dataKey="score" radius={[4, 4, 0, 0]} isAnimationActive={false}>
               {[...data].map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={getScoreHex(entry.score)} />
               ))}

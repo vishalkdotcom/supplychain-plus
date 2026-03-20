@@ -246,8 +246,12 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
     }
   };
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(draftResponseText);
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(draftResponseText);
+    } catch {
+      // Fallback for non-HTTPS or unfocused contexts
+    }
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

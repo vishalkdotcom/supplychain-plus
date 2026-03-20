@@ -90,7 +90,7 @@ export function ThemesBarChart({ themes }: ThemesBarChartProps) {
                 tick={{ fontSize: 12, fill: "#6b7280" }}
               />
               <Tooltip content={<CustomTooltip />} />
-              <Bar dataKey="mentions" radius={[0, 4, 4, 0]}>
+              <Bar dataKey="mentions" radius={[0, 4, 4, 0]} isAnimationActive={false}>
                 {sorted.map((entry, index) => (
                   <Cell
                     key={`cell-${index}`}

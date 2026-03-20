@@ -112,7 +112,7 @@ export function RiskDistributionChart({
               domain={[0, Math.ceil(maxCount * 1.1)]}
             />
             <Tooltip content={<CustomTooltip />} cursor={{ fill: "transparent" }} />
-            <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+            <Bar dataKey="count" radius={[4, 4, 0, 0]} isAnimationActive={false}>
               {data.map((entry) => (
                 <Cell key={entry.label} fill={getScoreHex(entry.midpoint)} />
               ))}
