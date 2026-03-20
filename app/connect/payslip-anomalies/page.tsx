@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { useQueryStates, parseAsInteger, parseAsString } from "nuqs";
-import { fetchPayslipAnomalies, toggleAnomalyResolved } from "@/lib/api";
+import { fetchPayslipAnomalies, toggleAnomalyResolved, fetchAnomalyTrends } from "@/lib/api";
 import { PayslipAnomaly } from "@/types";
 import {
   Card,
@@ -55,6 +56,19 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { SearchInput } from "@/components/search-input";
 import { getSeverityVariant } from "@/lib/risk-utils";
 import { IconAlertTriangle, IconArrowRight } from "@tabler/icons-react";
+
+const AnomalyTrendChart = dynamic(
+  () =>
+    import("@/components/connect/anomaly-trend-chart").then((m) => ({
+      default: m.AnomalyTrendChart,
+    })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[320px] w-full rounded-lg bg-muted animate-pulse" />
+    ),
+  },
+);
 
 function formatAge(dateStr: string): string {
   const days = Math.floor(
@@ -137,6 +151,11 @@ export default function PayslipAnomaliesPage() {
             : params.isResolved,
       }),
     placeholderData: keepPreviousData,
+  });
+
+  const { data: trendData } = useQuery({
+    queryKey: ["anomaly-trends"],
+    queryFn: fetchAnomalyTrends,
   });
 
   const toggleMutation = useMutation({
@@ -234,6 +253,9 @@ export default function PayslipAnomaliesPage() {
           </Card>
         </div>
       )}
+
+      {/* Trend Chart */}
+      <AnomalyTrendChart data={trendData || []} />
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-4 flex-wrap">

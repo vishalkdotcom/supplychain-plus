@@ -148,7 +148,7 @@ These are independent of each other and good for parallel worktree sessions.
 | Issue | Title | Status |
 |-------|-------|--------|
 | #59 | Cluster detail can't drill down to individual cases | **RESOLVED Session 10** — new `/connect/clusters/[id]` detail page + API |
-| #50 | No cluster/anomaly trend visualization | Medium — add time-series charts |
+| #50 | No cluster/anomaly trend visualization | **RESOLVED Session 11** — stacked AreaCharts on clusters + anomalies pages |
 | #25 | Duplicate cluster labels ("Wage Theft" x7) | **RESOLVED Session 7** — added region-based dedup in case-clustering.ts |
 
 ### Session 7: Fix #38, #40, #25, #39 + Verify #52 — Wave 3 quick wins ✅ DONE 2026-03-20
@@ -190,6 +190,15 @@ These are independent of each other and good for parallel worktree sessions.
 | **Fix Applied** | (1) New `GET /api/clusters/[id]` route: fetches cluster from PostgreSQL, queries `caseEmbeddings` for member message IDs, batch-fetches case details from SQL Server via parameterized IN clause, builds supplier list from results. (2) New detail page with breadcrumbs, severity header, full AI summary, suggested actions with urgency badges, affected suppliers (linked to `/suppliers/[id]`), cases table (linked to `/connect/[caseId]`), representative messages, case type badges. (3) Added `ClusterCase` and `ClusterDetail` types. (4) Added `fetchCluster()` to API client. (5) Cluster list cards now link to detail page with clickable title + "View Details →" button. |
 | **Bonus Fix** | Fixed `survey_mdlsurveyquestion` → `survey_mdlsurveyquestions` table name typo + `question_text` → `title` column name in `app/api/cases/[id]/context/route.ts`. This eliminated the "relation does not exist" warning on case detail pages. |
 | **Results** | Detail page shows 11 cases for cluster 212 ("Child Labor Exploitation"), 7 linked suppliers, 4 suggested actions. API responds in 27-81ms. Zero console errors, build clean. |
+
+### Session 11: Fix #50 — Cluster/anomaly trend visualization ✅ DONE 2026-03-20
+
+| Field | Detail |
+|-------|--------|
+| **Files** | `app/api/clusters/trends/route.ts` (new), `app/api/payslip-anomalies/trends/route.ts` (new), `components/connect/cluster-trend-chart.tsx` (new), `components/connect/anomaly-trend-chart.tsx` (new), `types/index.ts`, `lib/api.ts`, `app/connect/clusters/page.tsx`, `app/connect/payslip-anomalies/page.tsx` |
+| **Root Cause** | Connect module showed clusters and anomalies as lists/tables with no time-series visualization. Users couldn't see how issues evolved over time. |
+| **Fix Applied** | (1) Two new trend API endpoints using `date_trunc('month', detected_at) GROUP BY` with server-side pivot from flat rows to denormalized objects. (2) Cluster trend chart: stacked AreaChart by severity (critical red, warning amber, info blue). (3) Anomaly trend chart: stacked AreaChart by type (below_minimum red, sudden_drop amber, inconsistency blue). (4) Both charts follow existing Recharts conventions: dynamic import with `ssr: false`, gradient fills, consistent tooltip/axis styling. (5) Charts placed between stat cards and main content on both pages. |
+| **Results** | Cluster trends: 106 clusters (105 critical, 1 warning) in Mar 2026. Anomaly trends: 71 anomalies (24 below minimum, 32 sudden drop, 15 inconsistency). Both charts render correctly, zero console errors, build clean. |
 
 ### Batch D: Engage Module ✅ DONE 2026-03-20
 
@@ -278,7 +287,7 @@ These are roadmap items, not current bugs:
 | 8 | Wave 3: #35 (risk distribution chart) | **DONE 2026-03-20** — 10-bucket histogram (0–10 through 91–100), color-coded green/orange/red by risk level, custom tooltip, placed above collapsible visualizations |
 | 9 | Wave 3: #28 (lastActivityDate) | **DONE 2026-03-20** — queries GREATEST() across supplier_risk_history, worker_voice_trends, supplier_monitoring_signals, alerts. Batch LATERAL join for list endpoint. Fallback to today only if no pipeline data. |
 | 10 | Wave 3: #59 (cluster drill-down) | **DONE 2026-03-20** — new `/connect/clusters/[id]` detail page with breadcrumbs, AI summary, suggested actions, affected suppliers (linked), cases table (linked to case detail + supplier detail), representative messages. API bridges PostgreSQL caseEmbeddings → SQL Server case details. Also fixed `survey_mdlsurveyquestion` table name bug in case context API. |
-| 11 | Wave 3: #50 (trend visualization) | Recharts LineChart for anomaly/cluster trends over time |
+| 11 | Wave 3: #50 (trend visualization) | **DONE 2026-03-20** — Stacked AreaCharts for clusters (by severity) and anomalies (by type). New `/api/clusters/trends` and `/api/payslip-anomalies/trends` endpoints with monthly `date_trunc` aggregation. Charts placed between stat cards and content lists on both Connect pages. |
 | 12+ | Wave 4 features (pick 2-3) | Core product story is demonstrable |
 
 ### Ground Rules

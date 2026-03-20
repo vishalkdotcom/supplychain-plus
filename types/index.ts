@@ -371,6 +371,22 @@ export interface PayslipAnomaly {
   suggestedAction?: { action: string; urgency: "immediate" | "soon" | "routine" };
 }
 
+export interface ClusterTrendPoint {
+  month: string;
+  total: number;
+  critical: number;
+  warning: number;
+  info: number;
+}
+
+export interface AnomalyTrendPoint {
+  month: string;
+  total: number;
+  belowMinimum: number;
+  suddenDrop: number;
+  inconsistency: number;
+}
+
 export interface SupplierForecast {
   id: number;
   supplierId: string;

@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useState } from "react";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { useQueryStates, parseAsInteger, parseAsString } from "nuqs";
-import { fetchClusters } from "@/lib/api";
+import { fetchClusters, fetchClusterTrends } from "@/lib/api";
 import { CaseCluster } from "@/types";
 import {
   Card,
@@ -50,6 +51,19 @@ import {
   IconClock,
 } from "@tabler/icons-react";
 import { getSeverityVariant } from "@/lib/risk-utils";
+
+const ClusterTrendChart = dynamic(
+  () =>
+    import("@/components/connect/cluster-trend-chart").then((m) => ({
+      default: m.ClusterTrendChart,
+    })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[320px] w-full rounded-lg bg-muted animate-pulse" />
+    ),
+  },
+);
 
 function formatAge(dateStr: string): string {
   const days = Math.floor(
@@ -184,6 +198,11 @@ export default function ClustersPage() {
     placeholderData: keepPreviousData,
   });
 
+  const { data: trendData } = useQuery({
+    queryKey: ["cluster-trends"],
+    queryFn: fetchClusterTrends,
+  });
+
   const clusters = data?.data || [];
   const totalPages = data?.totalPages || 0;
   const total = data?.total || 0;
@@ -276,6 +295,9 @@ export default function ClustersPage() {
           </Card>
         </div>
       )}
+
+      {/* Trend Chart */}
+      <ClusterTrendChart data={trendData || []} />
 
       {/* Cluster List */}
       {isLoading ? (

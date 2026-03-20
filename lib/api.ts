@@ -16,6 +16,8 @@ import {
   CaseCluster,
   ClusterDetail,
   PayslipAnomaly,
+  ClusterTrendPoint,
+  AnomalyTrendPoint,
   SupplierForecast,
   VoiceTrend,
   MLInsightsSummary,
@@ -305,6 +307,18 @@ export async function toggleAnomalyResolved(
     body: JSON.stringify({ id, isResolved }),
   });
   if (!res.ok) throw new Error("Failed to update anomaly");
+}
+
+export async function fetchClusterTrends(): Promise<ClusterTrendPoint[]> {
+  const res = await fetch(`${API_BASE}/clusters/trends`);
+  if (!res.ok) throw new Error("Failed to fetch cluster trends");
+  return res.json();
+}
+
+export async function fetchAnomalyTrends(): Promise<AnomalyTrendPoint[]> {
+  const res = await fetch(`${API_BASE}/payslip-anomalies/trends`);
+  if (!res.ok) throw new Error("Failed to fetch anomaly trends");
+  return res.json();
 }
 
 export async function fetchForecasts(
