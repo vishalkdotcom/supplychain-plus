@@ -132,7 +132,7 @@ These are independent of each other and good for parallel worktree sessions.
 | Issue | Title | Status |
 |-------|-------|--------|
 | #38 | Dashboard cluster card shows confusing "106 Child Labor Exploitation" | **RESOLVED Session 7** — separated count from label, stripped leading numbers |
-| #35 | Add risk distribution chart to dashboard | Medium — new Recharts BarChart histogram |
+| #35 | Add risk distribution chart to dashboard | **RESOLVED Session 8** — 10-bucket histogram with risk-level coloring |
 | #52 | Brands page identical scores (if still open after Wave 1) | **VERIFIED Session 7** — 6 distinct values (44-49), acceptable for MVP |
 
 ### Batch B: Supplier Detail Story
@@ -162,6 +162,15 @@ These are independent of each other and good for parallel worktree sessions.
 | **#39 Fix** | Changed dashboard `fetchSuppliers` to `perPage: 50` (was default 12). Added "+N more" overflow nodes in network graph when a region group exceeds 6 displayed suppliers. |
 | **#52 Verified** | Brands page shows 6 distinct avgRiskScore values (44-49 range). No code change needed. |
 | **Results** | Dashboard cluster card clear and unambiguous. Supplier detail shows real trend ("Degrading"/"Improving"/"Stable") from history. Network graph shows full parent-child hierarchy with overflow indicators. Build passes, zero console errors. |
+
+### Session 8: Fix #35 — Risk distribution chart on dashboard ✅ DONE 2026-03-20
+
+| Field | Detail |
+|-------|--------|
+| **Files** | `components/dashboard/risk-distribution-chart.tsx` (new), `components/dashboard/dashboard-view.tsx` |
+| **Root Cause** | No at-a-glance visualization of how risk scores are distributed across the supplier portfolio. |
+| **Fix Applied** | (1) New `RiskDistributionChart` component: Recharts BarChart histogram with 10 equal-width buckets (0–10 through 91–100). (2) Each bar colored by bucket midpoint via `getScoreHex()` — green (≤30), orange (31–70), red (>70). (3) Custom tooltip showing bucket range + supplier count with pluralization. (4) Client-side bucketing with `useMemo` from existing `suppliers` array — no new API needed. (5) Placed as always-visible card between "Needs Attention" row and collapsible Visualizations section. (6) Dynamic import with SSR disabled matching existing dashboard patterns. |
+| **Results** | Chart renders with 50 scored suppliers across 2 active buckets (41–50: 15 suppliers, 51–60: 35 suppliers). Scores range 49–59 (all medium risk, consistent with #52 narrow-range observation). Tooltip, axis labels, and bar colors all verified. Zero console errors, build clean. |
 
 ### Batch D: Engage Module ✅ DONE 2026-03-20
 
@@ -247,7 +256,7 @@ These are roadmap items, not current bugs:
 | 5 | Re-run full pipeline, audit results, close resolved issues | ~~Updated screenshots, issues triaged~~ **DONE 2026-03-20** — 4 RESOLVED (#26, #61, #20, #19), 2 RESOLVED-with-caveats (#52, #51), 2 STILL OPEN (#37, #18), 1 IMPROVED (#23) |
 | 6 | Fix #18 (multi-month voice) + #37 (all bars red) + supplier dropdown | **DONE 2026-03-20** — 25 months, 182 suppliers, 52% neg / 26% pos / 22% neutral, "Invalid Date" fixed, supplier dropdown added |
 | 7 | Wave 3 quick wins: #38 (cluster card) + #40 (mock risk) + #25 (dedup labels) + #39 (network graph) + #52 (verify) | **DONE 2026-03-20** — 5 small fixes bundled, all verified visually, build clean |
-| 8 | Wave 3: #35 (risk distribution chart) | Recharts BarChart histogram on dashboard — bucket suppliers by risk score range, color by risk level |
+| 8 | Wave 3: #35 (risk distribution chart) | **DONE 2026-03-20** — 10-bucket histogram (0–10 through 91–100), color-coded green/orange/red by risk level, custom tooltip, placed above collapsible visualizations |
 | 9 | Wave 3: #28 (lastActivityDate) | Replace hardcoded `new Date()` with cross-DB MAX(activity dates) |
 | 10 | Wave 3: #59 (cluster drill-down) | New `/connect/clusters/[id]` page + API to show individual cases |
 | 11 | Wave 3: #50 (trend visualization) | Recharts LineChart for anomaly/cluster trends over time |

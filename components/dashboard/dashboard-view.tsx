@@ -57,6 +57,18 @@ const SupplyChainNetwork = dynamic(
     ),
   },
 );
+const RiskDistributionChart = dynamic(
+  () =>
+    import("@/components/dashboard/risk-distribution-chart").then((m) => ({
+      default: m.RiskDistributionChart,
+    })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[280px] w-full rounded-lg bg-muted animate-pulse" />
+    ),
+  },
+);
 
 export function DashboardView() {
   const { viewMode, currentBrandId } = useView();
@@ -163,6 +175,9 @@ export function DashboardView() {
           <AICopilotFeed />
         </div>
       </div>
+
+      {/* Row 2.5: Risk Distribution Histogram */}
+      <RiskDistributionChart suppliers={suppliers} />
 
       {/* Row 3: Collapsible Visualizations */}
       <Collapsible open={vizOpen} onOpenChange={setVizOpen}>
