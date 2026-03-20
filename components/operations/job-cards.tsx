@@ -21,7 +21,7 @@ import {
   JOB_TYPES,
   JOB_LABELS,
   JOB_DESCRIPTIONS,
-  OLLAMA_JOBS,
+  EMBEDDING_JOBS,
 } from "@/lib/jobs/constants";
 import { formatDistanceToNow } from "date-fns";
 
@@ -211,9 +211,9 @@ export function JobCards({
               )}
 
               <div className="flex gap-2">
-                {OLLAMA_JOBS.has(jobType) && (
+                {EMBEDDING_JOBS.has(jobType) && (
                   <Badge variant="outline" className="text-[10px] px-1.5">
-                    Ollama
+                    Ollama Embeddings
                   </Badge>
                 )}
                 <div className="flex-1" />

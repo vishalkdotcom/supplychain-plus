@@ -1,13 +1,23 @@
 import { openai, createOpenAI } from "@ai-sdk/openai";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { createPerplexity } from "@ai-sdk/perplexity";
-import { wrapLanguageModel, extractReasoningMiddleware } from "ai";
+import {
+  wrapLanguageModel,
+  extractReasoningMiddleware,
+  generateText as aiGenerateText,
+} from "ai";
+import type { LanguageModelV3 } from "@ai-sdk/provider";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createAnthropic } from "@ai-sdk/anthropic";
-import { ollama as ollamaProvider } from "ai-sdk-ollama";
+import { createOllama } from "ai-sdk-ollama";
 import { createGroq } from "@ai-sdk/groq";
 import { createCerebras } from "@ai-sdk/cerebras";
+
+// Strip trailing /api from OLLAMA_BASE_URL since the SDK appends it internally
+const ollamaBaseURL = (process.env.OLLAMA_BASE_URL ?? "http://127.0.0.1:11434/api")
+  .replace(/\/api\/?$/, "");
+const ollamaProvider = createOllama({ baseURL: ollamaBaseURL });
 
 // Middleware to extract <think>...</think> reasoning from NIM models
 // into a separate `reasoning` field, keeping `text` clean.
@@ -157,18 +167,15 @@ export function getModelFromRequest(
 }
 
 // ─── Batch job model resolver ────────────────────────────────
-// Controlled by JOB_AI_PROVIDER env var. Defaults to "ollama".
-// Valid: "ollama" | "groq" | "cerebras" | "nim"
+// Controlled by JOB_AI_PROVIDER env var. Defaults to "groq".
+// Valid: "groq" | "cerebras" | "nim" | "ollama"
+// JOB_AI_FALLBACK specifies a fallback provider for rate-limit / error recovery.
 
-const jobProvider = process.env.JOB_AI_PROVIDER ?? "ollama";
+const jobProvider = process.env.JOB_AI_PROVIDER ?? "groq";
+const jobFallback = process.env.JOB_AI_FALLBACK ?? "";
 
-/**
- * Resolve a language model for pipeline batch jobs.
- * Reads JOB_AI_PROVIDER to pick the cloud/local backend.
- * Embeddings always use Ollama (no free cloud embedding API at volume).
- */
-export function getJobModel() {
-  switch (jobProvider) {
+function buildJobModel(provider: string): LanguageModelV3 {
+  switch (provider) {
     case "groq": {
       const groq = createGroq({
         apiKey: process.env.GROQ_API_KEY ?? "",
@@ -197,12 +204,51 @@ export function getJobModel() {
   }
 }
 
-/** @deprecated Use getJobModel() for pipeline jobs. Kept for backwards compat. */
-export function getOllamaModel(modelName: string) {
-  return ollamaProvider(modelName, { think: false });
+/**
+ * Resolve the primary language model for pipeline batch jobs.
+ * Reads JOB_AI_PROVIDER to pick the backend (default: groq).
+ */
+export function getJobModel(): LanguageModelV3 {
+  return buildJobModel(jobProvider);
 }
 
-/** Get an Ollama embedding model (e.g. bge-m3). Always uses Ollama. */
+/** HTTP status codes that trigger fallback to the secondary provider. */
+const FALLBACK_STATUS_CODES = new Set([429, 500, 502, 503]);
+
+function isRetryableError(err: unknown): boolean {
+  if (typeof err === "object" && err !== null) {
+    const status =
+      (err as { statusCode?: number }).statusCode ??
+      (err as { status?: number }).status;
+    if (status && FALLBACK_STATUS_CODES.has(status)) return true;
+    const code = (err as { code?: string }).code;
+    if (code === "ECONNREFUSED" || code === "ETIMEDOUT") return true;
+  }
+  return false;
+}
+
+/**
+ * Drop-in replacement for `generateText` with automatic fallback to
+ * JOB_AI_FALLBACK on rate-limit (429) or server errors (5xx).
+ */
+export const generateTextWithFallback: typeof aiGenerateText = async (
+  params,
+) => {
+  try {
+    return await aiGenerateText(params);
+  } catch (err) {
+    if (jobFallback && jobFallback !== jobProvider && isRetryableError(err)) {
+      const fallbackModel = buildJobModel(jobFallback);
+      console.warn(
+        `[ai/provider] ${jobProvider} failed (${(err as { statusCode?: number }).statusCode ?? "network"}), falling back to ${jobFallback}`,
+      );
+      return await aiGenerateText({ ...params, model: fallbackModel });
+    }
+    throw err;
+  }
+};
+
+/** Get an Ollama embedding model (e.g. bge-m3). Always uses local Ollama. */
 export function getOllamaEmbedding(modelName: string = "bge-m3") {
   return ollamaProvider.embedding(modelName);
 }

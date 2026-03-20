@@ -5,7 +5,7 @@ import { eq, and, lte } from "drizzle-orm";
 import { logger } from "@/lib/logger";
 import {
   type JobType,
-  OLLAMA_JOBS,
+  EMBEDDING_JOBS,
   RUN_ALL_ORDER,
 } from "./constants";
 import { JOB_REGISTRY } from "./handlers";
@@ -38,7 +38,7 @@ export async function enqueueJob(
     jobRunId: run.id,
     jobType,
     priority,
-    requiresOllama: OLLAMA_JOBS.has(jobType),
+    requiresOllama: EMBEDDING_JOBS.has(jobType),
     status: "waiting",
   });
 

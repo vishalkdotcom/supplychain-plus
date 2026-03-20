@@ -1,5 +1,5 @@
-import { generateText, Output } from "ai";
-import { getJobModel } from "@/lib/ai/provider";
+import { Output } from "ai";
+import { getJobModel, generateTextWithFallback } from "@/lib/ai/provider";
 import { query as mssqlQuery } from "@/lib/db/sql-server";
 import { db } from "@/lib/db/drizzle";
 import { payslipAnomalies, alerts } from "@/lib/db/schema";
@@ -179,7 +179,7 @@ export async function payslipAnomaly(): Promise<JobResult> {
             ? "Net pay dropped more than 20% from previous period"
             : "Net pay is suspiciously close to gross pay (no deductions)";
 
-      const aiResult = await generateText({
+      const aiResult = await generateTextWithFallback({
         model,
         maxRetries: 3,
         system:

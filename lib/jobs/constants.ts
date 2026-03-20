@@ -9,13 +9,9 @@ export const JOB_TYPES = [
 
 export type JobType = (typeof JOB_TYPES)[number];
 
-/** Jobs that require Ollama and must be serialized to avoid VRAM thrashing */
-export const OLLAMA_JOBS: Set<JobType> = new Set([
-  "analyze-surveys",
+/** Jobs that use local Ollama embeddings and must be serialized to avoid VRAM thrashing */
+export const EMBEDDING_JOBS: Set<JobType> = new Set([
   "case-clustering",
-  "payslip-anomaly",
-  "risk-forecast",
-  "worker-voice-analytics",
 ]);
 
 /** Execution order for "Run All" — calculate-risk first since others depend on scores */

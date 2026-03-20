@@ -1,5 +1,4 @@
-import { generateText } from "ai";
-import { getJobModel } from "@/lib/ai/provider";
+import { getJobModel, generateTextWithFallback } from "@/lib/ai/provider";
 import { db } from "@/lib/db/drizzle";
 import {
   supplierRiskScores,
@@ -163,7 +162,7 @@ export async function riskForecast(): Promise<JobResult> {
     let aiReasoning = `Risk score predicted to ${trendDirection === "rising" ? "increase" : trendDirection === "falling" ? "decrease" : "remain stable"} from ${supplier.riskScore} to ${riskPred.predicted} over 60 days (confidence: ${Math.round(confidence * 100)}%).`;
 
     try {
-      const result = await generateText({
+      const result = await generateTextWithFallback({
         model,
         maxRetries: 2,
         system:

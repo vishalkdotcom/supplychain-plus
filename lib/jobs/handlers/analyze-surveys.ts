@@ -1,5 +1,4 @@
-import { generateText } from "ai";
-import { getJobModel } from "@/lib/ai/provider";
+import { getJobModel, generateTextWithFallback } from "@/lib/ai/provider";
 import { stripThinkingTags } from "@/lib/ai/utils";
 import { db } from "@/lib/db/drizzle";
 import { surveyAnalysis, surveyTemporalPatterns, type SurveyTheme } from "@/lib/db/schema";
@@ -77,7 +76,7 @@ export async function analyzeSurveys(params?: JobParams): Promise<JobResult> {
 
     const responseText = data.responses.slice(0, 50).join("\n---\n");
 
-    const { text } = await generateText({
+    const { text } = await generateTextWithFallback({
       model,
       prompt: `Analyze these factory worker survey responses and provide a structured analysis. /no_think
 Return ONLY valid JSON with exactly this shape (no markdown, no explanation):

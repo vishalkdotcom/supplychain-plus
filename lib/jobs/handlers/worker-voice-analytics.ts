@@ -1,5 +1,5 @@
-import { generateText, Output } from "ai";
-import { getJobModel } from "@/lib/ai/provider";
+import { Output } from "ai";
+import { getJobModel, generateTextWithFallback } from "@/lib/ai/provider";
 import { query as pgQuery } from "@/lib/db/postgres";
 import { db } from "@/lib/db/drizzle";
 import { workerVoiceTrends } from "@/lib/db/schema";
@@ -73,7 +73,7 @@ export async function workerVoiceAnalytics(): Promise<JobResult> {
     for (let i = 0; i < texts.length; i += batchSize) {
       const batch = texts.slice(i, i + batchSize);
       try {
-        const result = await generateText({
+        const result = await generateTextWithFallback({
           model,
           maxRetries: 3,
           system:
@@ -146,7 +146,7 @@ export async function workerVoiceAnalytics(): Promise<JobResult> {
   const globalBatch = allTexts.slice(0, 50);
 
   try {
-    const globalResult = await generateText({
+    const globalResult = await generateTextWithFallback({
       model,
       maxRetries: 3,
       system:

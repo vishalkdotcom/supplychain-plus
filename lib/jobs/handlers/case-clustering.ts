@@ -1,5 +1,5 @@
-import { generateText, embed, Output } from "ai";
-import { getJobModel, getOllamaEmbedding } from "@/lib/ai/provider";
+import { embed, Output } from "ai";
+import { getJobModel, getOllamaEmbedding, generateTextWithFallback } from "@/lib/ai/provider";
 import { query as mssqlQuery } from "@/lib/db/sql-server";
 import { db } from "@/lib/db/drizzle";
 import { caseEmbeddings, caseClusters } from "@/lib/db/schema";
@@ -144,7 +144,7 @@ export async function caseClustering(): Promise<JobResult> {
     const supplierIds = [...new Set(members.map((m) => m.companyId).filter(Boolean))];
 
     try {
-      const labelResult = await generateText({
+      const labelResult = await generateTextWithFallback({
         model: labelModel,
         maxRetries: 3,
         system:
