@@ -62,33 +62,52 @@ After all 4 fixes are applied:
 
 ---
 
-## Wave 2 — Verify & Mop Up (~1 session)
+## Wave 2 — Verify & Mop Up ✅ AUDITED 2026-03-20
 
-After re-running the pipeline with Wave 1 fixes, audit what actually changed. Many tier-2 issues will have shifted or auto-resolved.
+Pipeline re-run complete. Full DB + UI audit performed. Results below.
 
-### Expected Auto-Resolutions
+### Auto-Resolution Verdicts
 
-| Issue | Why It May Resolve |
-|-------|-------------------|
-| #52 — All brands show "MEDIUM 32" | Brand scores aggregate supplier scores; with real variance from #14/#16 fix, brands differentiate |
-| #26 — Voice sentiment all strongly negative | With 285 surveys analyzed (#15 fix), LLM gets more diverse input; may still need prompt calibration |
-| #37 — All voice trend bars red | Likely resolves with #15 fix providing diverse sentiment data |
-| #61 — Empty temporal patterns | Needs >2 surveys analyzed; #15 fix provides 285 |
-| #20 — Monitoring signals empty | With real geo data (#14 fix), regional contagion can detect patterns; silence detection gets correct IDs |
-| #51 — "No surveys conducted" for all | The `surveyStatsMap` uses `supplier.id` — verify this is correct for same-DB (PostgreSQL) lookup |
+| Issue | Verdict | Evidence |
+|-------|---------|----------|
+| #52 — All brands show "MEDIUM 32" | **IMPROVED** | 20 brands now show differentiated scores (avg_risk 44–49, 6 distinct values). No longer all "32", but range is narrow — all still "MEDIUM". Acceptable for MVP; wider spread requires more supplier variance. |
+| #26 — Voice sentiment all strongly negative | **RESOLVED** | 285 surveys analyzed. avg_pos=43.69, avg_neg=41.69, avg_neut=14.62. 196/285 surveys have sentiment_positive > 30. Sentiment donuts on Engage page show green/red/gray mix. |
+| #37 — All voice trend bars red | **STILL OPEN** | Despite diverse survey sentiment, the `worker-voice-analytics` LLM topic extraction produces 1420 negative vs 7 positive vs 14 neutral themes. All bars on Voice Trends page are red. Root cause: LLM prompt in `worker-voice-analytics.ts` extracts workplace complaint topics which are inherently negative. Needs prompt calibration or sentiment override from survey-level data. |
+| #61 — Empty temporal patterns | **RESOLVED** | 708 temporal patterns across 708 distinct themes populated in `survey_temporal_patterns` table. |
+| #20 — Monitoring signals empty | **RESOLVED** | 91 active signals (64 critical, 27 warning). Currently only "silence" type detected. Silence signals work correctly — e.g., "Dak Lak Textile Industries Co., Ltd. has gone silent. No case activity in 65 days." Regional contagion signals may need more diverse geo data to trigger. |
+| #51 — "No surveys conducted" for all | **RESOLVED (seed data)** | In seed data `client_id == client_key` for all rows, so the `surveyStatsMap` lookup works correctly. Survey scores are differentiated (20–60 range, 5 distinct values). **Latent code bug**: the query groups by `client_id` but lookup uses `client_key` — would break with real production data where these differ. Low priority fix. |
 
-### Issues That Need Re-Triage
+### Re-Triage Verdicts
 
-| Issue | What to Check |
-|-------|--------------|
-| #23 — Forecast unreliable | With real variance, forecasts improve naturally. But 3 data points is still too few — consider raising minimum to 14. |
-| #18 — Voice trends 1 month | May need explicit fix to group responses by `created_date` month instead of processing as single batch |
-| #19 — Training still global? | Depends on whether Moodle has per-company enrollment data |
+| Issue | Verdict | Evidence |
+|-------|---------|----------|
+| #23 — Forecast unreliable | **IMPROVED** | 440 forecasts across 220 suppliers, 36 distinct predicted scores. Each supplier has 33 history points (sufficient for linear regression). Confidence is low (avg 0.37) but forecasts exist and are varied. Trend chart shows 30-day history + 60-day forecast correctly. |
+| #18 — Voice trends 1 month | **STILL OPEN** | Only 1 month (2026-03-01). Root cause: `worker-voice-analytics.ts` line 25 hardcodes `currentMonth`. All survey responses go into a single month bucket regardless of actual `created_date`. Fix: group responses by actual month before LLM analysis. |
+| #19 — Training still global? | **RESOLVED** | 7 distinct training scores (70, 93–98) across 220 suppliers. Per-supplier Moodle query confirmed working. Brands (20 suppliers) get default score 70; factories get 93–98 based on actual course completion rates. |
 
-### Action
-- Close issues that are verified fixed
-- Re-triage remaining issues with updated severity
-- Update this document with findings
+### Additional Observations
+
+| Finding | Details |
+|---------|---------|
+| Voice Trends "Invalid Date" | Global view on `/engage/voice-trends` shows "Invalid Date" on x-axis labels — date formatting bug in `sentiment-trend-chart.tsx` |
+| Voice Global Sentiment = 0.0 | Global (null supplierId) row has sentimentShift = 0.0 — either not computed or averaging cancels out |
+| #28 — lastActivityDate | Confirmed still hardcoded to today (`new Date()`) in `/api/suppliers/[id]/route.ts` line 67 |
+| #20 — Only silence signals | No regional contagion signals detected yet — may need broader geo distribution or more case variety |
+
+### Issues to Close
+
+- [x] #52 — IMPROVED (no longer identical, narrow range acceptable for seed data)
+- [x] #26 — RESOLVED
+- [x] #61 — RESOLVED
+- [x] #20 — RESOLVED
+- [x] #51 — RESOLVED (seed data works; latent code bug noted)
+- [x] #19 — RESOLVED
+
+### Issues Remaining for Wave 3+
+
+- **#37** — All voice bars red → needs LLM prompt fix in `worker-voice-analytics.ts`
+- **#18** — Voice only 1 month → needs month-grouping logic in `worker-voice-analytics.ts`
+- **#23** — Forecast low confidence → acceptable for MVP, improves with more pipeline runs
 
 ---
 
@@ -201,7 +220,7 @@ These are roadmap items, not current bugs:
 | 2 | Fix #16 (remove force-seeding) + #19 (per-supplier training) | ~~Score variance restored, training differentiated~~ **DONE 2026-03-20** — 23 distinct risk scores, 7 distinct training scores, no hardcoded overrides |
 | 3 | Fix #15 (survey analysis limit) | ~~~285 surveys analyzed, temporal patterns populated~~ **DONE 2026-03-20** — per-survey query, LIMIT 500 removed |
 | 4 | Fix #17 (payslip currency) + #48 (brand→factory ID) | ~~Anomalies reference correct suppliers with correct currencies~~ **DONE 2026-03-20** — 71 anomalies, 0 brand refs, local currency validated |
-| 5 | Re-run full pipeline, audit results, close resolved issues | Updated screenshots, issues triaged |
+| 5 | Re-run full pipeline, audit results, close resolved issues | ~~Updated screenshots, issues triaged~~ **DONE 2026-03-20** — 4 RESOLVED (#26, #61, #20, #19), 2 RESOLVED-with-caveats (#52, #51), 2 STILL OPEN (#37, #18), 1 IMPROVED (#23) |
 | 6+ | Wave 3 UI fixes (parallelizable via worktrees) | Demo pages look credible |
 | 8+ | Wave 4 features (pick 2-3) | Core product story is demonstrable |
 
