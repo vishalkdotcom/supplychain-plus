@@ -13,6 +13,7 @@ import {
   IconPlayerPlay,
   IconSchool,
   IconSettings,
+  IconShieldCheck,
   IconSparkles,
 } from "@tabler/icons-react";
 import {
@@ -194,6 +195,26 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   </SidebarMenuItem>
                 ),
               )}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        <SidebarSeparator />
+        <SidebarGroup>
+          <SidebarGroupLabel>Govern</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname.startsWith("/remediation")}
+                  tooltip="Remediation"
+                >
+                  <Link href="/remediation">
+                    <IconShieldCheck />
+                    <span>Remediation</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

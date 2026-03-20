@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Card,
@@ -14,47 +15,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   IconArrowRight,
   IconCircleCheck,
-  IconSearch,
-  IconClipboardList,
-  IconProgress,
-  IconEye,
-  IconCircleCheckFilled,
+  IconExternalLink,
 } from "@tabler/icons-react";
-
-interface RemediationPlan {
-  id: number;
-  supplierId: string;
-  title: string;
-  status: string;
-  sourceType: string;
-  sourceId: number | null;
-  rootCause: string | null;
-  actionPlan: string | null;
-  assignedTo: string | null;
-  targetDate: string | null;
-  closedAt: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-const STATUS_STEPS = [
-  { key: "detected", label: "Detected", icon: IconSearch },
-  { key: "root_cause", label: "Root Cause", icon: IconSearch },
-  { key: "action_plan", label: "Action Plan", icon: IconClipboardList },
-  { key: "implementing", label: "Implementing", icon: IconProgress },
-  { key: "verifying", label: "Verifying", icon: IconEye },
-  { key: "closed", label: "Closed", icon: IconCircleCheckFilled },
-];
-
-function getStatusIndex(status: string): number {
-  return STATUS_STEPS.findIndex((s) => s.key === status);
-}
-
-function getNextStatus(current: string): string | null {
-  const idx = getStatusIndex(current);
-  if (idx < 0 || idx >= STATUS_STEPS.length - 1) return null;
-  return STATUS_STEPS[idx + 1].key;
-}
+import type { RemediationPlan } from "@/types";
+import {
+  StatusPipeline,
+  getNextStatus,
+  STATUS_STEPS,
+} from "@/components/remediation/status-pipeline";
 
 interface RemediationTrackerProps {
   supplierId: string;
@@ -125,6 +93,12 @@ export function RemediationTracker({ supplierId }: RemediationTrackerProps) {
               {active.length} active, {closed.length} closed
             </CardDescription>
           </div>
+          <Button variant="ghost" size="sm" asChild>
+            <Link href={`/remediation?supplierId=${supplierId}`}>
+              View All
+              <IconExternalLink className="h-3.5 w-3.5 ml-1" />
+            </Link>
+          </Button>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -171,14 +145,18 @@ function RemediationCard({
   onAdvance: (nextStatus: string) => void;
   isAdvancing: boolean;
 }) {
-  const currentIdx = getStatusIndex(remediation.status);
   const nextStatus = getNextStatus(remediation.status);
 
   return (
     <div className="rounded-lg border p-4 space-y-3">
       <div className="flex items-start justify-between gap-2">
         <div>
-          <p className="text-sm font-medium">{remediation.title}</p>
+          <Link
+            href={`/remediation/${remediation.id}`}
+            className="text-sm font-medium hover:underline"
+          >
+            {remediation.title}
+          </Link>
           <div className="flex items-center gap-2 mt-1">
             <Badge variant="outline" className="text-xs">
               {remediation.sourceType}
@@ -204,28 +182,7 @@ function RemediationCard({
         )}
       </div>
 
-      {/* Status Pipeline */}
-      <div className="flex items-center gap-0.5">
-        {STATUS_STEPS.map((step, idx) => {
-          const isComplete = idx <= currentIdx;
-          return (
-            <div key={step.key} className="flex items-center gap-0.5 flex-1">
-              <div
-                className={`h-1.5 flex-1 rounded-full transition-colors ${
-                  isComplete
-                    ? "bg-green-500"
-                    : "bg-muted"
-                }`}
-              />
-            </div>
-          );
-        })}
-      </div>
-      <div className="flex justify-between text-[10px] text-muted-foreground">
-        <span>Detected</span>
-        <span>{STATUS_STEPS[currentIdx]?.label}</span>
-        <span>Closed</span>
-      </div>
+      <StatusPipeline status={remediation.status} size="sm" />
 
       {/* Details */}
       {remediation.rootCause && (

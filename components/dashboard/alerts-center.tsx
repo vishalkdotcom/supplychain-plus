@@ -32,7 +32,7 @@ export function AlertsList() {
   });
 
   const markReadMutation = useMutation({
-    mutationFn: (alertId: string) => markAlertRead(alertId),
+    mutationFn: (alertId: number) => markAlertRead(alertId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["alerts"] });
     },
@@ -68,9 +68,9 @@ export function AlertsList() {
           className="p-4 hover:bg-muted/30 transition-colors flex gap-3 group"
         >
           <div className="mt-0.5 shrink-0">
-            {alert.severity === "high" ? (
+            {alert.severity === "critical" ? (
               <IconAlertCircle className="w-5 h-5 text-red-500" />
-            ) : alert.severity === "medium" ? (
+            ) : alert.severity === "warning" ? (
               <IconAlertCircle className="w-5 h-5 text-orange-500" />
             ) : (
               <IconInfoCircle className="w-5 h-5 text-blue-500" />

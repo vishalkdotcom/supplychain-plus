@@ -244,13 +244,60 @@ export interface RiskHistoryEntry {
 }
 
 export interface Alert {
-  id: string;
+  id: number;
   supplierId: string;
+  supplierName: string | null;
+  alertType: string;
   title: string;
   message: string;
-  severity: "high" | "medium" | "low";
+  severity: "critical" | "warning" | "info";
   isRead: boolean;
+  metadata: Record<string, unknown>;
+  resolvedAt: string | null;
   createdAt: string;
+}
+
+// ===============================
+// Remediation Workflow
+// ===============================
+
+export type RemediationStatus =
+  | "detected"
+  | "root_cause"
+  | "action_plan"
+  | "implementing"
+  | "verifying"
+  | "closed";
+
+export interface RemediationPlan {
+  id: number;
+  supplierId: string;
+  title: string;
+  status: RemediationStatus;
+  sourceType: string;
+  sourceId: number | null;
+  rootCause: string | null;
+  actionPlan: string | null;
+  assignedTo: string | null;
+  targetDate: string | null;
+  closedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RemediationEvidence {
+  id: number;
+  remediationId: number;
+  evidenceType: string;
+  referenceId: string | null;
+  title: string;
+  description: string | null;
+  date: string;
+  createdAt: string;
+}
+
+export interface RemediationPlanDetail extends RemediationPlan {
+  evidence: RemediationEvidence[];
 }
 
 // ===============================

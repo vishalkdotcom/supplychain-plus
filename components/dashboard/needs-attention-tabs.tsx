@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { useQueryState, parseAsString } from "nuqs";
@@ -19,11 +20,13 @@ import {
   IconAlertCircle,
   IconInfoCircle,
   IconCheck,
+  IconClipboardList,
 } from "@tabler/icons-react";
 import { Button } from "@/components/ui/button";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { markAlertRead } from "@/lib/api";
 import { useView } from "@/components/view-context";
+import { CreatePlanDialog } from "@/components/remediation/create-plan-dialog";
 
 export function NeedsAttentionTabs() {
   const [activeTab, setActiveTab] = useQueryState(
@@ -157,6 +160,9 @@ export function NeedsAttentionTabs() {
 
 function AlertsTabContent() {
   const queryClient = useQueryClient();
+  const [selectedAlert, setSelectedAlert] = React.useState<Alert | null>(null);
+  const [dialogOpen, setDialogOpen] = React.useState(false);
+
   const { data: alerts, isLoading } = useQuery<Alert[]>({
     queryKey: ["alerts"],
     queryFn: () => fetchAlerts(true, 10),
@@ -164,7 +170,7 @@ function AlertsTabContent() {
   });
 
   const markReadMutation = useMutation({
-    mutationFn: (alertId: string) => markAlertRead(alertId),
+    mutationFn: (alertId: number) => markAlertRead(alertId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["alerts"] });
     },
@@ -191,52 +197,71 @@ function AlertsTabContent() {
   }
 
   return (
-    <div className="space-y-2">
-      {activeAlerts.map((alert) => (
-        <div
-          key={alert.id}
-          className="p-3 rounded-lg border hover:bg-muted/30 transition-colors flex gap-3 group"
-        >
-          <div className="mt-0.5 shrink-0">
-            {alert.severity === "high" ? (
-              <IconAlertCircle className="w-4 h-4 text-red-500" />
-            ) : alert.severity === "medium" ? (
-              <IconAlertCircle className="w-4 h-4 text-orange-500" />
-            ) : (
-              <IconInfoCircle className="w-4 h-4 text-blue-500" />
-            )}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-2">
-              <Link
-                href={`/suppliers/${alert.supplierId}`}
-                className="font-medium text-sm hover:underline truncate"
-              >
-                {alert.title}
-              </Link>
-              <span className="text-[10px] text-muted-foreground whitespace-nowrap">
-                {new Date(alert.createdAt).toLocaleDateString()}
-              </span>
+    <>
+      <div className="space-y-2">
+        {activeAlerts.map((alert) => (
+          <div
+            key={alert.id}
+            className="p-3 rounded-lg border hover:bg-muted/30 transition-colors flex gap-3 group"
+          >
+            <div className="mt-0.5 shrink-0">
+              {alert.severity === "critical" ? (
+                <IconAlertCircle className="w-4 h-4 text-red-500" />
+              ) : alert.severity === "warning" ? (
+                <IconAlertCircle className="w-4 h-4 text-orange-500" />
+              ) : (
+                <IconInfoCircle className="w-4 h-4 text-blue-500" />
+              )}
             </div>
-            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-              {alert.message}
-            </p>
-            <div className="mt-2 flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 text-xs px-2"
-                onClick={() => markReadMutation.mutate(alert.id)}
-                disabled={markReadMutation.isPending}
-              >
-                <IconCheck className="w-3 h-3 mr-1" />
-                Acknowledge
-              </Button>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start justify-between gap-2">
+                <Link
+                  href={`/suppliers/${alert.supplierId}`}
+                  className="font-medium text-sm hover:underline truncate"
+                >
+                  {alert.title}
+                </Link>
+                <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                  {new Date(alert.createdAt).toLocaleDateString()}
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                {alert.message}
+              </p>
+              <div className="mt-2 flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 text-xs px-2"
+                  onClick={() => {
+                    setSelectedAlert(alert);
+                    setDialogOpen(true);
+                  }}
+                >
+                  <IconClipboardList className="w-3 h-3 mr-1" />
+                  Create Plan
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 text-xs px-2"
+                  onClick={() => markReadMutation.mutate(alert.id)}
+                  disabled={markReadMutation.isPending}
+                >
+                  <IconCheck className="w-3 h-3 mr-1" />
+                  Acknowledge
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
-      ))}
-    </div>
+        ))}
+      </div>
+      <CreatePlanDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        alert={selectedAlert ?? undefined}
+      />
+    </>
   );
 }
 

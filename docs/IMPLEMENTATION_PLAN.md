@@ -215,14 +215,28 @@ Only after the data foundation is solid. Ordered by demo impact.
 
 | Issue | Title | Demo Value | Effort |
 |-------|-------|-----------|--------|
-| #33 | Remediation workflow UI (alert → plan → evidence) | **Highest** — closes the detect→act→evidence loop, WOVO's core differentiator for regulators | Large |
+| #33 | Remediation workflow UI (alert → plan → evidence) | **Highest** — closes the detect→act→evidence loop, WOVO's core differentiator for regulators | Large | **DONE Session 12** |
 | #34 | Intelligence briefing page — full executive summary | **High** — best "wow factor" for exec demos | Medium |
 | #36 | Wire AI chat to ML output tables | **High** — makes AI assistant actually useful | Medium |
 | #56 | Data freshness indicators | **Medium** — small effort, big credibility boost | Small |
 | #57 | Job/pipeline status page | **Medium** — useful during development and demos | Medium |
 
+### Session 12: #33 — Remediation Workflow UI ✅ DONE 2026-03-20
+
+| Field | Detail |
+|-------|--------|
+| **New Files** | `app/remediation/page.tsx`, `app/remediation/[id]/page.tsx`, `components/remediation/status-pipeline.tsx`, `components/remediation/create-plan-dialog.tsx`, `components/remediation/add-evidence-dialog.tsx`, `components/remediation/evidence-timeline.tsx`, `components/remediation/plan-card.tsx` |
+| **Modified Files** | `types/index.ts`, `lib/api.ts`, `app/api/alerts/route.ts`, `components/app-sidebar.tsx`, `components/suppliers/remediation-tracker.tsx`, `components/dashboard/needs-attention-tabs.tsx`, `components/dashboard/alerts-center.tsx` |
+| **Types Added** | `RemediationStatus` (6-step union), `RemediationPlan`, `RemediationPlanDetail`, `RemediationEvidence`. Expanded `Alert` type: `id` string→number, `severity` high/medium/low→critical/warning/info, added `supplierName`, `alertType`, `metadata`, `resolvedAt`. |
+| **API Functions** | `fetchRemediations`, `fetchRemediation`, `createRemediation`, `updateRemediation`, `addRemediationEvidence`, `resolveAlert`. API handler enhanced with `severity`/`hasRemediation` filters and server-side `resolvedAt` via `resolve: true` flag. |
+| **List Page** | Stat cards (Open Alerts, Active Plans, Avg Days to Close, Closed Plans). Three tabs: Alerts (with "Create Plan" buttons, filters out already-linked alerts), Active Plans (PlanCard grid), Closed. |
+| **Detail Page** | Breadcrumb, header with metadata, interactive 6-step StatusPipeline (detected→root_cause→action_plan→implementing→verifying→closed). Two-column layout: Root Cause + Action Plan (editable) + Source link on left; Evidence Timeline + Details metadata on right. |
+| **Shared Components** | `StatusPipeline` (sm/md sizes, extracted from `remediation-tracker.tsx`), `CreatePlanDialog` (keyed inner form for state reset), `EvidenceTimeline` (vertical CSS timeline with typed icons), `PlanCard` (clickable card with mini pipeline). |
+| **Integration** | Sidebar "Govern" section with Remediation link. Dashboard alerts get "Create Plan" action. Supplier detail `RemediationTracker` refactored to use shared `StatusPipeline` + types, added "View All" link and clickable plan titles. |
+| **Results** | Full detect→act→evidence loop: create plan from alert → advance through 6 stages → add evidence → close. Build clean, zero lint errors, zero console errors. |
+
 ### Recommendation
-- **Must-have for MVP**: #33 (remediation workflow) — this is the product's core story
+- ~~**Must-have for MVP**: #33 (remediation workflow) — this is the product's core story~~ **DONE**
 - **High-impact, low-effort**: #56 (freshness indicators) — adds credibility fast
 - **Demo wow-factor**: #34 (intelligence briefing) — best slide for exec presentations
 
@@ -288,7 +302,8 @@ These are roadmap items, not current bugs:
 | 9 | Wave 3: #28 (lastActivityDate) | **DONE 2026-03-20** — queries GREATEST() across supplier_risk_history, worker_voice_trends, supplier_monitoring_signals, alerts. Batch LATERAL join for list endpoint. Fallback to today only if no pipeline data. |
 | 10 | Wave 3: #59 (cluster drill-down) | **DONE 2026-03-20** — new `/connect/clusters/[id]` detail page with breadcrumbs, AI summary, suggested actions, affected suppliers (linked), cases table (linked to case detail + supplier detail), representative messages. API bridges PostgreSQL caseEmbeddings → SQL Server case details. Also fixed `survey_mdlsurveyquestion` table name bug in case context API. |
 | 11 | Wave 3: #50 (trend visualization) | **DONE 2026-03-20** — Stacked AreaCharts for clusters (by severity) and anomalies (by type). New `/api/clusters/trends` and `/api/payslip-anomalies/trends` endpoints with monthly `date_trunc` aggregation. Charts placed between stat cards and content lists on both Connect pages. |
-| 12+ | Wave 4 features (pick 2-3) | Core product story is demonstrable |
+| 12 | Wave 4: #33 (remediation workflow UI) | **DONE 2026-03-20** — 7 new components, full detect→act→evidence loop. List page with alerts/plans tabs, detail page with interactive 6-step pipeline, evidence timeline, create plan from alert dialog. Shared StatusPipeline extracted from remediation-tracker. Dashboard + sidebar + supplier detail wired in. |
+| 13+ | Wave 4 features (#34, #36, #56, #57) | Core product story is demonstrable |
 
 ### Ground Rules
 

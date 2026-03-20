@@ -21,6 +21,9 @@ import {
   SupplierForecast,
   VoiceTrend,
   MLInsightsSummary,
+  RemediationPlan,
+  RemediationPlanDetail,
+  RemediationEvidence,
 } from "@/types";
 
 const API_BASE = "/api";
@@ -202,11 +205,11 @@ export async function fetchAlerts(unreadOnly = true, limit = 20): Promise<Alert[
   return res.json();
 }
 
-export async function markAlertRead(alertId: string): Promise<void> {
+export async function markAlertRead(alertId: number | string): Promise<void> {
   const res = await fetch(`${API_BASE}/alerts`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ alertId, isRead: true })
+    body: JSON.stringify({ alertId: Number(alertId), isRead: true })
   });
   if (!res.ok) throw new Error("Failed to update alert");
 }
@@ -390,4 +393,93 @@ export async function fetchMonitoringSignals(
   const res = await fetch(`${API_BASE}/monitoring-signals${qs}`);
   if (!res.ok) throw new Error("Failed to fetch monitoring signals");
   return res.json();
+}
+
+// ===============================
+// Remediation Workflow
+// ===============================
+
+interface RemediationParams extends PaginationParams {
+  supplierId?: string;
+  status?: string;
+}
+
+export async function fetchRemediations(
+  params: RemediationParams = {},
+): Promise<PaginatedResponse<RemediationPlan>> {
+  const qs = buildQueryString({
+    page: params.page,
+    perPage: params.perPage,
+    supplierId: params.supplierId,
+    status: params.status,
+  });
+  const res = await fetch(`${API_BASE}/remediations${qs}`);
+  if (!res.ok) throw new Error("Failed to fetch remediations");
+  return res.json();
+}
+
+export async function fetchRemediation(id: number): Promise<RemediationPlanDetail> {
+  const res = await fetch(`${API_BASE}/remediations/${id}`);
+  if (!res.ok) throw new Error("Failed to fetch remediation");
+  return res.json();
+}
+
+export async function createRemediation(data: {
+  supplierId: string;
+  title: string;
+  sourceType: string;
+  sourceId?: number;
+  rootCause?: string;
+  actionPlan?: string;
+  assignedTo?: string;
+  targetDate?: string;
+}): Promise<RemediationPlan> {
+  const res = await fetch(`${API_BASE}/remediations`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("Failed to create remediation");
+  return res.json();
+}
+
+export async function updateRemediation(
+  id: number,
+  data: Partial<Pick<RemediationPlan, "status" | "rootCause" | "actionPlan" | "assignedTo" | "targetDate" | "title">>,
+): Promise<RemediationPlan> {
+  const res = await fetch(`${API_BASE}/remediations/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("Failed to update remediation");
+  return res.json();
+}
+
+export async function addRemediationEvidence(
+  remediationId: number,
+  data: {
+    evidenceType: string;
+    title: string;
+    description?: string;
+    date: string;
+    referenceId?: string;
+  },
+): Promise<RemediationEvidence> {
+  const res = await fetch(`${API_BASE}/remediations/${remediationId}/evidence`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("Failed to add evidence");
+  return res.json();
+}
+
+export async function resolveAlert(alertId: number): Promise<void> {
+  const res = await fetch(`${API_BASE}/alerts`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ alertId, isRead: true, resolve: true }),
+  });
+  if (!res.ok) throw new Error("Failed to resolve alert");
 }
