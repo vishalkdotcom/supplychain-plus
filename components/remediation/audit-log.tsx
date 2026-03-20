@@ -15,6 +15,7 @@ import {
   IconFileCheck,
   IconRobot,
 } from "@tabler/icons-react";
+import { useDemoUser } from "@/lib/demo-user-context";
 
 function relativeTime(dateStr: string): string {
   const now = Date.now();
@@ -62,9 +63,10 @@ function actionDescription(entry: RemediationAuditEntry): string {
   }
 }
 
-function actorDisplay(entry: RemediationAuditEntry) {
+function actorDisplay(entry: RemediationAuditEntry, userNameMap: Map<string, string>) {
   if (entry.actorType === "user") {
-    return <span className="text-xs text-muted-foreground">{entry.actorId}</span>;
+    const displayName = userNameMap.get(entry.actorId) ?? entry.actorId;
+    return <span className="text-xs text-muted-foreground">{displayName}</span>;
   }
   return (
     <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
@@ -79,6 +81,9 @@ interface AuditLogProps {
 }
 
 export function AuditLog({ remediationId }: AuditLogProps) {
+  const { users } = useDemoUser();
+  const userNameMap = new Map(users.map((u) => [u.id, u.name]));
+
   const { data: entries = [], isLoading } = useQuery({
     queryKey: ["remediation-audit", remediationId],
     queryFn: () => fetchAuditLog(remediationId),
@@ -108,7 +113,7 @@ export function AuditLog({ remediationId }: AuditLogProps) {
                     {actionDescription(entry)}
                   </p>
                   <div className="flex items-center gap-2 mt-0.5">
-                    {actorDisplay(entry)}
+                    {actorDisplay(entry, userNameMap)}
                     <span className="text-muted-foreground/60">
                       {relativeTime(entry.createdAt)}
                     </span>

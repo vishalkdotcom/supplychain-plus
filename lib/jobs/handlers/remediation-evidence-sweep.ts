@@ -1,4 +1,5 @@
-import { query as mssqlQuery } from "@/lib/db/sql-server";
+import { paramQuery as mssqlParamQuery } from "@/lib/db/sql-server";
+import mssql from "mssql";
 import { query as mysqlQuery } from "@/lib/db/mysql";
 import { logger } from "@/lib/logger";
 import type { JobResult } from "./types";
@@ -26,14 +27,14 @@ export async function remediationEvidenceSweep(): Promise<JobResult> {
       // Query resolved cases (Status >= 5 means resolved in this system) for this supplier
       // CompanyId maps to supplierId via client_key
       const companyId = parseInt(supplierId) || 0;
-      const resolvedCases = await mssqlQuery(`
+      const resolvedCases = await mssqlParamQuery(`
         SELECT COUNT(*) as cnt
         FROM Message m
         JOIN [Case] c ON m.CaseId = c.Id
-        WHERE c.CompanyId = ${companyId}
+        WHERE c.CompanyId = @companyId
           AND c.StatusId >= 5
           AND c.UpdatedDate >= DATEADD(day, -30, GETDATE())
-      `);
+      `, { companyId: { type: mssql.Int, value: companyId } });
 
       const resolvedCount = resolvedCases?.recordset?.[0]?.cnt ?? 0;
       if (resolvedCount > 0) {

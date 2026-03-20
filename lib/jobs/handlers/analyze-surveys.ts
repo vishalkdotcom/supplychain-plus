@@ -282,12 +282,18 @@ ${responseText}`,
 
     if (positiveRising.length > 0) {
       for (const remediation of activeRemediations) {
+        // Only attach evidence if the supplier is affected by rising themes
+        const relevantThemes = positiveRising.filter((t) =>
+          (t.affectedSuppliers ?? []).includes(remediation.supplierId),
+        );
+        if (relevantThemes.length === 0) continue;
+
         const refId = buildReferenceId("survey_improvement", new Date().toISOString().slice(0, 10), remediation.supplierId);
         await attachAutoEvidence(
           remediation.id,
           "survey_improvement",
-          `${positiveRising.length} survey theme(s) trending positively`,
-          `Rising themes: ${positiveRising.map((t) => t.themeName).join(", ")}. This indicates improving worker conditions.`,
+          `${relevantThemes.length} survey theme(s) trending positively`,
+          `Rising themes: ${relevantThemes.map((t) => t.themeName).join(", ")}. This indicates improving worker conditions.`,
           refId,
         );
       }

@@ -16,9 +16,10 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { createRemediation, resolveAlert } from "@/lib/api";
 import { IconSparkles } from "@tabler/icons-react";
+import { useDemoUser } from "@/lib/demo-user-context";
 
 export interface RemediationSource {
-  type: string; // "alert" | "cluster" | "anomaly" | "monitoring_signal" | "manual"
+  type: "alert" | "cluster" | "anomaly" | "monitoring_signal" | "manual";
   id: number | null;
   title: string;
   supplierId: string;
@@ -59,6 +60,7 @@ function CreatePlanForm({
   onOpenChange: (open: boolean) => void;
 }) {
   const queryClient = useQueryClient();
+  const { currentUser } = useDemoUser();
   const [title, setTitle] = useState("");
   const [rootCause, setRootCause] = useState("");
   const [actionPlan, setActionPlan] = useState("");
@@ -80,7 +82,7 @@ function CreatePlanForm({
         actionPlan: actionPlan || undefined,
         assignedTo: assignedTo || undefined,
         targetDate: targetDate || undefined,
-      });
+      }, currentUser?.id);
       // Only resolve alert if source is an alert
       if (source.type === "alert" && source.id) {
         await resolveAlert(source.id);

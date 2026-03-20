@@ -424,6 +424,7 @@ export const remediationEvidence = pgTable(
   },
   (table) => [
     index("idx_evidence_remediation").on(table.remediationId),
+    uniqueIndex("idx_evidence_dedup").on(table.remediationId, table.referenceId),
   ],
 );
 

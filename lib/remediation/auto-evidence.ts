@@ -63,33 +63,21 @@ export async function attachAutoEvidence(
   referenceId: string,
 ): Promise<boolean> {
   try {
-    // Dedup check: skip if evidence with this referenceId already exists for this remediation
-    const existing = await db
-      .select({ id: remediationEvidence.id })
-      .from(remediationEvidence)
-      .where(
-        and(
-          eq(remediationEvidence.remediationId, remediationId),
-          eq(remediationEvidence.referenceId, referenceId),
-        ),
-      )
-      .limit(1);
-
-    if (existing.length > 0) {
-      return false; // Already attached
-    }
-
     const today = new Date().toISOString().slice(0, 10);
 
-    // Insert evidence
-    await db.insert(remediationEvidence).values({
+    // Insert evidence with conflict-safe dedup (unique index on remediationId + referenceId)
+    const result = await db.insert(remediationEvidence).values({
       remediationId,
       evidenceType,
       referenceId,
       title,
       description,
       date: today,
-    });
+    }).onConflictDoNothing({ target: [remediationEvidence.remediationId, remediationEvidence.referenceId] });
+
+    if ((result as unknown as { rowCount: number }).rowCount === 0) {
+      return false; // Already attached (dedup)
+    }
 
     // Write audit log
     await db.insert(remediationAuditLog).values({
