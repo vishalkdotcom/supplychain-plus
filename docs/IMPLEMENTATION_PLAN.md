@@ -217,7 +217,7 @@ Only after the data foundation is solid. Ordered by demo impact.
 |-------|-------|-----------|--------|
 | #33 | Remediation workflow UI (alert → plan → evidence) | **Highest** — closes the detect→act→evidence loop, WOVO's core differentiator for regulators | Large | **DONE Session 12** |
 | #34 | Intelligence briefing page — full executive summary | **High** — best "wow factor" for exec demos | Medium | **DONE Session 14** |
-| #36 | Wire AI chat to ML output tables | **High** — makes AI assistant actually useful | Medium |
+| #36 | Wire AI chat to ML output tables | **High** — makes AI assistant actually useful | Medium | **DONE Session 15** |
 | #56 | Data freshness indicators | **Medium** — small effort, big credibility boost | Small | **DONE Session 13** |
 | #57 | Job/pipeline status page | **Medium** — useful during development and demos | Medium |
 
@@ -260,10 +260,24 @@ Only after the data foundation is solid. Ordered by demo impact.
 | **Sidebar** | "Intelligence" link added under Govern section with `IconReportAnalytics`, placed above Remediation. |
 | **Results** | 4 attention items, 93 alerts, 5 urgent cases, 10 risk movements, executive summary flowing from cross-database intelligence. Historical dropdown, regenerate button, freshness badge all working. Build clean, zero console errors. |
 
+### Session 15: #36 — Wire AI Chat to ML Output Tables ✅ DONE 2026-03-21
+
+| Field | Detail |
+|-------|--------|
+| **Modified Files** | `lib/ai/tools.ts`, `app/api/ai/chat/route.ts`, `lib/ai/prompts.ts`, `components/ai/smart-input.tsx` |
+| **Root Cause** | AI chat had 8 tools covering ~40% of ML output tables. Clusters, forecasts, voice trends, anomalies, monitoring signals, remediations, and risk history were invisible to the AI assistant — it had to guess answers for these topics. |
+| **New Tools (7)** | `queryClusters` (caseClusters), `queryVoiceTrends` (workerVoiceTrends), `queryAnomalies` (payslipAnomalies), `queryForecasts` (supplierRiskForecast), `queryMonitoringSignals` (supplierMonitoringSignals), `queryRemediations` (remediationPlans), `queryRiskHistory` (supplierRiskHistory). All use Drizzle ORM with `_card` metadata pattern and `items` key for consistent card rendering. |
+| **System Prompt** | Expanded to include Govern module (remediation, signals, forecasts). Added explicit `TOOL ROUTING:` section mapping question types to tools. |
+| **Slash Commands** | Added `/clusters`, `/anomalies`, `/signals`, `/voice`, `/remediation`. Updated hint buttons to `/risk`, `/clusters`, `/forecast`, `/voice`. |
+| **Step Limit** | Raised `stopWhen: stepCountIs(3)` → `stepCountIs(5)` to allow multi-tool answers for broad questions like "full picture of supplier X". |
+| **Bonus Fix** | Disabled Recharts Bar animation (`isAnimationActive={false}`) across 4 components to fix `Maximum update depth exceeded` infinite loop bug in recharts 3.6.x. Added try-catch to clipboard `writeText` for non-HTTPS contexts. |
+| **Results** | AI chat now queries 100% of ML pipeline tables (was ~40%). 15 tools total (was 8). 12 slash commands (was 7). Build clean, zero console errors. |
+
 ### Recommendation
 - ~~**Must-have for MVP**: #33 (remediation workflow) — this is the product's core story~~ **DONE**
 - ~~**High-impact, low-effort**: #56 (freshness indicators) — adds credibility fast~~ **DONE**
 - ~~**Demo wow-factor**: #34 (intelligence briefing) — best slide for exec presentations~~ **DONE**
+- ~~**High demo value**: #36 (wire AI chat) — makes AI assistant actually useful~~ **DONE**
 
 ---
 
@@ -330,7 +344,8 @@ These are roadmap items, not current bugs:
 | 12 | Wave 4: #33 (remediation workflow UI) | **DONE 2026-03-20** — 7 new components, full detect→act→evidence loop. List page with alerts/plans tabs, detail page with interactive 6-step pipeline, evidence timeline, create plan from alert dialog. Shared StatusPipeline extracted from remediation-tracker. Dashboard + sidebar + supplier detail wired in. |
 | 13 | Wave 4: #56 (data freshness indicators) | **DONE 2026-03-20** — PipelineFreshnessBar on dashboard with 7 color-coded badges querying job_runs. Shared `formatAge` utility extracted from 4 Connect pages. DataFreshnessBadge reusable component with tooltip. |
 | 14 | Wave 4: #34 (intelligence briefing page) | **DONE 2026-03-20** — Standalone executive summary page with AI summary banner, 6 stat cards, severity-grouped attention items, risk movements, urgent cases. Shared metrics-briefing service extracted. Historical briefing selector + regenerate button. Sidebar link under Govern. |
-| 15+ | Wave 4 features (#36, #57) | Core product story is demonstrable |
+| 15 | Wave 4: #36 (wire AI chat to ML tables) | **DONE 2026-03-21** — 7 new tools (clusters, voice trends, anomalies, forecasts, signals, remediations, risk history). 15 total tools, 12 slash commands, step limit raised to 5. Also fixed Recharts Bar animation infinite loop + clipboard error. |
+| 16+ | Wave 4 features (#57) / Wave 5 | Core product story is demonstrable |
 
 ### Ground Rules
 
