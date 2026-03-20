@@ -166,10 +166,11 @@ export function getModelFromRequest(
   return type === "strong" ? strongModel : model;
 }
 
-// ─── Batch job model resolver ────────────────────────────────
-// Controlled by JOB_AI_PROVIDER env var. Defaults to "groq".
-// Valid: "groq" | "cerebras" | "nim" | "ollama"
-// JOB_AI_FALLBACK specifies a fallback provider for rate-limit / error recovery.
+// ─── Batch job model cascade ─────────────────────────────────
+// Cross-provider model cascade with rate limiting.
+// Tries models in quality-first order, falling through on 429/5xx.
+// Configure via JOB_AI_CASCADE env var, or falls back to
+// JOB_AI_PROVIDER + JOB_AI_FALLBACK for backward compatibility.
 
 import {
   getRateLimiter,
@@ -177,29 +178,22 @@ import {
   extractRetryAfter,
 } from "@/lib/ai/rate-limiter";
 
-const jobProvider = process.env.JOB_AI_PROVIDER ?? "groq";
-const jobFallback = process.env.JOB_AI_FALLBACK ?? "";
-
-interface JobModelResult {
-  model: LanguageModelV3;
+interface CascadeEntry {
+  provider: string;
   modelId: string;
+  model: LanguageModelV3;
 }
 
-function buildJobModel(provider: string): JobModelResult {
+/** Create a provider model from "provider:modelId" notation. */
+function buildCascadeModel(provider: string, modelId: string): LanguageModelV3 {
   switch (provider) {
     case "groq": {
-      const groq = createGroq({
-        apiKey: process.env.GROQ_API_KEY ?? "",
-      });
-      const modelId = "llama-3.3-70b-versatile";
-      return { model: groq(modelId), modelId };
+      const groq = createGroq({ apiKey: process.env.GROQ_API_KEY ?? "" });
+      return groq(modelId);
     }
     case "cerebras": {
-      const cerebras = createCerebras({
-        apiKey: process.env.CEREBRAS_API_KEY ?? "",
-      });
-      const modelId = "llama-3.3-70b";
-      return { model: cerebras(modelId), modelId };
+      const cerebras = createCerebras({ apiKey: process.env.CEREBRAS_API_KEY ?? "" });
+      return cerebras(modelId);
     }
     case "nim": {
       const nim = createOpenAICompatible({
@@ -207,90 +201,172 @@ function buildJobModel(provider: string): JobModelResult {
         baseURL: "https://integrate.api.nvidia.com/v1",
         apiKey: process.env.NIM_API_KEY,
       });
-      const modelId = "deepseek-ai/deepseek-v3.1";
-      return { model: nim.chatModel(modelId), modelId };
+      return nim.chatModel(modelId);
     }
     case "ollama":
-    default: {
-      const modelId = process.env.OLLAMA_JOB_MODEL ?? "qwen3:4b";
-      return { model: ollamaProvider(modelId, { think: false }), modelId };
-    }
+    default:
+      return ollamaProvider(modelId, { think: false });
   }
 }
+
+/** Default cascade: quality-first, then budget. ~5.8M TPD total on free tier. */
+const DEFAULT_CASCADE: Array<[string, string]> = [
+  // Tier 1 – Best quality (70B+)
+  ["cerebras", "qwen-3-235b-a22b-instruct-2507"],
+  ["cerebras", "gpt-oss-120b"],
+  ["groq", "openai/gpt-oss-120b"],
+  ["groq", "llama-3.3-70b-versatile"],
+  // Tier 2 – Good quality (17B–32B)
+  ["groq", "meta-llama/llama-4-scout-17b-16e-instruct"],
+  ["groq", "qwen/qwen3-32b"],
+  ["groq", "moonshotai/kimi-k2-instruct"],
+  ["groq", "openai/gpt-oss-20b"],
+  // Tier 3 – Fast/small (7B–8B)
+  ["cerebras", "llama3.1-8b"],
+  ["groq", "llama-3.1-8b-instant"],
+  ["groq", "allam-2-7b"],
+];
+
+function buildCascade(): CascadeEntry[] {
+  const cascadeEnv = process.env.JOB_AI_CASCADE;
+
+  if (cascadeEnv) {
+    // Parse "provider:model,provider:model,..." format
+    return cascadeEnv.split(",").map((entry) => {
+      const sep = entry.indexOf(":");
+      const provider = entry.slice(0, sep).trim();
+      const modelId = entry.slice(sep + 1).trim();
+      return { provider, modelId, model: buildCascadeModel(provider, modelId) };
+    });
+  }
+
+  // Backward compat: if old env vars are set, use them as a 2-entry cascade
+  const legacyProvider = process.env.JOB_AI_PROVIDER;
+  const legacyFallback = process.env.JOB_AI_FALLBACK;
+  if (legacyProvider && !cascadeEnv) {
+    const entries: CascadeEntry[] = [];
+    // Find the default model for this provider from DEFAULT_CASCADE
+    const primaryPair = DEFAULT_CASCADE.find(([p]) => p === legacyProvider);
+    if (primaryPair) {
+      entries.push({
+        provider: primaryPair[0],
+        modelId: primaryPair[1],
+        model: buildCascadeModel(primaryPair[0], primaryPair[1]),
+      });
+    }
+    if (legacyFallback && legacyFallback !== legacyProvider) {
+      const fbPair = DEFAULT_CASCADE.find(([p]) => p === legacyFallback);
+      if (fbPair) {
+        entries.push({
+          provider: fbPair[0],
+          modelId: fbPair[1],
+          model: buildCascadeModel(fbPair[0], fbPair[1]),
+        });
+      }
+    }
+    if (entries.length > 0) return entries;
+  }
+
+  // Default: full 11-model cascade
+  return DEFAULT_CASCADE.map(([provider, modelId]) => ({
+    provider,
+    modelId,
+    model: buildCascadeModel(provider, modelId),
+  }));
+}
+
+const cascade = buildCascade();
+
+console.log(
+  `[ai/cascade] ${cascade.length} models configured: ` +
+  cascade.map((e, i) => `${i + 1}. ${e.provider}:${e.modelId}`).join(", "),
+);
 
 /**
  * Resolve the primary language model for pipeline batch jobs.
- * Reads JOB_AI_PROVIDER to pick the backend (default: groq).
+ * Returns the first model in the cascade chain.
  */
 export function getJobModel(): LanguageModelV3 {
-  return buildJobModel(jobProvider).model;
+  return cascade[0].model;
 }
 
-/** HTTP status codes that trigger fallback to the secondary provider. */
-const FALLBACK_STATUS_CODES = new Set([429, 500, 502, 503]);
+/** HTTP status codes that trigger cascade fallthrough. */
+const RETRYABLE_STATUS_CODES = new Set([429, 500, 502, 503]);
 
 function isRetryableError(err: unknown): boolean {
-  if (typeof err === "object" && err !== null) {
-    const status =
-      (err as { statusCode?: number }).statusCode ??
-      (err as { status?: number }).status;
-    if (status && FALLBACK_STATUS_CODES.has(status)) return true;
-    const code = (err as { code?: string }).code;
-    if (code === "ECONNREFUSED" || code === "ETIMEDOUT") return true;
+  if (typeof err !== "object" || err === null) return false;
+  const e = err as Record<string, unknown>;
+
+  // Check top-level status (direct API errors)
+  const status = (e.statusCode ?? e.status) as number | undefined;
+  if (status && RETRYABLE_STATUS_CODES.has(status)) return true;
+
+  // Check nested lastError (AI SDK RetryError wraps the original)
+  const lastError = e.lastError as Record<string, unknown> | undefined;
+  if (lastError) {
+    const nestedStatus = (lastError.statusCode ?? lastError.status) as number | undefined;
+    if (nestedStatus && RETRYABLE_STATUS_CODES.has(nestedStatus)) return true;
   }
+
+  // Network errors (check both levels)
+  const code = (e.code ?? lastError?.code) as string | undefined;
+  if (code === "ECONNREFUSED" || code === "ETIMEDOUT") return true;
   return false;
 }
 
-// Pre-resolve primary/fallback model info for rate limiter lookups
-const primaryJob = buildJobModel(jobProvider);
-const fallbackJob = jobFallback && jobFallback !== jobProvider
-  ? buildJobModel(jobFallback)
-  : null;
-
 /**
  * Drop-in replacement for `generateText` with rate limiting and
- * automatic fallback to JOB_AI_FALLBACK on rate-limit (429) or server errors (5xx).
+ * smart model cascade. Tries models in quality-first order,
+ * skipping models with exhausted daily budgets, and falling through
+ * on 429/5xx errors.
  */
 export const generateTextWithFallback: typeof aiGenerateText = async (
   params,
 ) => {
   const estimatedTokens = estimateParamTokens(params as Record<string, unknown>);
-  const limiter = getRateLimiter(jobProvider, primaryJob.modelId);
+  let lastError: unknown;
 
-  await limiter.acquire(estimatedTokens);
+  for (let i = 0; i < cascade.length; i++) {
+    const entry = cascade[i];
+    const limiter = getRateLimiter(entry.provider, entry.modelId);
 
-  try {
-    const result = await aiGenerateText(params);
-    // Correct the bucket with actual usage from the response
-    const actual = (result.usage?.totalTokens ?? 0) || estimatedTokens;
-    limiter.reportActualUsage(actual, estimatedTokens);
-    return result;
-  } catch (err) {
-    // Report retry-after so other concurrent jobs also wait
-    const retryAfter = extractRetryAfter(err);
-    if (retryAfter) limiter.reportRetryAfter(retryAfter);
-
-    if (fallbackJob && isRetryableError(err)) {
-      const fbLimiter = getRateLimiter(jobFallback, fallbackJob.modelId);
-      await fbLimiter.acquire(estimatedTokens);
-
-      console.warn(
-        `[ai/provider] ${jobProvider} failed (${(err as { statusCode?: number }).statusCode ?? "network"}), falling back to ${jobFallback}`,
+    // Smart skip: if daily budget is exhausted, don't even try
+    if (await limiter.isDailyExhausted(estimatedTokens)) {
+      console.log(
+        `[ai/cascade] skipping ${entry.provider}:${entry.modelId} (${i + 1}/${cascade.length}) — daily budget exhausted`,
       );
-
-      try {
-        const result = await aiGenerateText({ ...params, model: fallbackJob.model });
-        const actual = (result.usage?.totalTokens ?? 0) || estimatedTokens;
-        fbLimiter.reportActualUsage(actual, estimatedTokens);
-        return result;
-      } catch (fbErr) {
-        const fbRetryAfter = extractRetryAfter(fbErr);
-        if (fbRetryAfter) fbLimiter.reportRetryAfter(fbRetryAfter);
-        throw fbErr;
-      }
+      continue;
     }
-    throw err;
+
+    await limiter.acquire(estimatedTokens);
+
+    try {
+      console.log(
+        `[ai/cascade] using ${entry.provider}:${entry.modelId} (${i + 1}/${cascade.length})`,
+      );
+      const result = await aiGenerateText({ ...params, model: entry.model, maxRetries: 0 });
+      const actual = (result.usage?.totalTokens ?? 0) || estimatedTokens;
+      limiter.reportActualUsage(actual, estimatedTokens);
+      return result;
+    } catch (err) {
+      lastError = err;
+      const retryAfter = extractRetryAfter(err);
+      if (retryAfter) limiter.reportRetryAfter(retryAfter);
+
+      if (isRetryableError(err)) {
+        const status = (err as { statusCode?: number }).statusCode ?? "network";
+        console.warn(
+          `[ai/cascade] ${entry.provider}:${entry.modelId} failed (${status}), trying next model...`,
+        );
+        continue;
+      }
+      // Non-retryable error — don't cascade
+      throw err;
+    }
   }
+
+  // All models exhausted
+  throw lastError ?? new Error("[ai/cascade] all models exhausted");
 };
 
 /** Get an Ollama embedding model (e.g. bge-m3). Always uses local Ollama. */

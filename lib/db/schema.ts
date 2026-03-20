@@ -572,3 +572,31 @@ export const intelligenceBriefing = pgTable("intelligence_briefing", {
     .notNull(),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
 });
+
+// ===============================
+// RATE LIMIT TRACKING
+// ===============================
+
+// Tracks daily token/request usage per provider:model so rate-limiter
+// state survives server restarts. Keyed by (date, provider, model_id).
+export const rateLimitDailyUsage = pgTable(
+  "rate_limit_daily_usage",
+  {
+    id: serial("id").primaryKey(),
+    date: date("date").defaultNow().notNull(),
+    provider: varchar("provider", { length: 32 }).notNull(),
+    modelId: varchar("model_id", { length: 128 }).notNull(),
+    tokensUsed: integer("tokens_used").notNull().default(0),
+    requestsUsed: integer("requests_used").notNull().default(0),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("idx_rate_limit_date_provider_model").on(
+      table.date,
+      table.provider,
+      table.modelId,
+    ),
+  ],
+);
