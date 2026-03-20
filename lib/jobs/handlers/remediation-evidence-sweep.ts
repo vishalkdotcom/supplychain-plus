@@ -32,8 +32,8 @@ export async function remediationEvidenceSweep(): Promise<JobResult> {
         FROM Message m
         JOIN [Case] c ON m.CaseId = c.Id
         WHERE c.CompanyId = @companyId
-          AND c.StatusId >= 5
-          AND c.UpdatedDate >= DATEADD(day, -30, GETDATE())
+          AND c.CaseStatusId >= 5
+          AND c.Modified >= DATEADD(day, -30, GETDATE())
       `, { companyId: { type: mssql.Int, value: companyId } });
 
       const resolvedCount = resolvedCases?.recordset?.[0]?.cnt ?? 0;
@@ -59,10 +59,11 @@ export async function remediationEvidenceSweep(): Promise<JobResult> {
       const supplierId = remediation.supplierId;
 
       const trainingResult = await mysqlQuery(`
-        SELECT COUNT(*) as cnt
-        FROM mdl_company_course
-        WHERE company_id = ?
-          AND completed > 0
+        SELECT COUNT(DISTINCT cc.course) as cnt
+        FROM mdl_company_course mcc
+        JOIN mdl_course_completions cc ON cc.course = mcc.courseid
+        WHERE mcc.companyid = ?
+          AND cc.timecompleted IS NOT NULL
       `, [parseInt(supplierId) || 0]);
 
       const completedCourses = (trainingResult as Array<{cnt: number}>)?.[0]?.cnt ?? 0;
