@@ -63,21 +63,34 @@ export async function attachAutoEvidence(
   referenceId: string,
 ): Promise<boolean> {
   try {
+    // Fast-path dedup: skip if evidence with this referenceId already exists
+    const existing = await db
+      .select({ id: remediationEvidence.id })
+      .from(remediationEvidence)
+      .where(
+        and(
+          eq(remediationEvidence.remediationId, remediationId),
+          eq(remediationEvidence.referenceId, referenceId),
+        ),
+      )
+      .limit(1);
+
+    if (existing.length > 0) {
+      return false;
+    }
+
     const today = new Date().toISOString().slice(0, 10);
 
-    // Insert evidence with conflict-safe dedup (unique index on remediationId + referenceId)
-    const result = await db.insert(remediationEvidence).values({
+    // Insert evidence — unique index (remediationId, referenceId) prevents duplicates
+    // if a concurrent job passed the SELECT check above
+    await db.insert(remediationEvidence).values({
       remediationId,
       evidenceType,
       referenceId,
       title,
       description,
       date: today,
-    }).onConflictDoNothing({ target: [remediationEvidence.remediationId, remediationEvidence.referenceId] });
-
-    if ((result as unknown as { rowCount: number }).rowCount === 0) {
-      return false; // Already attached (dedup)
-    }
+    });
 
     // Write audit log
     await db.insert(remediationAuditLog).values({
@@ -96,6 +109,11 @@ export async function attachAutoEvidence(
     );
     return true;
   } catch (error) {
+    // Unique constraint violation means concurrent insert won the race — not an error
+    const msg = error instanceof Error ? error.message : "";
+    if (msg.includes("idx_evidence_dedup") || msg.includes("unique")) {
+      return false;
+    }
     logger.warn(
       "auto-evidence",
       `Failed to attach evidence to remediation #${remediationId}`,
