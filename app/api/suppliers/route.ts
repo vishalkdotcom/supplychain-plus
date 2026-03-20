@@ -7,6 +7,7 @@ import { Supplier, PaginatedResponse, RiskReason } from "@/types";
 import { inArray } from "drizzle-orm";
 import { logger } from "@/lib/logger";
 import { deriveRegion } from "@/lib/risk-utils";
+import { getLastActivityDates } from "@/lib/last-activity";
 
 export async function GET(request: NextRequest) {
   try {
@@ -187,6 +188,15 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Batch-fetch last activity dates from pipeline tables
+    const supplierIdsForActivity = paginatedRows.map((r) => String(r.client_key));
+    let activityDateMap = new Map<string, string>();
+    try {
+      activityDateMap = await getLastActivityDates(supplierIdsForActivity);
+    } catch (err) {
+      logger.error("api/suppliers", "Failed to fetch last activity dates", err);
+    }
+
     const suppliers: Supplier[] = paginatedRows.map((row) => ({
       id: String(row.client_key),
       name: row.name,
@@ -204,7 +214,7 @@ export async function GET(request: NextRequest) {
             ? "medium"
             : "low",
       status: row.is_active ? "active" : "inactive",
-      lastActivityDate: new Date().toISOString().split("T")[0],
+      lastActivityDate: activityDateMap.get(String(row.client_key)) || new Date().toISOString().split("T")[0],
       riskBreakdown: {
         caseScore: row.case_score,
         surveyScore: row.survey_score,

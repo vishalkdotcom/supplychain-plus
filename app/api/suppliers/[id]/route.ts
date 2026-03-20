@@ -7,6 +7,7 @@ import { Supplier } from "@/types";
 import { eq } from "drizzle-orm";
 import { logger } from "@/lib/logger";
 import { deriveRegion } from "@/lib/risk-utils";
+import { getLastActivityDate } from "@/lib/last-activity";
 
 export async function GET(
   request: Request,
@@ -64,7 +65,7 @@ export async function GET(
       riskScore,
       riskLevel: riskScore > 70 ? "high" : riskScore > 30 ? "medium" : "low",
       status: row.is_active ? "active" : "inactive",
-      lastActivityDate: new Date().toISOString().split("T")[0],
+      lastActivityDate: await getLastActivityDate(String(row.client_key)) || new Date().toISOString().split("T")[0],
       riskBreakdown: {
         caseScore: risk?.caseScore || 50,
         surveyScore: risk?.surveyScore || 50,

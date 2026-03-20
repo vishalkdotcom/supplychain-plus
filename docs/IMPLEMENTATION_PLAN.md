@@ -141,7 +141,7 @@ These are independent of each other and good for parallel worktree sessions.
 |-------|-------|--------|
 | #40 | Risk breakdown uses mock `previousRiskScore` | **RESOLVED Session 7** — now uses real `supplier_risk_history` data |
 | #39 | Supply chain network graph truncated to ~2 nodes | **RESOLVED Session 7** — increased perPage to 50, added "+N more" overflow nodes |
-| #28 | `lastActivityDate` always returns "today" | Medium — calculate from case/survey timestamps |
+| #28 | `lastActivityDate` always returns "today" | **RESOLVED Session 9** — queries GREATEST() across 4 pipeline tables (risk history, voice trends, monitoring signals, alerts) |
 
 ### Batch C: Connect Module
 
@@ -171,6 +171,15 @@ These are independent of each other and good for parallel worktree sessions.
 | **Root Cause** | No at-a-glance visualization of how risk scores are distributed across the supplier portfolio. |
 | **Fix Applied** | (1) New `RiskDistributionChart` component: Recharts BarChart histogram with 10 equal-width buckets (0–10 through 91–100). (2) Each bar colored by bucket midpoint via `getScoreHex()` — green (≤30), orange (31–70), red (>70). (3) Custom tooltip showing bucket range + supplier count with pluralization. (4) Client-side bucketing with `useMemo` from existing `suppliers` array — no new API needed. (5) Placed as always-visible card between "Needs Attention" row and collapsible Visualizations section. (6) Dynamic import with SSR disabled matching existing dashboard patterns. |
 | **Results** | Chart renders with 50 scored suppliers across 2 active buckets (41–50: 15 suppliers, 51–60: 35 suppliers). Scores range 49–59 (all medium risk, consistent with #52 narrow-range observation). Tooltip, axis labels, and bar colors all verified. Zero console errors, build clean. |
+
+### Session 9: Fix #28 — `lastActivityDate` always returns "today" ✅ DONE 2026-03-20
+
+| Field | Detail |
+|-------|--------|
+| **Files** | `lib/last-activity.ts` (new), `app/api/suppliers/[id]/route.ts`, `app/api/suppliers/route.ts` |
+| **Root Cause** | Both supplier API routes hardcoded `lastActivityDate: new Date().toISOString().split("T")[0]` — every supplier showed today's date regardless of actual activity. |
+| **Fix Applied** | (1) New `lib/last-activity.ts` with two functions: `getLastActivityDate(supplierId)` for single supplier, `getLastActivityDates(supplierIds)` for batch. (2) Queries `GREATEST()` across 4 PostgreSQL pipeline tables: `supplier_risk_history.snapshot_date`, `worker_voice_trends.month`, `supplier_monitoring_signals.detected_at`, `alerts.created_at`. (3) Batch version uses `LATERAL` joins on `unnest()` for single-query efficiency. (4) Graceful fallback: try/catch in list endpoint, falls back to today if query fails or no data. |
+| **Results** | Both `/api/suppliers/:id` and `/api/suppliers?page=N` return real pipeline dates. Build clean, no type errors. |
 
 ### Batch D: Engage Module ✅ DONE 2026-03-20
 
@@ -257,7 +266,7 @@ These are roadmap items, not current bugs:
 | 6 | Fix #18 (multi-month voice) + #37 (all bars red) + supplier dropdown | **DONE 2026-03-20** — 25 months, 182 suppliers, 52% neg / 26% pos / 22% neutral, "Invalid Date" fixed, supplier dropdown added |
 | 7 | Wave 3 quick wins: #38 (cluster card) + #40 (mock risk) + #25 (dedup labels) + #39 (network graph) + #52 (verify) | **DONE 2026-03-20** — 5 small fixes bundled, all verified visually, build clean |
 | 8 | Wave 3: #35 (risk distribution chart) | **DONE 2026-03-20** — 10-bucket histogram (0–10 through 91–100), color-coded green/orange/red by risk level, custom tooltip, placed above collapsible visualizations |
-| 9 | Wave 3: #28 (lastActivityDate) | Replace hardcoded `new Date()` with cross-DB MAX(activity dates) |
+| 9 | Wave 3: #28 (lastActivityDate) | **DONE 2026-03-20** — queries GREATEST() across supplier_risk_history, worker_voice_trends, supplier_monitoring_signals, alerts. Batch LATERAL join for list endpoint. Fallback to today only if no pipeline data. |
 | 10 | Wave 3: #59 (cluster drill-down) | New `/connect/clusters/[id]` page + API to show individual cases |
 | 11 | Wave 3: #50 (trend visualization) | Recharts LineChart for anomaly/cluster trends over time |
 | 12+ | Wave 4 features (pick 2-3) | Core product story is demonstrable |
