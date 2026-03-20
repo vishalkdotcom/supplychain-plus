@@ -14,7 +14,12 @@ const SLASH_COMMANDS: SlashCommand[] = [
   { command: "/report", label: "Report", description: "Generate HRDD compliance report", query: "Generate an HRDD compliance report for the current period" },
   { command: "/risk", label: "Risk", description: "Show current risk overview", query: "Show me the current supplier risk overview" },
   { command: "/cases", label: "Cases", description: "Search grievance cases", query: "Show me recent grievance cases" },
-  { command: "/forecast", label: "Forecast", description: "Show risk forecasts", query: "Show me the 60-day risk forecast for suppliers" },
+  { command: "/forecast", label: "Forecast", description: "Show 60-day risk forecasts", query: "Show me the 60-day risk forecast for suppliers" },
+  { command: "/clusters", label: "Clusters", description: "Show systemic case patterns", query: "What systemic patterns have been detected across suppliers?" },
+  { command: "/anomalies", label: "Anomalies", description: "Show wage and payslip anomalies", query: "Show me current payslip anomalies and wage issues" },
+  { command: "/signals", label: "Signals", description: "Show monitoring signals", query: "Show me active supplier monitoring signals" },
+  { command: "/voice", label: "Voice", description: "Show worker voice trends", query: "What are workers talking about? Show me voice trends" },
+  { command: "/remediation", label: "Remediation", description: "Show remediation plans", query: "Show me the current remediation plans and their status" },
   { command: "/survey", label: "Survey", description: "Design a worker survey", query: "Help me design a new worker survey" },
   { command: "/training", label: "Training", description: "Create training course", query: "Help me create a new training course" },
   { command: "/recalculate", label: "Recalculate", description: "Trigger risk recalculation", query: "Recalculate all supplier risk scores" },
@@ -166,7 +171,7 @@ export function SmartInput({ value, onChange, onSubmit, isLoading }: SmartInputP
 
         {/* Command hints */}
         <div className="hidden sm:flex items-center gap-1 mb-0.5">
-          {["/report", "/risk", "/cases"].map((cmd) => (
+          {["/risk", "/clusters", "/forecast", "/voice"].map((cmd) => (
             <button
               key={cmd}
               onClick={() => onChange(cmd)}

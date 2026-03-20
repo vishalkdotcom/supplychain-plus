@@ -10,6 +10,13 @@ import {
   markAlertRead,
   triggerRiskRecalculation,
   queryPlaybook,
+  queryClusters,
+  queryVoiceTrends,
+  queryAnomalies,
+  queryForecasts,
+  queryMonitoringSignals,
+  queryRemediations,
+  queryRiskHistory,
 } from "@/lib/ai/tools";
 import { db } from "@/lib/db/drizzle";
 import { aiChatHistory } from "@/lib/db/schema";
@@ -59,8 +66,15 @@ export async function POST(req: Request) {
       markAlertRead,
       triggerRiskRecalculation,
       queryPlaybook,
+      queryClusters,
+      queryVoiceTrends,
+      queryAnomalies,
+      queryForecasts,
+      queryMonitoringSignals,
+      queryRemediations,
+      queryRiskHistory,
     },
-    stopWhen: stepCountIs(3),
+    stopWhen: stepCountIs(5),
     onFinish: async ({ text }) => {
       // Save assistant response to chat history
       if (sessionId && text) {

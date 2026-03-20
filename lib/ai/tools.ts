@@ -3,14 +3,21 @@ import { z } from "zod";
 import { db } from "@/lib/db/drizzle";
 import {
   supplierRiskScores,
+  supplierRiskHistory,
   alerts,
   surveyAnalysis,
   casePlaybookCache,
+  caseClusters,
+  workerVoiceTrends,
+  payslipAnomalies,
+  supplierRiskForecast,
+  supplierMonitoringSignals,
+  remediationPlans,
 } from "@/lib/db/schema";
 import { query as pgQuery } from "@/lib/db/postgres";
 import { paramQuery as mssqlParamQuery } from "@/lib/db/sql-server";
 import { query as mysqlQuery } from "@/lib/db/mysql";
-import { desc, eq, gte, and, sql } from "drizzle-orm";
+import { desc, eq, gte, and, sql, isNull } from "drizzle-orm";
 import mssql from "mssql";
 
 // ===============================
@@ -456,5 +463,442 @@ export const triggerRiskRecalculation = tool({
         message: "Failed to trigger risk recalculation.",
       };
     }
+  },
+});
+
+// ===============================
+// ML Output Tools (Pipeline Data)
+// ===============================
+
+export const queryClusters = tool({
+  description:
+    "Get systemic case patterns detected by clustering analysis. Use when the user asks about patterns, clusters, systemic issues, or recurring problems across suppliers.",
+  inputSchema: z.object({
+    severity: z
+      .enum(["critical", "warning", "info"])
+      .optional()
+      .describe("Filter by severity level"),
+    limit: z.number().default(10).describe("Number of clusters to return"),
+  }),
+  execute: async ({ severity, limit }) => {
+    const conditions = severity
+      ? [eq(caseClusters.severity, severity)]
+      : [];
+
+    const results = await db
+      .select()
+      .from(caseClusters)
+      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .orderBy(desc(caseClusters.caseCount))
+      .limit(limit);
+
+    const items = results.map((r) => ({
+      id: r.id,
+      label: r.clusterLabel,
+      severity: r.severity,
+      caseCount: r.caseCount,
+      supplierCount: r.supplierCount,
+      regions: (r.regions as string[])?.join(", ") || "",
+      summary: r.aiSummary?.substring(0, 200) || "",
+    }));
+
+    return {
+      _card: {
+        type: "table" as const,
+        title: "Systemic Case Patterns",
+        columns: [
+          { key: "label", label: "Pattern" },
+          { key: "severity", label: "Severity", format: "badge" },
+          { key: "caseCount", label: "Cases" },
+          { key: "supplierCount", label: "Suppliers" },
+          { key: "regions", label: "Regions" },
+        ],
+      },
+      items,
+    };
+  },
+});
+
+export const queryVoiceTrends = tool({
+  description:
+    "Get worker voice trends and sentiment analysis over time. Use when the user asks about what workers are talking about, sentiment trends, emerging topics, or worker voice.",
+  inputSchema: z.object({
+    supplierId: z
+      .string()
+      .optional()
+      .describe("Filter by supplier ID, or omit for global trends"),
+    limit: z.number().default(5).describe("Number of months to return"),
+  }),
+  execute: async ({ supplierId, limit }) => {
+    const conditions = supplierId
+      ? [eq(workerVoiceTrends.supplierId, supplierId)]
+      : [isNull(workerVoiceTrends.supplierId)];
+
+    const results = await db
+      .select()
+      .from(workerVoiceTrends)
+      .where(and(...conditions))
+      .orderBy(desc(workerVoiceTrends.month))
+      .limit(limit);
+
+    type VoiceTopic = { name: string; mentions: number; sentiment: string };
+
+    const items = results.map((r) => {
+      const themes = (r.topThemes as VoiceTopic[]) || [];
+      return {
+        month: r.month,
+        sentimentShift: r.sentimentShift,
+        topThemes: themes
+          .slice(0, 3)
+          .map((t) => `${t.name} (${t.sentiment}, ${t.mentions} mentions)`)
+          .join("; "),
+        emergingCount: (r.emergingTopics as VoiceTopic[])?.length || 0,
+        decliningCount: (r.decliningTopics as VoiceTopic[])?.length || 0,
+      };
+    });
+
+    return {
+      _card: {
+        type: "table" as const,
+        title: supplierId
+          ? `Voice Trends — Supplier ${supplierId}`
+          : "Global Voice Trends",
+        columns: [
+          { key: "month", label: "Month" },
+          { key: "topThemes", label: "Top Themes" },
+          { key: "sentimentShift", label: "Sentiment Δ" },
+          { key: "emergingCount", label: "Emerging" },
+          { key: "decliningCount", label: "Declining" },
+        ],
+      },
+      items,
+    };
+  },
+});
+
+export const queryAnomalies = tool({
+  description:
+    "Get payslip anomalies and wage issues detected across suppliers. Use when the user asks about wage problems, payslip issues, minimum wage violations, salary anomalies, or payment irregularities.",
+  inputSchema: z.object({
+    supplierId: z
+      .string()
+      .optional()
+      .describe("Filter by supplier ID"),
+    severity: z
+      .enum(["critical", "warning", "info"])
+      .optional()
+      .describe("Filter by severity"),
+    unresolvedOnly: z
+      .boolean()
+      .default(true)
+      .describe("Only show unresolved anomalies"),
+    limit: z.number().default(10),
+  }),
+  execute: async ({ supplierId, severity, unresolvedOnly, limit }) => {
+    const conditions = [];
+    if (supplierId) conditions.push(eq(payslipAnomalies.supplierId, supplierId));
+    if (severity) conditions.push(eq(payslipAnomalies.severity, severity));
+    if (unresolvedOnly) conditions.push(eq(payslipAnomalies.isResolved, false));
+
+    const results = await db
+      .select()
+      .from(payslipAnomalies)
+      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .orderBy(desc(payslipAnomalies.detectedAt))
+      .limit(limit);
+
+    type AnomalyDetails = {
+      expected?: number;
+      actual?: number;
+      currency?: string;
+      country?: string;
+      employeeCount?: number;
+    };
+
+    const items = results.map((r) => {
+      const details = (r.details as AnomalyDetails) || {};
+      return {
+        id: r.id,
+        supplier: r.supplierName,
+        type: r.anomalyType,
+        severity: r.severity,
+        country: details.country || "",
+        currency: details.currency || "",
+        expected: details.expected,
+        actual: details.actual,
+        affected: details.employeeCount || 0,
+        interpretation:
+          r.aiInterpretation?.substring(0, 150) || "",
+        detectedAt: r.detectedAt,
+      };
+    });
+
+    return {
+      _card: {
+        type: "table" as const,
+        title: "Payslip Anomalies",
+        columns: [
+          { key: "supplier", label: "Supplier" },
+          { key: "type", label: "Type" },
+          { key: "severity", label: "Severity", format: "badge" },
+          { key: "country", label: "Country" },
+          { key: "affected", label: "Workers" },
+        ],
+      },
+      items,
+    };
+  },
+});
+
+export const queryForecasts = tool({
+  description:
+    "Get 60-day risk forecasts for suppliers. Use when the user asks about predictions, forecasts, future risk, which suppliers are getting worse, or risk outlook.",
+  inputSchema: z.object({
+    supplierId: z
+      .string()
+      .optional()
+      .describe("Filter by supplier ID"),
+    trendDirection: z
+      .enum(["rising", "falling", "stable"])
+      .optional()
+      .describe("Filter by trend direction"),
+    limit: z.number().default(10),
+  }),
+  execute: async ({ supplierId, trendDirection, limit }) => {
+    const conditions = [];
+    if (supplierId)
+      conditions.push(eq(supplierRiskForecast.supplierId, supplierId));
+    if (trendDirection)
+      conditions.push(eq(supplierRiskForecast.trendDirection, trendDirection));
+
+    const results = await db
+      .select()
+      .from(supplierRiskForecast)
+      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .orderBy(desc(supplierRiskForecast.predictedRiskScore))
+      .limit(limit);
+
+    const items = results.map((r) => ({
+      supplierId: r.supplierId,
+      forecastDate: r.forecastDate,
+      predictedRisk: r.predictedRiskScore,
+      trend: r.trendDirection,
+      confidence: r.confidence
+        ? `${Math.round(r.confidence * 100)}%`
+        : "N/A",
+      reasoning: r.aiReasoning?.substring(0, 150) || "",
+    }));
+
+    return {
+      _card: {
+        type: "chart" as const,
+        title: "Risk Forecasts (60-Day)",
+        chartType: "bar" as const,
+        data: results.map((r) => ({
+          name: r.supplierId || "Unknown",
+          value: r.predictedRiskScore || 0,
+          color:
+            (r.predictedRiskScore || 0) >= 70
+              ? "#ef4444"
+              : (r.predictedRiskScore || 0) >= 50
+                ? "#f59e0b"
+                : "#22c55e",
+        })),
+        columns: [
+          { key: "supplierId", label: "Supplier" },
+          { key: "predictedRisk", label: "Predicted Risk", format: "score" },
+          { key: "trend", label: "Trend" },
+          { key: "confidence", label: "Confidence" },
+        ],
+      },
+      items,
+    };
+  },
+});
+
+export const queryMonitoringSignals = tool({
+  description:
+    "Get supplier monitoring signals like silence detection, engagement decay, and regional contagion. Use when the user asks about silent suppliers, disengaged suppliers, warning signals, or who needs attention.",
+  inputSchema: z.object({
+    signalType: z
+      .enum(["silence", "engagement_decay", "regional_contagion"])
+      .optional()
+      .describe("Filter by signal type"),
+    severity: z
+      .enum(["critical", "warning", "info"])
+      .optional()
+      .describe("Filter by severity"),
+    activeOnly: z
+      .boolean()
+      .default(true)
+      .describe("Only show unresolved signals"),
+    limit: z.number().default(10),
+  }),
+  execute: async ({ signalType, severity, activeOnly, limit }) => {
+    const conditions = [];
+    if (signalType)
+      conditions.push(eq(supplierMonitoringSignals.signalType, signalType));
+    if (severity)
+      conditions.push(eq(supplierMonitoringSignals.severity, severity));
+    if (activeOnly)
+      conditions.push(isNull(supplierMonitoringSignals.resolvedAt));
+
+    const results = await db
+      .select()
+      .from(supplierMonitoringSignals)
+      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .orderBy(desc(supplierMonitoringSignals.detectedAt))
+      .limit(limit);
+
+    const items = results.map((r) => ({
+      id: r.id,
+      supplierId: r.supplierId,
+      signalType: r.signalType,
+      severity: r.severity,
+      title: r.title,
+      description: r.description?.substring(0, 150) || "",
+      detectedAt: r.detectedAt,
+    }));
+
+    return {
+      _card: {
+        type: "table" as const,
+        title: "Monitoring Signals",
+        columns: [
+          { key: "supplierId", label: "Supplier" },
+          { key: "signalType", label: "Signal" },
+          { key: "severity", label: "Severity", format: "badge" },
+          { key: "title", label: "Title" },
+          { key: "detectedAt", label: "Detected" },
+        ],
+      },
+      items,
+    };
+  },
+});
+
+export const queryRemediations = tool({
+  description:
+    "Get remediation plans and their status. Use when the user asks about remediation progress, action plans, what's being fixed, or compliance follow-ups.",
+  inputSchema: z.object({
+    status: z
+      .enum([
+        "detected",
+        "root_cause",
+        "action_plan",
+        "implementing",
+        "verifying",
+        "closed",
+      ])
+      .optional()
+      .describe("Filter by remediation status"),
+    supplierId: z
+      .string()
+      .optional()
+      .describe("Filter by supplier ID"),
+    limit: z.number().default(10),
+  }),
+  execute: async ({ status, supplierId, limit }) => {
+    const conditions = [];
+    if (status) conditions.push(eq(remediationPlans.status, status));
+    if (supplierId)
+      conditions.push(eq(remediationPlans.supplierId, supplierId));
+
+    const results = await db
+      .select()
+      .from(remediationPlans)
+      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .orderBy(desc(remediationPlans.createdAt))
+      .limit(limit);
+
+    const items = results.map((r) => ({
+      id: r.id,
+      title: r.title,
+      supplierId: r.supplierId,
+      status: r.status,
+      sourceType: r.sourceType,
+      rootCause: r.rootCause?.substring(0, 100) || "",
+      targetDate: r.targetDate,
+      createdAt: r.createdAt,
+    }));
+
+    return {
+      _card: {
+        type: "table" as const,
+        title: "Remediation Plans",
+        columns: [
+          { key: "title", label: "Plan" },
+          { key: "supplierId", label: "Supplier" },
+          { key: "status", label: "Status", format: "badge" },
+          { key: "sourceType", label: "Source" },
+          { key: "targetDate", label: "Target Date" },
+        ],
+      },
+      items,
+    };
+  },
+});
+
+export const queryRiskHistory = tool({
+  description:
+    "Get historical risk score trend for a specific supplier. Use when the user asks about how a supplier's risk has changed over time, risk trends, or score history.",
+  inputSchema: z.object({
+    supplierId: z
+      .string()
+      .describe("Supplier ID to get history for (required)"),
+    days: z
+      .number()
+      .default(30)
+      .describe("Number of days of history to return"),
+  }),
+  execute: async ({ supplierId, days }) => {
+    const since = new Date();
+    since.setDate(since.getDate() - days);
+
+    const results = await db
+      .select()
+      .from(supplierRiskHistory)
+      .where(
+        and(
+          eq(supplierRiskHistory.supplierId, supplierId),
+          gte(supplierRiskHistory.snapshotDate, since.toISOString().split("T")[0]),
+        ),
+      )
+      .orderBy(supplierRiskHistory.snapshotDate);
+
+    const items = results.map((r) => ({
+      date: r.snapshotDate,
+      riskScore: r.riskScore,
+      caseScore: r.caseScore,
+      surveyScore: r.surveyScore,
+      trainingScore: r.trainingScore,
+      engagementScore: r.engagementScore,
+    }));
+
+    return {
+      _card: {
+        type: "chart" as const,
+        title: `Risk History — Supplier ${supplierId}`,
+        chartType: "bar" as const,
+        data: results.map((r) => ({
+          name: String(r.snapshotDate),
+          value: r.riskScore ?? 0,
+          color:
+            (r.riskScore ?? 0) >= 70
+              ? "#ef4444"
+              : (r.riskScore ?? 0) >= 50
+                ? "#f59e0b"
+                : "#22c55e",
+        })),
+        columns: [
+          { key: "date", label: "Date" },
+          { key: "riskScore", label: "Risk", format: "score" },
+          { key: "caseScore", label: "Cases" },
+          { key: "surveyScore", label: "Survey" },
+          { key: "trainingScore", label: "Training" },
+        ],
+      },
+      items,
+    };
   },
 });
