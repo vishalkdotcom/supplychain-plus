@@ -98,8 +98,8 @@ export async function GET(
     const relatedSurveyThemes: string[] = [];
     try {
       const surveyRes = await pgQuery(
-        `SELECT DISTINCT question_text FROM survey_mdlsurveyquestion
-         WHERE client_id = $1 AND question_text IS NOT NULL
+        `SELECT DISTINCT title AS question_text FROM survey_mdlsurveyquestions
+         WHERE client_id = $1 AND title IS NOT NULL
          LIMIT 5`,
         [Number(CompanyId)]
       );

@@ -72,7 +72,9 @@ function ClusterCard({ cluster }: { cluster: CaseCluster }) {
               <Badge variant={getSeverityVariant(cluster.severity)}>
                 {cluster.severity}
               </Badge>
-              <CardTitle className="text-base">{cluster.clusterLabel}</CardTitle>
+              <Link href={`/connect/clusters/${cluster.id}`} className="hover:underline">
+                <CardTitle className="text-base">{cluster.clusterLabel}</CardTitle>
+              </Link>
             </div>
             <p className="text-sm text-muted-foreground">
               {cluster.caseCount} cases across {cluster.supplierCount} supplier
@@ -153,6 +155,13 @@ function ClusterCard({ cluster }: { cluster: CaseCluster }) {
             ))}
           </div>
         )}
+
+        {/* View Details link */}
+        <Link href={`/connect/clusters/${cluster.id}`}>
+          <Button variant="outline" size="sm" className="w-full mt-2">
+            View Details &rarr;
+          </Button>
+        </Link>
       </CardContent>
     </Card>
   );

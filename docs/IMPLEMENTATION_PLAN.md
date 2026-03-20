@@ -147,7 +147,7 @@ These are independent of each other and good for parallel worktree sessions.
 
 | Issue | Title | Status |
 |-------|-------|--------|
-| #59 | Cluster detail can't drill down to individual cases | Medium — add `/connect/clusters/[id]` detail page |
+| #59 | Cluster detail can't drill down to individual cases | **RESOLVED Session 10** — new `/connect/clusters/[id]` detail page + API |
 | #50 | No cluster/anomaly trend visualization | Medium — add time-series charts |
 | #25 | Duplicate cluster labels ("Wage Theft" x7) | **RESOLVED Session 7** — added region-based dedup in case-clustering.ts |
 
@@ -180,6 +180,16 @@ These are independent of each other and good for parallel worktree sessions.
 | **Root Cause** | Both supplier API routes hardcoded `lastActivityDate: new Date().toISOString().split("T")[0]` — every supplier showed today's date regardless of actual activity. |
 | **Fix Applied** | (1) New `lib/last-activity.ts` with two functions: `getLastActivityDate(supplierId)` for single supplier, `getLastActivityDates(supplierIds)` for batch. (2) Queries `GREATEST()` across 4 PostgreSQL pipeline tables: `supplier_risk_history.snapshot_date`, `worker_voice_trends.month`, `supplier_monitoring_signals.detected_at`, `alerts.created_at`. (3) Batch version uses `LATERAL` joins on `unnest()` for single-query efficiency. (4) Graceful fallback: try/catch in list endpoint, falls back to today if query fails or no data. |
 | **Results** | Both `/api/suppliers/:id` and `/api/suppliers?page=N` return real pipeline dates. Build clean, no type errors. |
+
+### Session 10: Fix #59 — Cluster drill-down page ✅ DONE 2026-03-20
+
+| Field | Detail |
+|-------|--------|
+| **Files** | `app/api/clusters/[id]/route.ts` (new), `app/connect/clusters/[id]/page.tsx` (new), `types/index.ts`, `lib/api.ts`, `app/connect/clusters/page.tsx`, `app/api/cases/[id]/context/route.ts` |
+| **Root Cause** | Cluster list page showed cards but users couldn't drill down to see individual cases, affected suppliers, or full AI analysis. |
+| **Fix Applied** | (1) New `GET /api/clusters/[id]` route: fetches cluster from PostgreSQL, queries `caseEmbeddings` for member message IDs, batch-fetches case details from SQL Server via parameterized IN clause, builds supplier list from results. (2) New detail page with breadcrumbs, severity header, full AI summary, suggested actions with urgency badges, affected suppliers (linked to `/suppliers/[id]`), cases table (linked to `/connect/[caseId]`), representative messages, case type badges. (3) Added `ClusterCase` and `ClusterDetail` types. (4) Added `fetchCluster()` to API client. (5) Cluster list cards now link to detail page with clickable title + "View Details →" button. |
+| **Bonus Fix** | Fixed `survey_mdlsurveyquestion` → `survey_mdlsurveyquestions` table name typo + `question_text` → `title` column name in `app/api/cases/[id]/context/route.ts`. This eliminated the "relation does not exist" warning on case detail pages. |
+| **Results** | Detail page shows 11 cases for cluster 212 ("Child Labor Exploitation"), 7 linked suppliers, 4 suggested actions. API responds in 27-81ms. Zero console errors, build clean. |
 
 ### Batch D: Engage Module ✅ DONE 2026-03-20
 
@@ -267,7 +277,7 @@ These are roadmap items, not current bugs:
 | 7 | Wave 3 quick wins: #38 (cluster card) + #40 (mock risk) + #25 (dedup labels) + #39 (network graph) + #52 (verify) | **DONE 2026-03-20** — 5 small fixes bundled, all verified visually, build clean |
 | 8 | Wave 3: #35 (risk distribution chart) | **DONE 2026-03-20** — 10-bucket histogram (0–10 through 91–100), color-coded green/orange/red by risk level, custom tooltip, placed above collapsible visualizations |
 | 9 | Wave 3: #28 (lastActivityDate) | **DONE 2026-03-20** — queries GREATEST() across supplier_risk_history, worker_voice_trends, supplier_monitoring_signals, alerts. Batch LATERAL join for list endpoint. Fallback to today only if no pipeline data. |
-| 10 | Wave 3: #59 (cluster drill-down) | New `/connect/clusters/[id]` page + API to show individual cases |
+| 10 | Wave 3: #59 (cluster drill-down) | **DONE 2026-03-20** — new `/connect/clusters/[id]` detail page with breadcrumbs, AI summary, suggested actions, affected suppliers (linked), cases table (linked to case detail + supplier detail), representative messages. API bridges PostgreSQL caseEmbeddings → SQL Server case details. Also fixed `survey_mdlsurveyquestion` table name bug in case context API. |
 | 11 | Wave 3: #50 (trend visualization) | Recharts LineChart for anomaly/cluster trends over time |
 | 12+ | Wave 4 features (pick 2-3) | Core product story is demonstrable |
 

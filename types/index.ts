@@ -333,6 +333,23 @@ export interface CaseCluster {
   suggestedActions?: { action: string; urgency: "immediate" | "soon" | "routine" }[];
 }
 
+export interface ClusterCase {
+  caseId: string;
+  messageId: string;
+  messageText: string;
+  companyId: string;
+  companyName: string;
+  caseTypeName: string;
+  status: string;
+  severity: "high" | "medium" | "low";
+  createdAt: string;
+}
+
+export interface ClusterDetail extends CaseCluster {
+  cases: ClusterCase[];
+  suppliers: { id: string; name: string }[];
+}
+
 export interface PayslipAnomalyDetails {
   expected: number;
   actual: number;

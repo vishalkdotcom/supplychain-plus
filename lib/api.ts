@@ -14,6 +14,7 @@ import {
   MetricsBriefing,
   CaseContext,
   CaseCluster,
+  ClusterDetail,
   PayslipAnomaly,
   SupplierForecast,
   VoiceTrend,
@@ -268,6 +269,12 @@ export async function fetchClusters(
   });
   const res = await fetch(`${API_BASE}/clusters${qs}`);
   if (!res.ok) throw new Error("Failed to fetch clusters");
+  return res.json();
+}
+
+export async function fetchCluster(id: number): Promise<ClusterDetail> {
+  const res = await fetch(`${API_BASE}/clusters/${id}`);
+  if (!res.ok) throw new Error("Failed to fetch cluster");
   return res.json();
 }
 
