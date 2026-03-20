@@ -475,6 +475,23 @@ export async function addRemediationEvidence(
   return res.json();
 }
 
+// --- Freshness ---
+
+export interface FreshnessEntry {
+  jobType: string;
+  completedAt: string;
+  durationMs: number | null;
+  resultSummary: Record<string, unknown> | null;
+}
+
+export type FreshnessMap = Record<string, FreshnessEntry>;
+
+export async function fetchFreshness(): Promise<FreshnessMap> {
+  const res = await fetch(`${API_BASE}/freshness`);
+  if (!res.ok) throw new Error("Failed to fetch freshness");
+  return res.json();
+}
+
 export async function resolveAlert(alertId: number): Promise<void> {
   const res = await fetch(`${API_BASE}/alerts`, {
     method: "PATCH",

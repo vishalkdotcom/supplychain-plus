@@ -7,6 +7,7 @@ import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { useQueryStates, parseAsInteger, parseAsString } from "nuqs";
 import { fetchClusters, fetchClusterTrends } from "@/lib/api";
 import { CaseCluster } from "@/types";
+import { formatAge } from "@/lib/format-age";
 import {
   Card,
   CardContent,
@@ -65,14 +66,6 @@ const ClusterTrendChart = dynamic(
   },
 );
 
-function formatAge(dateStr: string): string {
-  const days = Math.floor(
-    (Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24)
-  );
-  if (days === 0) return "today";
-  if (days === 1) return "1 day ago";
-  return `${days} days ago`;
-}
 
 function ClusterCard({ cluster }: { cluster: CaseCluster }) {
   const [open, setOpen] = useState(false);

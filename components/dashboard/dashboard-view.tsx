@@ -12,6 +12,7 @@ import { Supplier } from "@/types";
 import { useView } from "@/components/view-context";
 
 import { AIBriefingBar } from "@/components/dashboard/ai-briefing-bar";
+import { PipelineFreshnessBar } from "@/components/dashboard/pipeline-freshness-bar";
 import { MetricCard } from "@/components/dashboard/metric-card";
 import { MLInsightCards } from "@/components/dashboard/ml-insight-cards";
 import { NeedsAttentionTabs } from "@/components/dashboard/needs-attention-tabs";
@@ -124,6 +125,9 @@ export function DashboardView() {
             : "Cross-module intelligence across your supply chain"}
         </p>
       </div>
+
+      {/* Data freshness indicators */}
+      <PipelineFreshnessBar />
 
       {/* Row 0: AI Briefing Bar */}
       <AIBriefingBar />

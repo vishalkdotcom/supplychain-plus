@@ -6,6 +6,7 @@ import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tansta
 import { useQueryStates, parseAsInteger, parseAsString } from "nuqs";
 import { fetchPayslipAnomalies, toggleAnomalyResolved, fetchAnomalyTrends } from "@/lib/api";
 import { PayslipAnomaly } from "@/types";
+import { formatAge } from "@/lib/format-age";
 import {
   Card,
   CardContent,
@@ -70,14 +71,6 @@ const AnomalyTrendChart = dynamic(
   },
 );
 
-function formatAge(dateStr: string): string {
-  const days = Math.floor(
-    (Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24)
-  );
-  if (days === 0) return "today";
-  if (days === 1) return "1 day ago";
-  return `${days} days ago`;
-}
 
 function formatCurrency(amount: number, currency: string): string {
   const symbols: Record<string, string> = {

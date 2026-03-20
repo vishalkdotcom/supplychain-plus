@@ -32,15 +32,8 @@ import { useView } from "@/components/view-context";
 import { useQueryStates, parseAsInteger, parseAsString } from "nuqs";
 import { SearchInput } from "@/components/search-input";
 import { getSeverityVariant } from "@/lib/risk-utils";
+import { formatAge } from "@/lib/format-age";
 
-function formatAge(dateStr: string): string {
-  const days = Math.floor(
-    (Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24)
-  );
-  if (days === 0) return "today";
-  if (days === 1) return "1d ago";
-  return `${days}d ago`;
-}
 
 export default function ConnectPage() {
   const [params, setParams] = useQueryStates({
@@ -205,7 +198,7 @@ export default function ConnectPage() {
                     </p>
                     <span className="flex items-center gap-1 text-xs text-muted-foreground">
                       <IconClock className="h-3 w-3" />
-                      {formatAge(c.createdAt)}
+                      {formatAge(c.createdAt, true)}
                     </span>
                   </div>
                   <div className="flex items-start gap-2">

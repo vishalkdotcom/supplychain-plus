@@ -218,7 +218,7 @@ Only after the data foundation is solid. Ordered by demo impact.
 | #33 | Remediation workflow UI (alert → plan → evidence) | **Highest** — closes the detect→act→evidence loop, WOVO's core differentiator for regulators | Large | **DONE Session 12** |
 | #34 | Intelligence briefing page — full executive summary | **High** — best "wow factor" for exec demos | Medium |
 | #36 | Wire AI chat to ML output tables | **High** — makes AI assistant actually useful | Medium |
-| #56 | Data freshness indicators | **Medium** — small effort, big credibility boost | Small |
+| #56 | Data freshness indicators | **Medium** — small effort, big credibility boost | Small | **DONE Session 13** |
 | #57 | Job/pipeline status page | **Medium** — useful during development and demos | Medium |
 
 ### Session 12: #33 — Remediation Workflow UI ✅ DONE 2026-03-20
@@ -235,9 +235,21 @@ Only after the data foundation is solid. Ordered by demo impact.
 | **Integration** | Sidebar "Govern" section with Remediation link. Dashboard alerts get "Create Plan" action. Supplier detail `RemediationTracker` refactored to use shared `StatusPipeline` + types, added "View All" link and clickable plan titles. |
 | **Results** | Full detect→act→evidence loop: create plan from alert → advance through 6 stages → add evidence → close. Build clean, zero lint errors, zero console errors. |
 
+### Session 13: #56 — Data Freshness Indicators ✅ DONE 2026-03-20
+
+| Field | Detail |
+|-------|--------|
+| **New Files** | `lib/format-age.ts`, `app/api/freshness/route.ts`, `components/data-freshness-badge.tsx`, `components/dashboard/pipeline-freshness-bar.tsx` |
+| **Modified Files** | `lib/api.ts`, `components/dashboard/dashboard-view.tsx`, `app/connect/clusters/page.tsx`, `app/connect/clusters/[id]/page.tsx`, `app/connect/payslip-anomalies/page.tsx`, `app/connect/page.tsx` |
+| **Shared Utility** | `lib/format-age.ts` extracts duplicated `formatAge` from 4 Connect pages into shared module. Adds `formatFreshnessAge` returning `{ text, level }` with color-coded freshness classification (fresh <24h, aging 1–7d, stale >7d, never). |
+| **API Endpoint** | `GET /api/freshness` queries `job_runs` table using `DISTINCT ON (job_type)` to get latest completed run per pipeline. Returns map of jobType → `{ completedAt, durationMs, resultSummary }`. |
+| **DataFreshnessBadge** | Reusable component: colored dot (green/amber/red/gray) + relative time text + Tooltip with full timestamp and duration. Uses `outline` Badge variant. |
+| **PipelineFreshnessBar** | Dashboard component showing all 7 pipelines (Risk, Surveys, Clusters, Anomalies, Forecasts, Voice, Briefing) as a flex-wrap row of freshness badges. Fetches via `useQuery` with 60s stale time. |
+| **Results** | Dashboard shows "Data as of:" bar with 7 color-coded badges. All pipelines showing green (fresh) with hour-level granularity (3h–7h ago). Tooltips show exact timestamps and duration. Build clean, zero console errors. |
+
 ### Recommendation
 - ~~**Must-have for MVP**: #33 (remediation workflow) — this is the product's core story~~ **DONE**
-- **High-impact, low-effort**: #56 (freshness indicators) — adds credibility fast
+- ~~**High-impact, low-effort**: #56 (freshness indicators) — adds credibility fast~~ **DONE**
 - **Demo wow-factor**: #34 (intelligence briefing) — best slide for exec presentations
 
 ---
@@ -303,7 +315,8 @@ These are roadmap items, not current bugs:
 | 10 | Wave 3: #59 (cluster drill-down) | **DONE 2026-03-20** — new `/connect/clusters/[id]` detail page with breadcrumbs, AI summary, suggested actions, affected suppliers (linked), cases table (linked to case detail + supplier detail), representative messages. API bridges PostgreSQL caseEmbeddings → SQL Server case details. Also fixed `survey_mdlsurveyquestion` table name bug in case context API. |
 | 11 | Wave 3: #50 (trend visualization) | **DONE 2026-03-20** — Stacked AreaCharts for clusters (by severity) and anomalies (by type). New `/api/clusters/trends` and `/api/payslip-anomalies/trends` endpoints with monthly `date_trunc` aggregation. Charts placed between stat cards and content lists on both Connect pages. |
 | 12 | Wave 4: #33 (remediation workflow UI) | **DONE 2026-03-20** — 7 new components, full detect→act→evidence loop. List page with alerts/plans tabs, detail page with interactive 6-step pipeline, evidence timeline, create plan from alert dialog. Shared StatusPipeline extracted from remediation-tracker. Dashboard + sidebar + supplier detail wired in. |
-| 13+ | Wave 4 features (#34, #36, #56, #57) | Core product story is demonstrable |
+| 13 | Wave 4: #56 (data freshness indicators) | **DONE 2026-03-20** — PipelineFreshnessBar on dashboard with 7 color-coded badges querying job_runs. Shared `formatAge` utility extracted from 4 Connect pages. DataFreshnessBadge reusable component with tooltip. |
+| 14+ | Wave 4 features (#34, #36, #57) | Core product story is demonstrable |
 
 ### Ground Rules
 

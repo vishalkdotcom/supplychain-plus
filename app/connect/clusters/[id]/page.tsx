@@ -35,15 +35,8 @@ import {
   IconInfoCircle,
 } from "@tabler/icons-react";
 import { getSeverityVariant } from "@/lib/risk-utils";
+import { formatAge } from "@/lib/format-age";
 
-function formatAge(dateStr: string): string {
-  const days = Math.floor(
-    (Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24),
-  );
-  if (days === 0) return "today";
-  if (days === 1) return "1 day ago";
-  return `${days} days ago`;
-}
 
 interface ClusterDetailPageProps {
   params: Promise<{ id: string }>;
