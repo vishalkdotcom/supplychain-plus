@@ -314,11 +314,14 @@ function isRetryableError(err: unknown): boolean {
   return false;
 }
 
+/** Max time (ms) to wait for a higher-quality model before trying a faster one. */
+const THROTTLE_THRESHOLD_MS = Number(process.env.JOB_CASCADE_THROTTLE_MS) || 5_000;
+
 /**
  * Drop-in replacement for `generateText` with rate limiting and
- * smart model cascade. Tries models in quality-first order,
- * skipping models with exhausted daily budgets, and falling through
- * on 429/5xx errors.
+ * smart model cascade. Picks the highest-quality model that can serve
+ * within THROTTLE_THRESHOLD_MS, skipping exhausted daily budgets,
+ * and falling through on 429/5xx errors.
  */
 export const generateTextWithFallback: typeof aiGenerateText = async (
   params,
@@ -326,15 +329,55 @@ export const generateTextWithFallback: typeof aiGenerateText = async (
   const estimatedTokens = estimateParamTokens(params as Record<string, unknown>);
   let lastError: unknown;
 
+  // ── Phase 1: Find best model with acceptable wait ──
+  // Scan cascade in quality order; pick first model under threshold.
+  // Track lowest-wait fallback in case all models exceed threshold.
+  let selectedIdx = -1;
+  let lowestWaitIdx = -1;
+  let lowestWait = Infinity;
+
   for (let i = 0; i < cascade.length; i++) {
     const entry = cascade[i];
     const limiter = getRateLimiter(entry.provider, entry.modelId);
 
-    // Smart skip: if daily budget is exhausted, don't even try
     if (await limiter.isDailyExhausted(estimatedTokens)) {
       console.log(
         `[ai/cascade] skipping ${entry.provider}:${entry.modelId} (${i + 1}/${cascade.length}) — daily budget exhausted`,
       );
+      continue;
+    }
+
+    const waitMs = await limiter.estimateWaitMs(estimatedTokens);
+
+    if (waitMs <= THROTTLE_THRESHOLD_MS) {
+      selectedIdx = i;
+      break;
+    }
+
+    if (waitMs < lowestWait) {
+      lowestWait = waitMs;
+      lowestWaitIdx = i;
+    }
+  }
+
+  if (selectedIdx === -1) selectedIdx = lowestWaitIdx;
+
+  if (selectedIdx === -1) {
+    throw new Error("[ai/cascade] all models exhausted (daily budgets)");
+  }
+
+  // ── Phase 2: Try selected model first, then fall through all others on error ──
+  // Build order: selected model first, then remaining models in cascade order
+  const tryOrder: number[] = [selectedIdx];
+  for (let i = 0; i < cascade.length; i++) {
+    if (i !== selectedIdx) tryOrder.push(i);
+  }
+
+  for (const i of tryOrder) {
+    const entry = cascade[i];
+    const limiter = getRateLimiter(entry.provider, entry.modelId);
+
+    if (i !== selectedIdx && await limiter.isDailyExhausted(estimatedTokens)) {
       continue;
     }
 

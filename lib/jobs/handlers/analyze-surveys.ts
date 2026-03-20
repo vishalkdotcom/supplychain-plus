@@ -3,6 +3,7 @@ import { stripThinkingTags } from "@/lib/ai/utils";
 import { db } from "@/lib/db/drizzle";
 import { surveyAnalysis, surveyTemporalPatterns, type SurveyTheme } from "@/lib/db/schema";
 import { query as pgQuery } from "@/lib/db/postgres";
+import { gte } from "drizzle-orm";
 import { z } from "zod";
 import { logger } from "@/lib/logger";
 import type { JobResult, JobParams } from "./types";
@@ -11,12 +12,12 @@ const surveyAnalysisSchema = z.object({
   sentimentPositive: z.number(),
   sentimentNegative: z.number(),
   sentimentNeutral: z.number(),
-  riskScore: z.number(),
+  riskScore: z.number().min(0).max(100).transform((v) => Math.round(v)),
   themes: z.array(
     z.object({
       name: z.string(),
       sentiment: z.enum(["positive", "negative", "neutral"]),
-      mentionCount: z.number(),
+      mentionCount: z.number().transform((v) => Math.round(v)),
     }),
   ),
   insight: z.string().describe("One-paragraph summary of key findings"),
@@ -67,18 +68,42 @@ export async function analyzeSurveys(params?: JobParams): Promise<JobResult> {
     surveyResponses.set(survey.id, { name: survey.name, responses });
   }
 
+  // Checkpoint: skip surveys analyzed in the last 24 hours (unless force=true)
+  const forceReanalyze = params?.force === true;
+  const recentlyAnalyzed = new Set<string>();
+  if (!forceReanalyze) {
+    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const recent = await db
+      .select({ surveyId: surveyAnalysis.surveyId })
+      .from(surveyAnalysis)
+      .where(gte(surveyAnalysis.analyzedAt, cutoff));
+    for (const row of recent) recentlyAnalyzed.add(row.surveyId);
+    if (recentlyAnalyzed.size > 0) {
+      logger.info("jobs/analyze-surveys", `Checkpoint: ${recentlyAnalyzed.size} surveys analyzed <24h ago, will skip (use force=true to override)`);
+    }
+  }
+
   let processedCount = 0;
+  let skippedCount = 0;
+  let dbErrorCount = 0;
 
   const model = getJobModel();
 
   for (const [surveyId, data] of surveyResponses) {
     if (data.responses.length === 0) continue;
 
+    if (recentlyAnalyzed.has(surveyId)) {
+      skippedCount++;
+      continue;
+    }
+
     const responseText = data.responses.slice(0, 50).join("\n---\n");
 
-    const { text } = await generateTextWithFallback({
-      model,
-      prompt: `Analyze these factory worker survey responses and provide a structured analysis. /no_think
+    let text: string;
+    try {
+      ({ text } = await generateTextWithFallback({
+        model,
+        prompt: `Analyze these factory worker survey responses and provide a structured analysis. /no_think
 Return ONLY valid JSON with exactly this shape (no markdown, no explanation):
 {
   "sentimentPositive": <number 0-100>,
@@ -91,7 +116,11 @@ Return ONLY valid JSON with exactly this shape (no markdown, no explanation):
 
 Survey: "${data.name}"
 ${responseText}`,
-    });
+      }));
+    } catch (llmErr) {
+      logger.warn("jobs/analyze-surveys", `LLM call failed for survey ${surveyId}, skipping`, llmErr);
+      continue;
+    }
 
     const jsonStr = stripThinkingTags(text)
       .replace(/```(?:json)?\s*/g, "")
@@ -114,21 +143,11 @@ ${responseText}`,
 
     if (parsed.success) {
       const output = parsed.data;
-      await db
-        .insert(surveyAnalysis)
-        .values({
-          surveyId,
-          sentimentPositive: output.sentimentPositive,
-          sentimentNegative: output.sentimentNegative,
-          sentimentNeutral: output.sentimentNeutral,
-          riskScore: output.riskScore,
-          themes: output.themes,
-          aiInsight: output.insight,
-          responseCount: data.responses.length,
-        })
-        .onConflictDoUpdate({
-          target: surveyAnalysis.surveyId,
-          set: {
+      try {
+        await db
+          .insert(surveyAnalysis)
+          .values({
+            surveyId,
             sentimentPositive: output.sentimentPositive,
             sentimentNegative: output.sentimentNegative,
             sentimentNeutral: output.sentimentNeutral,
@@ -136,11 +155,26 @@ ${responseText}`,
             themes: output.themes,
             aiInsight: output.insight,
             responseCount: data.responses.length,
-            analyzedAt: new Date(),
-          },
-        });
+          })
+          .onConflictDoUpdate({
+            target: surveyAnalysis.surveyId,
+            set: {
+              sentimentPositive: output.sentimentPositive,
+              sentimentNegative: output.sentimentNegative,
+              sentimentNeutral: output.sentimentNeutral,
+              riskScore: output.riskScore,
+              themes: output.themes,
+              aiInsight: output.insight,
+              responseCount: data.responses.length,
+              analyzedAt: new Date(),
+            },
+          });
 
-      processedCount++;
+        processedCount++;
+      } catch (dbErr) {
+        logger.warn("jobs/analyze-surveys", `DB write failed for survey ${surveyId}, skipping`, dbErr);
+        dbErrorCount++;
+      }
     } else {
       logger.warn("jobs/analyze-surveys", `Schema validation failed for survey ${surveyId}`, parsed.error.issues);
     }
@@ -231,7 +265,9 @@ ${responseText}`,
   return {
     success: true,
     count: processedCount,
+    skipped: skippedCount,
+    dbErrors: dbErrorCount,
     temporalPatterns: temporalPatternsCount,
-    message: `Analyzed ${processedCount} surveys, detected ${temporalPatternsCount} theme patterns`,
+    message: `Analyzed ${processedCount} surveys${skippedCount ? `, skipped ${skippedCount} recent` : ""}${dbErrorCount ? `, ${dbErrorCount} DB errors` : ""}, detected ${temporalPatternsCount} theme patterns`,
   };
 }

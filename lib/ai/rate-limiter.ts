@@ -416,6 +416,25 @@ export class RateLimiter {
     );
   }
 
+  /**
+   * Peek at how long acquire() would wait, without deducting tokens.
+   * Note: calls refill() which advances bucket clocks (not a pure read),
+   * but this is benign — refill would happen on the next acquire() anyway.
+   */
+  async estimateWaitMs(estimatedTokens: number): Promise<number> {
+    await this.ensureDbInit();
+    this.tpm.refill();
+    this.rpm.refill();
+    this.tpd.refill();
+    this.rpd.refill();
+    return Math.max(
+      this.tpm.waitMs(estimatedTokens),
+      this.rpm.waitMs(1),
+      this.tpd.waitMs(estimatedTokens),
+      this.rpd.waitMs(1),
+    );
+  }
+
   /** Wait until budget is available across all 4 dimensions, then deduct. */
   async acquire(estimatedTokens: number): Promise<void> {
     await this.ensureDbInit();
