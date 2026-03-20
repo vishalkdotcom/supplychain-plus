@@ -5,6 +5,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchRemediation, updateRemediation } from "@/lib/api";
+import { useDemoUser } from "@/lib/demo-user-context";
+import { AuditLog } from "@/components/remediation/audit-log";
 import {
   Card,
   CardContent,
@@ -39,12 +41,14 @@ import {
   IconClock,
   IconExternalLink,
   IconPencil,
+  IconAlertTriangle,
 } from "@tabler/icons-react";
 import { toast } from "sonner";
 import type { RemediationStatus } from "@/types";
 import { StatusPipeline } from "@/components/remediation/status-pipeline";
 import { EvidenceTimeline } from "@/components/remediation/evidence-timeline";
 import { AddEvidenceDialog } from "@/components/remediation/add-evidence-dialog";
+import { AdvancementSuggestion } from "@/components/remediation/advancement-suggestion";
 
 function daysOpen(createdAt: string, closedAt: string | null): number {
   const end = closedAt ? new Date(closedAt) : new Date();
@@ -73,6 +77,7 @@ export default function RemediationDetailPage({ params }: RemediationDetailPageP
   const { id } = use(params);
   const numericId = parseInt(id);
   const queryClient = useQueryClient();
+  const { currentUser } = useDemoUser();
 
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editField, setEditField] = useState<"rootCause" | "actionPlan" | "details">("rootCause");
@@ -90,19 +95,21 @@ export default function RemediationDetailPage({ params }: RemediationDetailPageP
   });
 
   const advanceMutation = useMutation({
-    mutationFn: (nextStatus: string) => updateRemediation(numericId, { status: nextStatus as RemediationStatus }),
+    mutationFn: (nextStatus: string) => updateRemediation(numericId, { status: nextStatus as RemediationStatus }, currentUser?.id),
     onSuccess: () => {
       toast.success("Status advanced");
       queryClient.invalidateQueries({ queryKey: ["remediation", numericId] });
+      queryClient.invalidateQueries({ queryKey: ["remediation-audit", numericId] });
     },
     onError: () => toast.error("Failed to advance status"),
   });
 
   const editMutation = useMutation({
-    mutationFn: (data: Record<string, string>) => updateRemediation(numericId, data),
+    mutationFn: (data: Record<string, string>) => updateRemediation(numericId, data, currentUser?.id),
     onSuccess: () => {
       toast.success("Updated");
       queryClient.invalidateQueries({ queryKey: ["remediation", numericId] });
+      queryClient.invalidateQueries({ queryKey: ["remediation-audit", numericId] });
       setEditDialogOpen(false);
     },
     onError: () => toast.error("Failed to update"),
@@ -127,6 +134,17 @@ export default function RemediationDetailPage({ params }: RemediationDetailPageP
 
   const link = sourceLink(plan.sourceType, plan.sourceId);
   const days = daysOpen(plan.createdAt, plan.closedAt);
+  const isOverdue = !!(plan.targetDate && new Date(plan.targetDate) < new Date() && plan.status !== "closed");
+  const daysOverdue = isOverdue
+    ? Math.floor((Date.now() - new Date(plan.targetDate!).getTime()) / 86400000)
+    : 0;
+  const formattedTargetDate = plan.targetDate
+    ? new Date(plan.targetDate).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
+    : "";
 
   function openEditDialog(field: "rootCause" | "actionPlan" | "details") {
     setEditField(field);
@@ -187,13 +205,11 @@ export default function RemediationDetailPage({ params }: RemediationDetailPageP
                 </span>
               )}
               {plan.targetDate && (
-                <span className="flex items-center gap-1">
+                <span className={`flex items-center gap-1 ${isOverdue ? "text-red-600 font-medium" : ""}`}>
                   <IconCalendar className="h-3.5 w-3.5" />
-                  Target: {new Date(plan.targetDate).toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                  })}
+                  {isOverdue
+                    ? `${daysOverdue} days overdue`
+                    : `Target: ${formattedTargetDate}`}
                 </span>
               )}
               <span className="flex items-center gap-1">
@@ -213,6 +229,14 @@ export default function RemediationDetailPage({ params }: RemediationDetailPageP
         </div>
       </div>
 
+      {/* Overdue Warning */}
+      {isOverdue && (
+        <div className="rounded-md bg-red-50 border border-red-200 p-3 text-sm text-red-800 flex items-center gap-2">
+          <IconAlertTriangle className="h-4 w-4" />
+          <span>This remediation plan is <strong>{daysOverdue} days overdue</strong>. Target date was {formattedTargetDate}.</span>
+        </div>
+      )}
+
       {/* Status Pipeline */}
       <Card>
         <CardHeader className="pb-2">
@@ -228,6 +252,15 @@ export default function RemediationDetailPage({ params }: RemediationDetailPageP
           />
         </CardContent>
       </Card>
+
+      {/* Advancement Suggestion */}
+      {plan.status !== "closed" && (
+        <AdvancementSuggestion
+          plan={plan}
+          onAdvance={(next) => advanceMutation.mutate(next)}
+          isAdvancing={advanceMutation.isPending}
+        />
+      )}
 
       {/* Two-column layout */}
       <div className="grid gap-6 lg:grid-cols-3">
@@ -355,6 +388,12 @@ export default function RemediationDetailPage({ params }: RemediationDetailPageP
                   </span>
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-4">
+              <AuditLog remediationId={numericId} />
             </CardContent>
           </Card>
         </div>

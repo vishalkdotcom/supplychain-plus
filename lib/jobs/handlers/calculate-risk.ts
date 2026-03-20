@@ -4,13 +4,12 @@ import {
   supplierRiskHistory,
   alerts,
   remediationPlans,
-  remediationEvidence,
 } from "@/lib/db/schema";
 import type { RiskReason } from "@/lib/db/schema";
 import { query as pgQuery } from "@/lib/db/postgres";
 import { query as mssqlQuery } from "@/lib/db/sql-server";
 import { query as mysqlQuery } from "@/lib/db/mysql";
-import { eq, and, lt, desc } from "drizzle-orm";
+import { eq, and, lt, ne, desc } from "drizzle-orm";
 import { logger } from "@/lib/logger";
 import { computeMonitoringSignals } from "@/lib/jobs/monitoring-signals";
 import type { JobResult, JobParams } from "./types";
@@ -365,12 +364,11 @@ export async function calculateRisk(params?: JobParams): Promise<JobResult> {
   // Compute monitoring signals after risk scores are updated
   const monitoringResult = await computeMonitoringSignals();
 
-  // Auto-link evidence: if a supplier's risk dropped while a remediation is in "implementing" status
+  // Auto-link evidence to active remediations
   try {
-    const activeRemediations = await db
-      .select()
-      .from(remediationPlans)
-      .where(eq(remediationPlans.status, "implementing"));
+    const { findAllActiveRemediations, attachAutoEvidence, buildReferenceId } = await import("@/lib/remediation/auto-evidence");
+    const activeRemediations = await findAllActiveRemediations();
+    const today = new Date().toISOString().slice(0, 10);
 
     for (const remediation of activeRemediations) {
       const supplierScore = await db
@@ -379,36 +377,93 @@ export async function calculateRisk(params?: JobParams): Promise<JobResult> {
         .where(eq(supplierRiskScores.supplierId, remediation.supplierId))
         .limit(1);
 
-      if (supplierScore.length > 0) {
-        const currentScore = supplierScore[0].riskScore;
-        const historicalScore = await db
-          .select()
-          .from(supplierRiskHistory)
-          .where(
-            and(
-              eq(supplierRiskHistory.supplierId, remediation.supplierId),
-              lt(supplierRiskHistory.snapshotDate, remediation.createdAt.toISOString().slice(0, 10)),
-            ),
-          )
-          .orderBy(desc(supplierRiskHistory.snapshotDate))
-          .limit(1);
+      if (supplierScore.length === 0) continue;
+      const current = supplierScore[0];
 
-        if (historicalScore.length > 0 && currentScore < historicalScore[0].riskScore - 5) {
-          await db
-            .insert(remediationEvidence)
-            .values({
-              remediationId: remediation.id,
-              evidenceType: "risk_score_drop",
-              title: `Risk score improved: ${historicalScore[0].riskScore} → ${currentScore}`,
-              description: `Risk score dropped by ${historicalScore[0].riskScore - currentScore} points since remediation started.`,
-              date: new Date().toISOString().slice(0, 10),
-            })
-            .onConflictDoNothing();
-        }
+      // Risk score drop evidence
+      const historicalScore = await db
+        .select()
+        .from(supplierRiskHistory)
+        .where(
+          and(
+            eq(supplierRiskHistory.supplierId, remediation.supplierId),
+            lt(supplierRiskHistory.snapshotDate, remediation.createdAt.toISOString().slice(0, 10)),
+          ),
+        )
+        .orderBy(desc(supplierRiskHistory.snapshotDate))
+        .limit(1);
+
+      if (historicalScore.length > 0 && current.riskScore < historicalScore[0].riskScore - 5) {
+        const refId = buildReferenceId("risk_score_drop", today, remediation.supplierId);
+        await attachAutoEvidence(
+          remediation.id,
+          "risk_score_drop",
+          `Risk score improved: ${historicalScore[0].riskScore} → ${current.riskScore}`,
+          `Risk score dropped by ${historicalScore[0].riskScore - current.riskScore} points since remediation started.`,
+          refId,
+        );
+      }
+
+      // Engagement improvement evidence (>10% rise)
+      const prevEngagement = historicalScore.length > 0 ? (historicalScore[0].engagementScore ?? 0) : 0;
+      const currEngagement = current.engagementScore ?? 0;
+      if (prevEngagement > 0 && currEngagement > prevEngagement * 1.1) {
+        const refId = buildReferenceId("engagement_improvement", today, remediation.supplierId);
+        await attachAutoEvidence(
+          remediation.id,
+          "engagement_improvement",
+          `Engagement improved: ${prevEngagement} → ${currEngagement}`,
+          `Engagement score rose by ${Math.round(((currEngagement - prevEngagement) / prevEngagement) * 100)}% since remediation started.`,
+          refId,
+        );
       }
     }
   } catch (e) {
     logger.warn("jobs/calculate-risk", "Auto-evidence linking failed (non-fatal)", e);
+  }
+
+  // Auto-generate alerts for overdue remediation plans
+  try {
+    const overdueRemediations = await db
+      .select()
+      .from(remediationPlans)
+      .where(
+        and(
+          ne(remediationPlans.status, "closed"),
+          lt(remediationPlans.targetDate, new Date().toISOString().slice(0, 10)),
+        ),
+      );
+
+    for (const plan of overdueRemediations) {
+      // Check if an overdue alert already exists for this plan
+      const existingAlert = await db
+        .select({ id: alerts.id })
+        .from(alerts)
+        .where(
+          and(
+            eq(alerts.supplierId, plan.supplierId),
+            eq(alerts.alertType, "remediation_overdue"),
+          ),
+        )
+        .limit(1);
+
+      if (existingAlert.length === 0) {
+        const daysOverdue = Math.floor(
+          (Date.now() - new Date(plan.targetDate!).getTime()) / 86400000,
+        );
+        await db.insert(alerts).values({
+          supplierId: plan.supplierId,
+          supplierName: null,
+          alertType: "remediation_overdue",
+          severity: daysOverdue > 14 ? "critical" : "warning",
+          title: `Remediation overdue: ${plan.title}`,
+          message: `Remediation plan "${plan.title}" is ${daysOverdue} days past its target date.`,
+          metadata: { remediationId: plan.id, daysOverdue },
+        });
+      }
+    }
+  } catch (e) {
+    logger.warn("jobs/calculate-risk", "Overdue alert check failed (non-fatal)", e);
   }
 
   return {

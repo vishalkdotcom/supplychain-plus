@@ -1,10 +1,11 @@
 "use client";
 
-import { use } from "react";
+import { use, useState } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { fetchCluster } from "@/lib/api";
+import { CreatePlanDialog, type RemediationSource } from "@/components/remediation/create-plan-dialog";
 import {
   Card,
   CardContent,
@@ -33,7 +34,9 @@ import {
   IconClock,
   IconExternalLink,
   IconInfoCircle,
+  IconShieldCheck,
 } from "@tabler/icons-react";
+import { Button } from "@/components/ui/button";
 import { getSeverityVariant } from "@/lib/risk-utils";
 import { formatAge } from "@/lib/format-age";
 
@@ -44,6 +47,7 @@ interface ClusterDetailPageProps {
 
 export default function ClusterDetailPage({ params }: ClusterDetailPageProps) {
   const { id } = use(params);
+  const [planDialogOpen, setPlanDialogOpen] = useState(false);
 
   const { data: cluster, isLoading } = useQuery({
     queryKey: ["cluster", id],
@@ -96,10 +100,20 @@ export default function ClusterDetailPage({ params }: ClusterDetailPageProps) {
               {cluster.clusterLabel}
             </h1>
           </div>
-          <span className="flex items-center gap-1 text-sm text-muted-foreground shrink-0">
-            <IconClock className="h-4 w-4" />
-            Detected {formatAge(cluster.detectedAt)}
-          </span>
+          <div className="flex items-center gap-3 shrink-0">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setPlanDialogOpen(true)}
+            >
+              <IconShieldCheck className="h-4 w-4 mr-1.5" />
+              Create Remediation Plan
+            </Button>
+            <span className="flex items-center gap-1 text-sm text-muted-foreground">
+              <IconClock className="h-4 w-4" />
+              Detected {formatAge(cluster.detectedAt)}
+            </span>
+          </div>
         </div>
 
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
@@ -294,6 +308,19 @@ export default function ClusterDetailPage({ params }: ClusterDetailPageProps) {
           ))}
         </div>
       )}
+
+      <CreatePlanDialog
+        open={planDialogOpen}
+        onOpenChange={setPlanDialogOpen}
+        source={cluster ? {
+          type: "cluster",
+          id: cluster.id,
+          title: `Remediate: ${cluster.clusterLabel}`,
+          supplierId: cluster.suppliers?.[0]?.id ?? "unknown",
+          supplierName: cluster.suppliers?.[0]?.name,
+          context: cluster.aiSummary,
+        } satisfies RemediationSource : undefined}
+      />
     </div>
   );
 }

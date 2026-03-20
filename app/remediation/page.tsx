@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { fetchAlerts, fetchRemediations } from "@/lib/api";
+import { fetchAlerts, fetchRemediations, fetchOverdueRemediations } from "@/lib/api";
 import type { Alert } from "@/types";
 import {
   Card,
@@ -28,9 +28,10 @@ import {
   IconClipboardList,
   IconAlertCircle,
   IconInfoCircle,
+  IconClock,
 } from "@tabler/icons-react";
 import { PlanCard } from "@/components/remediation/plan-card";
-import { CreatePlanDialog } from "@/components/remediation/create-plan-dialog";
+import { CreatePlanDialog, type RemediationSource } from "@/components/remediation/create-plan-dialog";
 
 function severityIcon(severity: string) {
   switch (severity) {
@@ -66,6 +67,11 @@ export default function RemediationPage() {
   const { data: remediationsData, isLoading: remediationsLoading } = useQuery({
     queryKey: ["remediations", "all"],
     queryFn: () => fetchRemediations({ perPage: 100 }),
+  });
+
+  const { data: overduePlans } = useQuery({
+    queryKey: ["remediations", "overdue"],
+    queryFn: fetchOverdueRemediations,
   });
 
   // Figure out which alerts already have remediation plans
@@ -114,7 +120,7 @@ export default function RemediationPage() {
       </div>
 
       {/* Stat Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-5">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Open Alerts</CardTitle>
@@ -164,6 +170,19 @@ export default function RemediationPage() {
               <Skeleton className="h-8 w-16" />
             ) : (
               <div className="text-2xl font-bold">{closedPlans.length}</div>
+            )}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Overdue Plans</CardTitle>
+            <IconClock className="h-4 w-4 text-red-500" />
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <Skeleton className="h-8 w-16" />
+            ) : (
+              <div className="text-2xl font-bold text-red-600">{overduePlans?.length ?? 0}</div>
             )}
           </CardContent>
         </Card>
@@ -305,7 +324,14 @@ export default function RemediationPage() {
       <CreatePlanDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
-        alert={selectedAlert ?? undefined}
+        source={selectedAlert ? {
+          type: "alert",
+          id: selectedAlert.id,
+          title: `Remediate: ${selectedAlert.title}`,
+          supplierId: selectedAlert.supplierId,
+          supplierName: selectedAlert.supplierName ?? undefined,
+          context: selectedAlert.message,
+        } satisfies RemediationSource : undefined}
       />
     </div>
   );

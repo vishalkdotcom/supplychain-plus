@@ -42,6 +42,11 @@ export function PlanCard({ plan, supplierName }: PlanCardProps) {
             <Badge variant={sourceTypeBadge(plan.sourceType)} className="text-xs">
               {plan.sourceType.replace(/_/g, " ")}
             </Badge>
+            {plan.targetDate && new Date(plan.targetDate) < new Date() && plan.status !== "closed" && (
+              <Badge variant="destructive" className="text-xs">
+                Overdue
+              </Badge>
+            )}
             {supplierName && (
               <span className="text-xs text-muted-foreground truncate">
                 {supplierName}

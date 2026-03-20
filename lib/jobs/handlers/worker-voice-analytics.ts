@@ -3,6 +3,7 @@ import { getJobModel, generateTextWithFallback } from "@/lib/ai/provider";
 import { query as pgQuery } from "@/lib/db/postgres";
 import { db } from "@/lib/db/drizzle";
 import { workerVoiceTrends } from "@/lib/db/schema";
+import { eq, desc } from "drizzle-orm";
 import { z } from "zod";
 import type { VoiceTopic } from "@/lib/db/schema";
 import { logger } from "@/lib/logger";
@@ -287,6 +288,41 @@ export async function workerVoiceAnalytics(params?: JobParams): Promise<JobResul
           analyzedAt: new Date(),
         },
       });
+  }
+
+  // Auto-link evidence: satisfaction improvement (negative sentiment drops >15% month-over-month)
+  try {
+    const { findAllActiveRemediations, attachAutoEvidence, buildReferenceId } = await import("@/lib/remediation/auto-evidence");
+    const activeRemediations = await findAllActiveRemediations();
+
+    for (const remediation of activeRemediations) {
+      // Get the two most recent voice trends for this supplier
+      const trends = await db
+        .select()
+        .from(workerVoiceTrends)
+        .where(eq(workerVoiceTrends.supplierId, remediation.supplierId))
+        .orderBy(desc(workerVoiceTrends.month))
+        .limit(2);
+
+      if (trends.length < 2) continue;
+
+      const [current, previous] = trends;
+      const currentNeg = (current.topThemes as Array<{sentiment: string}>)?.filter((t) => t.sentiment === "negative").length ?? 0;
+      const previousNeg = (previous.topThemes as Array<{sentiment: string}>)?.filter((t) => t.sentiment === "negative").length ?? 0;
+
+      if (previousNeg > 0 && currentNeg < previousNeg * 0.85) {
+        const refId = buildReferenceId("satisfaction_improvement", current.month ?? "unknown", remediation.supplierId);
+        await attachAutoEvidence(
+          remediation.id,
+          "satisfaction_improvement",
+          `Worker satisfaction improving for supplier ${remediation.supplierId}`,
+          `Negative themes dropped from ${previousNeg} to ${currentNeg} month-over-month (${Math.round((1 - currentNeg / previousNeg) * 100)}% improvement).`,
+          refId,
+        );
+      }
+    }
+  } catch (e) {
+    logger.warn("jobs/worker-voice-analytics", "Auto-evidence linking failed (non-fatal)", e);
   }
 
   return {

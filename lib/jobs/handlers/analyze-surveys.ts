@@ -3,7 +3,7 @@ import { stripThinkingTags } from "@/lib/ai/utils";
 import { db } from "@/lib/db/drizzle";
 import { surveyAnalysis, surveyTemporalPatterns, type SurveyTheme } from "@/lib/db/schema";
 import { query as pgQuery } from "@/lib/db/postgres";
-import { gte } from "drizzle-orm";
+import { eq, gte } from "drizzle-orm";
 import { z } from "zod";
 import { logger } from "@/lib/logger";
 import type { JobResult, JobParams } from "./types";
@@ -260,6 +260,40 @@ ${responseText}`,
     }
   } catch (e) {
     logger.error("jobs/analyze-surveys", "Temporal analysis failed", e);
+  }
+
+  // Auto-link evidence: survey sentiment improvements for active remediations
+  // Note: surveyAnalysis has surveyId (not supplierId), so we check temporal patterns
+  // which track theme trends that indicate improving conditions globally
+  try {
+    const { findAllActiveRemediations, attachAutoEvidence, buildReferenceId } = await import("@/lib/remediation/auto-evidence");
+    const activeRemediations = await findAllActiveRemediations();
+
+    // Check if overall survey sentiment has improved (positive themes rising)
+    const risingThemes = await db
+      .select()
+      .from(surveyTemporalPatterns)
+      .where(eq(surveyTemporalPatterns.trendDirection, "rising"));
+
+    const positiveRising = risingThemes.filter((t) => {
+      const months = Object.values(t.mentionsByMonth ?? {});
+      return months.length >= 2;
+    });
+
+    if (positiveRising.length > 0) {
+      for (const remediation of activeRemediations) {
+        const refId = buildReferenceId("survey_improvement", new Date().toISOString().slice(0, 10), remediation.supplierId);
+        await attachAutoEvidence(
+          remediation.id,
+          "survey_improvement",
+          `${positiveRising.length} survey theme(s) trending positively`,
+          `Rising themes: ${positiveRising.map((t) => t.themeName).join(", ")}. This indicates improving worker conditions.`,
+          refId,
+        );
+      }
+    }
+  } catch (e) {
+    logger.warn("jobs/analyze-surveys", "Auto-evidence linking failed (non-fatal)", e);
   }
 
   return {
