@@ -9,6 +9,9 @@ import {
   IconBellOff,
   IconPencil,
   IconPlus,
+  IconHeartHandshake,
+  IconMoodHappy,
+  IconArrowDown,
 } from "@tabler/icons-react";
 import type { RemediationEvidence } from "@/types";
 
@@ -22,6 +25,9 @@ const EVIDENCE_TYPE_CONFIG: Record<
   risk_score_drop: { icon: IconTrendingDown, color: "text-emerald-600 bg-emerald-100", label: "Risk Score Drop" },
   anomaly_resolved: { icon: IconBellOff, color: "text-amber-600 bg-amber-100", label: "Anomaly Resolved" },
   manual_note: { icon: IconPencil, color: "text-gray-600 bg-gray-100", label: "Manual Note" },
+  engagement_improvement: { icon: IconHeartHandshake, color: "text-teal-600 bg-teal-100", label: "Engagement Improved" },
+  satisfaction_improvement: { icon: IconMoodHappy, color: "text-indigo-600 bg-indigo-100", label: "Satisfaction Improved" },
+  case_volume_decrease: { icon: IconArrowDown, color: "text-cyan-600 bg-cyan-100", label: "Case Volume Decrease" },
 };
 
 function getEvidenceConfig(type: string) {
@@ -79,6 +85,11 @@ export function EvidenceTimeline({ evidence, onAddEvidence }: EvidenceTimelinePr
                     <span className="text-xs text-muted-foreground">
                       {config.label}
                     </span>
+                    {item.referenceId && (
+                      <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">
+                        auto
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>

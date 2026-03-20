@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db/drizzle";
-import { remediationPlans, remediationEvidence } from "@/lib/db/schema";
+import { remediationPlans, remediationEvidence, remediationAuditLog } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { logger } from "@/lib/logger";
 
@@ -56,6 +56,21 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     const { id } = await params;
     const remediationId = parseInt(id);
     const body = await request.json();
+    const actorId = request.headers.get("x-demo-user-id") || "system";
+
+    // Fetch current state for audit comparison
+    const [current] = await db
+      .select()
+      .from(remediationPlans)
+      .where(eq(remediationPlans.id, remediationId))
+      .limit(1);
+
+    if (!current) {
+      return NextResponse.json(
+        { error: "Remediation not found" },
+        { status: 404 },
+      );
+    }
 
     const updates: Record<string, unknown> = { updatedAt: new Date() };
 
@@ -86,11 +101,87 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       .where(eq(remediationPlans.id, remediationId))
       .returning();
 
-    if (!result) {
-      return NextResponse.json(
-        { error: "Remediation not found" },
-        { status: 404 },
-      );
+    // Write audit log entries for each changed field
+    const auditEntries: Array<{
+      remediationId: number;
+      action: string;
+      field: string;
+      previousValue: string | null;
+      newValue: string | null;
+      actorId: string;
+      actorType: string;
+    }> = [];
+    const actorType = actorId === "system" ? "system" : "user";
+
+    if (body.status && body.status !== current.status) {
+      auditEntries.push({
+        remediationId,
+        action: "status_change",
+        field: "status",
+        previousValue: current.status,
+        newValue: body.status,
+        actorId,
+        actorType,
+      });
+    }
+    if (body.rootCause !== undefined && body.rootCause !== current.rootCause) {
+      auditEntries.push({
+        remediationId,
+        action: "field_edit",
+        field: "rootCause",
+        previousValue: current.rootCause,
+        newValue: body.rootCause,
+        actorId,
+        actorType,
+      });
+    }
+    if (body.actionPlan !== undefined && body.actionPlan !== current.actionPlan) {
+      auditEntries.push({
+        remediationId,
+        action: "field_edit",
+        field: "actionPlan",
+        previousValue: current.actionPlan,
+        newValue: body.actionPlan,
+        actorId,
+        actorType,
+      });
+    }
+    if (body.assignedTo !== undefined && body.assignedTo !== current.assignedTo) {
+      auditEntries.push({
+        remediationId,
+        action: "field_edit",
+        field: "assignedTo",
+        previousValue: current.assignedTo,
+        newValue: body.assignedTo,
+        actorId,
+        actorType,
+      });
+    }
+    if (body.targetDate !== undefined && body.targetDate !== current.targetDate) {
+      auditEntries.push({
+        remediationId,
+        action: "field_edit",
+        field: "targetDate",
+        previousValue: current.targetDate,
+        newValue: body.targetDate,
+        actorId,
+        actorType,
+      });
+    }
+    if (body.title !== undefined && body.title !== current.title) {
+      auditEntries.push({
+        remediationId,
+        action: "field_edit",
+        field: "title",
+        previousValue: current.title,
+        newValue: body.title,
+        actorId,
+        actorType,
+      });
+    }
+
+    if (auditEntries.length > 0) {
+      await db.insert(remediationAuditLog).values(auditEntries);
     }
 
     return NextResponse.json(result);

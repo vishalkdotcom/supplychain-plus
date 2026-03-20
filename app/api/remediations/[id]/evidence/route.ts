@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db/drizzle";
-import { remediationEvidence } from "@/lib/db/schema";
+import { remediationEvidence, remediationAuditLog } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { logger } from "@/lib/logger";
 
@@ -54,6 +54,18 @@ export async function POST(request: Request, { params }: RouteParams) {
         date,
       })
       .returning();
+
+    // Write audit log entry for evidence addition
+    const actorId = request.headers.get("x-demo-user-id") || "system";
+    await db.insert(remediationAuditLog).values({
+      remediationId,
+      action: "evidence_added",
+      field: "evidence",
+      previousValue: null,
+      newValue: title,
+      actorId,
+      actorType: actorId === "system" ? "system" : "user",
+    });
 
     return NextResponse.json(result, { status: 201 });
   } catch (error) {

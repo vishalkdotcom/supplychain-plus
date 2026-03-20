@@ -424,8 +424,46 @@ export const remediationEvidence = pgTable(
   },
   (table) => [
     index("idx_evidence_remediation").on(table.remediationId),
+    uniqueIndex("idx_evidence_dedup").on(table.remediationId, table.referenceId),
   ],
 );
+
+// Remediation Audit Log — tracks every change to a remediation plan
+export const remediationAuditLog = pgTable(
+  "remediation_audit_log",
+  {
+    id: serial("id").primaryKey(),
+    remediationId: integer("remediation_id")
+      .notNull()
+      .references(() => remediationPlans.id),
+    action: varchar("action", { length: 50 }).notNull(),
+    // status_change, field_edit, evidence_added, evidence_auto_attached
+    field: varchar("field", { length: 100 }),
+    previousValue: text("previous_value"),
+    newValue: text("new_value"),
+    actorId: varchar("actor_id", { length: 100 }).notNull().default("system"),
+    actorType: varchar("actor_type", { length: 30 }).notNull(),
+    // user, system, auto_evidence_job
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("idx_audit_remediation").on(table.remediationId),
+  ],
+);
+
+// ===============================
+// AUTH LAYER
+// ===============================
+
+// Demo Users — lightweight user identities for audit trail / UI
+export const demoUsers = pgTable("demo_users", {
+  id: varchar("id", { length: 50 }).primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  role: varchar("role", { length: 100 }).notNull(),
+  avatarColor: varchar("avatar_color", { length: 30 }).notNull(),
+});
 
 // ===============================
 // STATE LAYER

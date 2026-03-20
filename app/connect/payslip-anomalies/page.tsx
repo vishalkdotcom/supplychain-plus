@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
@@ -56,7 +57,9 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { SearchInput } from "@/components/search-input";
 import { getSeverityVariant } from "@/lib/risk-utils";
-import { IconAlertTriangle, IconArrowRight } from "@tabler/icons-react";
+import { IconAlertTriangle, IconArrowRight, IconShieldCheck } from "@tabler/icons-react";
+import { Button } from "@/components/ui/button";
+import { CreatePlanDialog, type RemediationSource } from "@/components/remediation/create-plan-dialog";
 
 const AnomalyTrendChart = dynamic(
   () =>
@@ -110,6 +113,8 @@ function getAnomalyTypeLabel(
 
 export default function PayslipAnomaliesPage() {
   const queryClient = useQueryClient();
+  const [selectedAnomaly, setSelectedAnomaly] = useState<PayslipAnomaly | null>(null);
+  const [planDialogOpen, setPlanDialogOpen] = useState(false);
 
   const [params, setParams] = useQueryStates({
     page: parseAsInteger.withDefault(1),
@@ -339,6 +344,7 @@ export default function PayslipAnomaliesPage() {
                     <TableHead>AI Interpretation</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Detected</TableHead>
+                    <TableHead className="w-[1%]"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -415,6 +421,20 @@ export default function PayslipAnomaliesPage() {
                       <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
                         {formatAge(anomaly.detectedAt)}
                       </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="whitespace-nowrap"
+                          onClick={() => {
+                            setSelectedAnomaly(anomaly);
+                            setPlanDialogOpen(true);
+                          }}
+                        >
+                          <IconShieldCheck className="h-3.5 w-3.5 mr-1" />
+                          Create Plan
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -468,6 +488,19 @@ export default function PayslipAnomaliesPage() {
           </PaginationContent>
         </Pagination>
       )}
+
+      <CreatePlanDialog
+        open={planDialogOpen}
+        onOpenChange={setPlanDialogOpen}
+        source={selectedAnomaly ? {
+          type: "anomaly",
+          id: selectedAnomaly.id,
+          title: `Remediate: ${selectedAnomaly.supplierName} payslip anomaly`,
+          supplierId: selectedAnomaly.supplierId,
+          supplierName: selectedAnomaly.supplierName,
+          context: selectedAnomaly.aiInterpretation ?? `${selectedAnomaly.anomalyType}: ${selectedAnomaly.details.actual} vs expected ${selectedAnomaly.details.expected} ${selectedAnomaly.details.currency}`,
+        } satisfies RemediationSource : undefined}
+      />
     </div>
   );
 }

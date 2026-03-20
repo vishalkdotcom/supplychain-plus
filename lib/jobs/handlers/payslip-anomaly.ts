@@ -3,6 +3,7 @@ import { getJobModel, generateTextWithFallback } from "@/lib/ai/provider";
 import { query as mssqlQuery } from "@/lib/db/sql-server";
 import { db } from "@/lib/db/drizzle";
 import { payslipAnomalies, alerts } from "@/lib/db/schema";
+import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { logger } from "@/lib/logger";
 import type { JobResult } from "./types";
@@ -236,6 +237,41 @@ Workers affected: ${anomaly.details.employeeCount}`,
       });
       savedCount++;
     }
+  }
+
+  // Auto-link evidence: resolved anomalies for suppliers with active remediations
+  try {
+    const { findAllActiveRemediations, attachAutoEvidence, buildReferenceId } = await import("@/lib/remediation/auto-evidence");
+    const activeRemediations = await findAllActiveRemediations();
+    const today = new Date().toISOString().slice(0, 10);
+
+    for (const remediation of activeRemediations) {
+      if (remediation.sourceType !== "anomaly") continue;
+
+      // Check if any anomalies for this supplier are resolved
+      const unresolvedAnomalies = await db
+        .select({ id: payslipAnomalies.id })
+        .from(payslipAnomalies)
+        .where(
+          and(
+            eq(payslipAnomalies.supplierId, remediation.supplierId),
+            eq(payslipAnomalies.isResolved, false),
+          ),
+        );
+
+      if (unresolvedAnomalies.length === 0) {
+        const refId = buildReferenceId("anomaly_resolved", today, remediation.supplierId);
+        await attachAutoEvidence(
+          remediation.id,
+          "anomaly_resolved",
+          `All payslip anomalies resolved for supplier ${remediation.supplierId}`,
+          `No unresolved payslip anomalies remain for this supplier.`,
+          refId,
+        );
+      }
+    }
+  } catch (e) {
+    logger.warn("jobs/payslip-anomaly", "Auto-evidence linking failed (non-fatal)", e);
   }
 
   return {

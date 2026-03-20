@@ -7,6 +7,7 @@ import { payslipAnomaly } from "./payslip-anomaly";
 import { riskForecast } from "./risk-forecast";
 import { workerVoiceAnalytics } from "./worker-voice-analytics";
 import { generateBriefing } from "./generate-briefing";
+import { remediationEvidenceSweep } from "./remediation-evidence-sweep";
 
 export type { JobResult, JobParams, JobHandler } from "./types";
 
@@ -22,4 +23,5 @@ export const JOB_REGISTRY: Record<JobType, JobHandler> = {
   "risk-forecast": riskForecast,
   "worker-voice-analytics": workerVoiceAnalytics,
   "generate-briefing": generateBriefing,
+  "remediation-evidence-sweep": remediationEvidenceSweep,
 };

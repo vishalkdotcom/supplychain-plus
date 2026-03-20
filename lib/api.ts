@@ -25,6 +25,8 @@ import {
   RemediationPlanDetail,
   RemediationEvidence,
   IntelligenceBriefingResponse,
+  RemediationAuditEntry,
+  DemoUser,
 } from "@/types";
 
 const API_BASE = "/api";
@@ -434,10 +436,13 @@ export async function createRemediation(data: {
   actionPlan?: string;
   assignedTo?: string;
   targetDate?: string;
-}): Promise<RemediationPlan> {
+}, actorId?: string): Promise<RemediationPlan> {
   const res = await fetch(`${API_BASE}/remediations`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(actorId ? { "x-demo-user-id": actorId } : {}),
+    },
     body: JSON.stringify(data),
   });
   if (!res.ok) throw new Error("Failed to create remediation");
@@ -447,10 +452,14 @@ export async function createRemediation(data: {
 export async function updateRemediation(
   id: number,
   data: Partial<Pick<RemediationPlan, "status" | "rootCause" | "actionPlan" | "assignedTo" | "targetDate" | "title">>,
+  actorId?: string,
 ): Promise<RemediationPlan> {
   const res = await fetch(`${API_BASE}/remediations/${id}`, {
     method: "PATCH",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(actorId ? { "x-demo-user-id": actorId } : {}),
+    },
     body: JSON.stringify(data),
   });
   if (!res.ok) throw new Error("Failed to update remediation");
@@ -466,13 +475,35 @@ export async function addRemediationEvidence(
     date: string;
     referenceId?: string;
   },
+  actorId?: string,
 ): Promise<RemediationEvidence> {
   const res = await fetch(`${API_BASE}/remediations/${remediationId}/evidence`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(actorId ? { "x-demo-user-id": actorId } : {}),
+    },
     body: JSON.stringify(data),
   });
   if (!res.ok) throw new Error("Failed to add evidence");
+  return res.json();
+}
+
+export async function fetchAuditLog(remediationId: number): Promise<RemediationAuditEntry[]> {
+  const res = await fetch(`${API_BASE}/remediations/${remediationId}/audit`);
+  if (!res.ok) throw new Error("Failed to fetch audit log");
+  return res.json();
+}
+
+export async function fetchOverdueRemediations(): Promise<RemediationPlan[]> {
+  const res = await fetch(`${API_BASE}/remediations/overdue`);
+  if (!res.ok) return [];
+  return res.json();
+}
+
+export async function fetchDemoUsers(): Promise<DemoUser[]> {
+  const res = await fetch(`${API_BASE}/demo-users`);
+  if (!res.ok) return [];
   return res.json();
 }
 

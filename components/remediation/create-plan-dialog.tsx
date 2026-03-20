@@ -15,26 +15,36 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { createRemediation, resolveAlert } from "@/lib/api";
-import type { Alert } from "@/types";
+import { IconSparkles } from "@tabler/icons-react";
+import { useDemoUser } from "@/lib/demo-user-context";
+
+export interface RemediationSource {
+  type: "alert" | "cluster" | "anomaly" | "monitoring_signal" | "manual";
+  id: number | null;
+  title: string;
+  supplierId: string;
+  supplierName?: string;
+  context?: string; // Additional context for AI root cause generation
+}
 
 interface CreatePlanDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  alert?: Alert;
+  source?: RemediationSource;
 }
 
 export function CreatePlanDialog({
   open,
   onOpenChange,
-  alert,
+  source,
 }: CreatePlanDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
-        {/* Key on alert id to reset form state when switching alerts */}
+        {/* Key on source id+type to reset form state when switching sources */}
         <CreatePlanForm
-          key={alert?.id ?? "none"}
-          alert={alert}
+          key={source ? `${source.type}-${source.id}` : "none"}
+          source={source}
           onOpenChange={onOpenChange}
         />
       </DialogContent>
@@ -43,35 +53,40 @@ export function CreatePlanDialog({
 }
 
 function CreatePlanForm({
-  alert,
+  source,
   onOpenChange,
 }: {
-  alert?: Alert;
+  source?: RemediationSource;
   onOpenChange: (open: boolean) => void;
 }) {
   const queryClient = useQueryClient();
+  const { currentUser } = useDemoUser();
   const [title, setTitle] = useState("");
   const [rootCause, setRootCause] = useState("");
   const [actionPlan, setActionPlan] = useState("");
   const [assignedTo, setAssignedTo] = useState("");
   const [targetDate, setTargetDate] = useState("");
+  const [isGenerating, setIsGenerating] = useState<"root_cause" | "action_plan" | null>(null);
 
-  const effectiveTitle = title || (alert ? `Remediate: ${alert.title}` : "");
+  const effectiveTitle = title || (source ? source.title : "");
 
   const mutation = useMutation({
     mutationFn: async () => {
-      if (!alert) throw new Error("No alert selected");
+      if (!source) throw new Error("No source selected");
       const plan = await createRemediation({
-        supplierId: alert.supplierId,
+        supplierId: source.supplierId,
         title: effectiveTitle,
-        sourceType: "alert",
-        sourceId: alert.id,
+        sourceType: source.type,
+        sourceId: source.id ?? undefined,
         rootCause: rootCause || undefined,
         actionPlan: actionPlan || undefined,
         assignedTo: assignedTo || undefined,
         targetDate: targetDate || undefined,
-      });
-      await resolveAlert(alert.id);
+      }, currentUser?.id);
+      // Only resolve alert if source is an alert
+      if (source.type === "alert" && source.id) {
+        await resolveAlert(source.id);
+      }
       return plan;
     },
     onSuccess: () => {
@@ -83,6 +98,42 @@ function CreatePlanForm({
     onError: () => toast.error("Failed to create plan"),
   });
 
+  async function handleAIDraft(mode: "root_cause" | "action_plan") {
+    setIsGenerating(mode);
+    const setter = mode === "root_cause" ? setRootCause : setActionPlan;
+    setter(""); // Clear current
+
+    try {
+      const res = await fetch("/api/ai/remediation-root-cause", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sourceType: source?.type ?? "manual",
+          sourceContext: mode === "action_plan" ? rootCause : (source?.context ?? ""),
+          supplierInfo: source?.supplierName ?? "",
+          mode,
+        }),
+      });
+
+      if (!res.ok || !res.body) throw new Error("Stream failed");
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let text = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        text += decoder.decode(value, { stream: true });
+        setter(text);
+      }
+    } catch {
+      toast.error("AI generation failed");
+    } finally {
+      setIsGenerating(null);
+    }
+  }
+
   return (
     <>
       <DialogHeader>
@@ -90,11 +141,12 @@ function CreatePlanForm({
       </DialogHeader>
 
       <div className="space-y-4 py-4">
-        {alert && (
+        {source && (
           <div className="rounded-md bg-muted p-3 text-sm">
-            <p className="font-medium">From alert: {alert.title}</p>
+            <p className="font-medium">{source.title}</p>
             <p className="text-muted-foreground mt-1 text-xs">
-              {alert.supplierName} &middot; {alert.alertType.replace(/_/g, " ")}
+              {source.supplierName && <>{source.supplierName} &middot; </>}
+              {source.type.replace(/_/g, " ")}
             </p>
           </div>
         )}
@@ -104,12 +156,23 @@ function CreatePlanForm({
           <Input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder={alert ? `Remediate: ${alert.title}` : "Plan title"}
+            placeholder={source ? source.title : "Plan title"}
           />
         </div>
 
         <div className="space-y-2">
-          <Label>Root Cause Analysis</Label>
+          <div className="flex items-center justify-between">
+            <Label>Root Cause Analysis</Label>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleAIDraft("root_cause")}
+              disabled={!source?.context || isGenerating !== null}
+            >
+              <IconSparkles className="h-3.5 w-3.5 mr-1" />
+              {isGenerating === "root_cause" ? "Generating..." : "AI Draft"}
+            </Button>
+          </div>
           <Textarea
             value={rootCause}
             onChange={(e) => setRootCause(e.target.value)}
@@ -119,7 +182,20 @@ function CreatePlanForm({
         </div>
 
         <div className="space-y-2">
-          <Label>Action Plan</Label>
+          <div className="flex items-center justify-between">
+            <Label>Action Plan</Label>
+            {rootCause && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleAIDraft("action_plan")}
+                disabled={isGenerating !== null}
+              >
+                <IconSparkles className="h-3.5 w-3.5 mr-1" />
+                {isGenerating === "action_plan" ? "Generating..." : "AI Draft"}
+              </Button>
+            )}
+          </div>
           <Textarea
             value={actionPlan}
             onChange={(e) => setActionPlan(e.target.value)}
@@ -154,7 +230,7 @@ function CreatePlanForm({
         </Button>
         <Button
           onClick={() => mutation.mutate()}
-          disabled={!alert || mutation.isPending}
+          disabled={!source || mutation.isPending}
         >
           {mutation.isPending ? "Creating..." : "Create Plan"}
         </Button>

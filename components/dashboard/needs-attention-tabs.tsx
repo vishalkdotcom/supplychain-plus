@@ -26,7 +26,7 @@ import { Button } from "@/components/ui/button";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { markAlertRead } from "@/lib/api";
 import { useView } from "@/components/view-context";
-import { CreatePlanDialog } from "@/components/remediation/create-plan-dialog";
+import { CreatePlanDialog, type RemediationSource } from "@/components/remediation/create-plan-dialog";
 
 export function NeedsAttentionTabs() {
   const [activeTab, setActiveTab] = useQueryState(
@@ -259,7 +259,14 @@ function AlertsTabContent() {
       <CreatePlanDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
-        alert={selectedAlert ?? undefined}
+        source={selectedAlert ? {
+          type: "alert",
+          id: selectedAlert.id,
+          title: `Remediate: ${selectedAlert.title}`,
+          supplierId: selectedAlert.supplierId,
+          supplierName: selectedAlert.supplierName ?? undefined,
+          context: selectedAlert.message,
+        } satisfies RemediationSource : undefined}
       />
     </>
   );

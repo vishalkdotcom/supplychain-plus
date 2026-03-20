@@ -41,6 +41,7 @@ import {
 } from "@/components/ui/collapsible";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { DemoUserSelector } from "@/components/demo-user-selector";
 
 const primaryNav = [
   {
@@ -253,6 +254,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <DemoUserSelector />
+          </SidebarMenuItem>
+        </SidebarMenu>
+        <SidebarSeparator />
         <SidebarMenu>
           <SidebarMenuItem>
             <div className="flex w-full items-center justify-between px-2 py-1">

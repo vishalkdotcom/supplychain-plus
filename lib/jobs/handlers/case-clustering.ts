@@ -3,7 +3,7 @@ import { getJobModel, getOllamaEmbedding, generateTextWithFallback } from "@/lib
 import { query as mssqlQuery } from "@/lib/db/sql-server";
 import { db } from "@/lib/db/drizzle";
 import { caseEmbeddings, caseClusters } from "@/lib/db/schema";
-import { inArray } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { logger } from "@/lib/logger";
 import type { JobResult } from "./types";
@@ -198,6 +198,36 @@ Respond with ONLY this JSON structure:
     } catch (e) {
       logger.error("jobs/case-clustering", "Cluster labeling failed", e);
     }
+  }
+
+  // Auto-link evidence: cluster case count reduction for remediations linked to clusters
+  try {
+    const { findAllActiveRemediations, attachAutoEvidence, buildReferenceId } = await import("@/lib/remediation/auto-evidence");
+    const activeRemediations = await findAllActiveRemediations();
+
+    for (const remediation of activeRemediations) {
+      if (remediation.sourceType !== "cluster" || !remediation.sourceId) continue;
+
+      // Check if the cluster this remediation is linked to has fewer cases
+      const [cluster] = await db
+        .select()
+        .from(caseClusters)
+        .where(eq(caseClusters.id, remediation.sourceId))
+        .limit(1);
+
+      if (cluster && cluster.caseCount !== null && cluster.caseCount < 3) {
+        const refId = buildReferenceId("case_resolved", new Date().toISOString().slice(0, 10), remediation.supplierId, String(cluster.id));
+        await attachAutoEvidence(
+          remediation.id,
+          "case_resolved",
+          `Cluster cases reduced to ${cluster.caseCount}`,
+          `The systemic pattern "${cluster.clusterLabel}" now has only ${cluster.caseCount} cases remaining.`,
+          refId,
+        );
+      }
+    }
+  } catch (e) {
+    logger.warn("jobs/case-clustering", "Auto-evidence linking failed (non-fatal)", e);
   }
 
   return {

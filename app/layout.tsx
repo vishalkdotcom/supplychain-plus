@@ -5,6 +5,7 @@ import { QueryProvider } from "@/components/providers/query-provider";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { ViewProvider } from "@/components/view-context";
+import { DemoUserProvider } from "@/lib/demo-user-context";
 import { AppHeader } from "@/components/app-header";
 import { Toaster } from "@/components/ui/sonner";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
@@ -46,6 +47,7 @@ export default function RootLayout({
         >
           <NuqsAdapter>
             <QueryProvider>
+              <DemoUserProvider>
               <ViewProvider>
                 <SidebarProvider>
                   <AppSidebar />
@@ -57,6 +59,7 @@ export default function RootLayout({
                   </div>
                 </SidebarProvider>
               </ViewProvider>
+              </DemoUserProvider>
             </QueryProvider>
           </NuqsAdapter>
           <Toaster />

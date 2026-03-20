@@ -300,6 +300,25 @@ export interface RemediationPlanDetail extends RemediationPlan {
   evidence: RemediationEvidence[];
 }
 
+export interface RemediationAuditEntry {
+  id: number;
+  remediationId: number;
+  action: "status_change" | "field_edit" | "evidence_added" | "evidence_auto_attached";
+  field: string | null;
+  previousValue: string | null;
+  newValue: string | null;
+  actorId: string;
+  actorType: "user" | "system" | "auto_evidence_job";
+  createdAt: string;
+}
+
+export interface DemoUser {
+  id: string;
+  name: string;
+  role: string;
+  avatarColor: string;
+}
+
 // ===============================
 // Dashboard Briefing (AI Co-Pilot)
 // ===============================

@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { addRemediationEvidence } from "@/lib/api";
+import { useDemoUser } from "@/lib/demo-user-context";
 
 const EVIDENCE_TYPES = [
   { value: "case_resolved", label: "Case Resolved" },
@@ -44,6 +45,7 @@ export function AddEvidenceDialog({
   remediationId,
 }: AddEvidenceDialogProps) {
   const queryClient = useQueryClient();
+  const { currentUser } = useDemoUser();
   const [evidenceType, setEvidenceType] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -56,10 +58,11 @@ export function AddEvidenceDialog({
         title,
         description: description || undefined,
         date,
-      }),
+      }, currentUser?.id),
     onSuccess: () => {
       toast.success("Evidence added");
       queryClient.invalidateQueries({ queryKey: ["remediation", remediationId] });
+      queryClient.invalidateQueries({ queryKey: ["remediation-audit", remediationId] });
       onOpenChange(false);
       resetForm();
     },

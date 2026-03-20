@@ -6,6 +6,7 @@ export const JOB_TYPES = [
   "risk-forecast",
   "worker-voice-analytics",
   "generate-briefing",
+  "remediation-evidence-sweep",
 ] as const;
 
 export type JobType = (typeof JOB_TYPES)[number];
@@ -24,6 +25,7 @@ export const RUN_ALL_ORDER: JobType[] = [
   "risk-forecast",
   "worker-voice-analytics",
   "generate-briefing",
+  "remediation-evidence-sweep",
 ];
 
 /** Human-readable labels for each job type */
@@ -35,6 +37,7 @@ export const JOB_LABELS: Record<JobType, string> = {
   "risk-forecast": "Risk Forecasting",
   "worker-voice-analytics": "Worker Voice Analytics",
   "generate-briefing": "Intelligence Briefing",
+  "remediation-evidence-sweep": "Evidence Sweep",
 };
 
 /** Brief descriptions for each job */
@@ -46,4 +49,5 @@ export const JOB_DESCRIPTIONS: Record<JobType, string> = {
   "risk-forecast": "Predict supplier risk scores 60 days ahead",
   "worker-voice-analytics": "Extract emerging topics and sentiment trends from worker feedback",
   "generate-briefing": "Aggregate intelligence from all jobs into a daily briefing digest",
+  "remediation-evidence-sweep": "Cross-reference resolved cases, training completions, and case volumes against active remediations",
 };

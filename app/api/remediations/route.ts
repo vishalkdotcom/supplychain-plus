@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db/drizzle";
-import { remediationPlans } from "@/lib/db/schema";
+import { remediationPlans, remediationAuditLog } from "@/lib/db/schema";
 import { desc, eq, and, count } from "drizzle-orm";
 import { logger } from "@/lib/logger";
 
@@ -89,6 +89,18 @@ export async function POST(request: Request) {
         status: "detected",
       })
       .returning();
+
+    // Write audit log entry for creation
+    const actorId = request.headers.get("x-demo-user-id") || "system";
+    await db.insert(remediationAuditLog).values({
+      remediationId: result.id,
+      action: "status_change",
+      field: "status",
+      previousValue: null,
+      newValue: "detected",
+      actorId,
+      actorType: actorId === "system" ? "system" : "user",
+    });
 
     return NextResponse.json(result, { status: 201 });
   } catch (error) {
