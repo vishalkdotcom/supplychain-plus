@@ -24,6 +24,7 @@ import {
   RemediationPlan,
   RemediationPlanDetail,
   RemediationEvidence,
+  IntelligenceBriefingResponse,
 } from "@/types";
 
 const API_BASE = "/api";
@@ -489,6 +490,17 @@ export type FreshnessMap = Record<string, FreshnessEntry>;
 export async function fetchFreshness(): Promise<FreshnessMap> {
   const res = await fetch(`${API_BASE}/freshness`);
   if (!res.ok) throw new Error("Failed to fetch freshness");
+  return res.json();
+}
+
+// --- Intelligence Briefing ---
+
+export async function fetchIntelligencePage(
+  briefingId?: number,
+): Promise<IntelligenceBriefingResponse> {
+  const qs = briefingId ? `?id=${briefingId}` : "";
+  const res = await fetch(`${API_BASE}/intelligence${qs}`);
+  if (!res.ok) throw new Error("Failed to fetch intelligence briefing");
   return res.json();
 }
 

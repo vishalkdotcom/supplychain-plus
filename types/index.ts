@@ -304,6 +304,26 @@ export interface RemediationPlanDetail extends RemediationPlan {
 // Dashboard Briefing (AI Co-Pilot)
 // ===============================
 
+export type { BriefingAttentionItem } from "@/lib/db/schema";
+
+export interface BriefingHistoryEntry {
+  id: number;
+  generatedAt: string;
+  itemCount: number;
+}
+
+export interface IntelligenceBriefingResponse {
+  current: {
+    id: number;
+    attentionItems: import("@/lib/db/schema").BriefingAttentionItem[];
+    generatedAt: string;
+    expiresAt: string;
+  } | null;
+  metrics: MetricsBriefing;
+  history: BriefingHistoryEntry[];
+  stale: boolean;
+}
+
 export interface MetricsBriefing {
   summary: string;
   newAlerts: number;

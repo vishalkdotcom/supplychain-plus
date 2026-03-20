@@ -13,6 +13,7 @@ import {
   IconPlayerPlay,
   IconSchool,
   IconSettings,
+  IconReportAnalytics,
   IconShieldCheck,
   IconSparkles,
 } from "@tabler/icons-react";
@@ -203,6 +204,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarGroupLabel>Govern</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname.startsWith("/intelligence")}
+                  tooltip="Intelligence"
+                >
+                  <Link href="/intelligence">
+                    <IconReportAnalytics />
+                    <span>Intelligence</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton
                   asChild

@@ -216,7 +216,7 @@ Only after the data foundation is solid. Ordered by demo impact.
 | Issue | Title | Demo Value | Effort |
 |-------|-------|-----------|--------|
 | #33 | Remediation workflow UI (alert → plan → evidence) | **Highest** — closes the detect→act→evidence loop, WOVO's core differentiator for regulators | Large | **DONE Session 12** |
-| #34 | Intelligence briefing page — full executive summary | **High** — best "wow factor" for exec demos | Medium |
+| #34 | Intelligence briefing page — full executive summary | **High** — best "wow factor" for exec demos | Medium | **DONE Session 14** |
 | #36 | Wire AI chat to ML output tables | **High** — makes AI assistant actually useful | Medium |
 | #56 | Data freshness indicators | **Medium** — small effort, big credibility boost | Small | **DONE Session 13** |
 | #57 | Job/pipeline status page | **Medium** — useful during development and demos | Medium |
@@ -247,10 +247,23 @@ Only after the data foundation is solid. Ordered by demo impact.
 | **PipelineFreshnessBar** | Dashboard component showing all 7 pipelines (Risk, Surveys, Clusters, Anomalies, Forecasts, Voice, Briefing) as a flex-wrap row of freshness badges. Fetches via `useQuery` with 60s stale time. |
 | **Results** | Dashboard shows "Data as of:" bar with 7 color-coded badges. All pipelines showing green (fresh) with hour-level granularity (3h–7h ago). Tooltips show exact timestamps and duration. Build clean, zero console errors. |
 
+### Session 14: #34 — Intelligence Briefing Page ✅ DONE 2026-03-20
+
+| Field | Detail |
+|-------|--------|
+| **New Files** | `app/intelligence/page.tsx`, `app/api/intelligence/route.ts`, `lib/services/metrics-briefing.ts` |
+| **Modified Files** | `types/index.ts`, `lib/api.ts`, `components/app-sidebar.tsx`, `app/api/metrics/briefing/route.ts` |
+| **Service Extraction** | Moved metrics briefing logic from `app/api/metrics/briefing/route.ts` into shared `lib/services/metrics-briefing.ts` with `getMetricsBriefing(since?)` function. Both `/api/metrics/briefing` and `/api/intelligence` now call the shared service — no internal HTTP fetch fragility. |
+| **API Endpoint** | `GET /api/intelligence?id=N` — combined endpoint returning latest (or historical) briefing attention items + real-time metrics + historical briefing list (last 10) in one call. |
+| **Types Added** | `BriefingHistoryEntry`, `IntelligenceBriefingResponse`. Re-exported `BriefingAttentionItem` from schema into `types/index.ts`. |
+| **Page Layout** | Header with `DataFreshnessBadge` + historical `Select` dropdown + Regenerate button. AI Summary banner (gradient card with executive summary from cross-database intelligence). 6 stat cards (attention items, new alerts, high risk suppliers, urgent cases, resolved cases, risk movements). Two-column content: severity-grouped attention items with "Investigate with AI" links on left; risk movements + urgent cases + quick actions on right. |
+| **Sidebar** | "Intelligence" link added under Govern section with `IconReportAnalytics`, placed above Remediation. |
+| **Results** | 4 attention items, 93 alerts, 5 urgent cases, 10 risk movements, executive summary flowing from cross-database intelligence. Historical dropdown, regenerate button, freshness badge all working. Build clean, zero console errors. |
+
 ### Recommendation
 - ~~**Must-have for MVP**: #33 (remediation workflow) — this is the product's core story~~ **DONE**
 - ~~**High-impact, low-effort**: #56 (freshness indicators) — adds credibility fast~~ **DONE**
-- **Demo wow-factor**: #34 (intelligence briefing) — best slide for exec presentations
+- ~~**Demo wow-factor**: #34 (intelligence briefing) — best slide for exec presentations~~ **DONE**
 
 ---
 
@@ -316,7 +329,8 @@ These are roadmap items, not current bugs:
 | 11 | Wave 3: #50 (trend visualization) | **DONE 2026-03-20** — Stacked AreaCharts for clusters (by severity) and anomalies (by type). New `/api/clusters/trends` and `/api/payslip-anomalies/trends` endpoints with monthly `date_trunc` aggregation. Charts placed between stat cards and content lists on both Connect pages. |
 | 12 | Wave 4: #33 (remediation workflow UI) | **DONE 2026-03-20** — 7 new components, full detect→act→evidence loop. List page with alerts/plans tabs, detail page with interactive 6-step pipeline, evidence timeline, create plan from alert dialog. Shared StatusPipeline extracted from remediation-tracker. Dashboard + sidebar + supplier detail wired in. |
 | 13 | Wave 4: #56 (data freshness indicators) | **DONE 2026-03-20** — PipelineFreshnessBar on dashboard with 7 color-coded badges querying job_runs. Shared `formatAge` utility extracted from 4 Connect pages. DataFreshnessBadge reusable component with tooltip. |
-| 14+ | Wave 4 features (#34, #36, #57) | Core product story is demonstrable |
+| 14 | Wave 4: #34 (intelligence briefing page) | **DONE 2026-03-20** — Standalone executive summary page with AI summary banner, 6 stat cards, severity-grouped attention items, risk movements, urgent cases. Shared metrics-briefing service extracted. Historical briefing selector + regenerate button. Sidebar link under Govern. |
+| 15+ | Wave 4 features (#36, #57) | Core product story is demonstrable |
 
 ### Ground Rules
 
