@@ -5,6 +5,7 @@ export const JOB_TYPES = [
   "payslip-anomaly",
   "risk-forecast",
   "worker-voice-analytics",
+  "generate-briefing",
 ] as const;
 
 export type JobType = (typeof JOB_TYPES)[number];
@@ -22,6 +23,7 @@ export const RUN_ALL_ORDER: JobType[] = [
   "payslip-anomaly",
   "risk-forecast",
   "worker-voice-analytics",
+  "generate-briefing",
 ];
 
 /** Human-readable labels for each job type */
@@ -32,6 +34,7 @@ export const JOB_LABELS: Record<JobType, string> = {
   "payslip-anomaly": "Payslip Anomaly Detection",
   "risk-forecast": "Risk Forecasting",
   "worker-voice-analytics": "Worker Voice Analytics",
+  "generate-briefing": "Intelligence Briefing",
 };
 
 /** Brief descriptions for each job */
@@ -42,4 +45,5 @@ export const JOB_DESCRIPTIONS: Record<JobType, string> = {
   "payslip-anomaly": "Detect wage anomalies and minimum wage violations",
   "risk-forecast": "Predict supplier risk scores 60 days ahead",
   "worker-voice-analytics": "Extract emerging topics and sentiment trends from worker feedback",
+  "generate-briefing": "Aggregate intelligence from all jobs into a daily briefing digest",
 };

@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
+import { withJobTracking } from "@/lib/jobs/with-job-tracking";
 import { generateBriefing } from "@/lib/jobs/handlers/generate-briefing";
-import { logger } from "@/lib/logger";
 
-export async function POST() {
-  try {
-    const result = await generateBriefing();
-    return NextResponse.json(result);
-  } catch (error) {
-    logger.error("jobs/generate-briefing", "Failed to generate intelligence briefing", error);
+async function _postHandler(_request: Request) {
+  const result = await generateBriefing();
+  if (!result.success) {
     return NextResponse.json({ error: "Failed to generate briefing" }, { status: 500 });
   }
+  return NextResponse.json(result);
 }
+
+export const POST = withJobTracking("generate-briefing", _postHandler);

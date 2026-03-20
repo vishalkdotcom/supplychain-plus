@@ -21,9 +21,5 @@ export const JOB_REGISTRY: Record<JobType, JobHandler> = {
   "payslip-anomaly": payslipAnomaly,
   "risk-forecast": riskForecast,
   "worker-voice-analytics": workerVoiceAnalytics,
+  "generate-briefing": generateBriefing,
 };
-
-/**
- * Generate-briefing is not in JOB_TYPES/queue but is available for direct invocation.
- */
-export { generateBriefing };
