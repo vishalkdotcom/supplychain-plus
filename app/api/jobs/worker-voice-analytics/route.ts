@@ -4,8 +4,12 @@ import { workerVoiceAnalytics } from "@/lib/jobs/handlers/worker-voice-analytics
 
 export const maxDuration = 600;
 
-async function _postHandler(_request: Request) {
-  const result = await workerVoiceAnalytics();
+async function _postHandler(request: Request) {
+  const url = new URL(request.url);
+  const limitParam = url.searchParams.get("limit");
+  const limit = limitParam ? parseInt(limitParam, 10) : undefined;
+
+  const result = await workerVoiceAnalytics(limit ? { limit } : undefined);
   if (!result.success) {
     return NextResponse.json({ error: "Worker voice analytics failed" }, { status: 500 });
   }

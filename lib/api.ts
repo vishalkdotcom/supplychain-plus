@@ -325,6 +325,14 @@ export async function fetchVoiceTrends(
   return res.json();
 }
 
+export async function fetchVoiceTrendSuppliers(): Promise<
+  Array<{ id: string; name: string }>
+> {
+  const res = await fetch(`${API_BASE}/voice-trends/suppliers`);
+  if (!res.ok) throw new Error("Failed to fetch voice trend suppliers");
+  return res.json();
+}
+
 export async function fetchMLInsights(): Promise<MLInsightsSummary> {
   const res = await fetch(`${API_BASE}/ml-insights`);
   if (!res.ok) throw new Error("Failed to fetch ML insights");

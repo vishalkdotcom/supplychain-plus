@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { useQueryStates, parseAsString } from "nuqs";
-import { fetchVoiceTrends } from "@/lib/api";
+import { fetchVoiceTrends, fetchVoiceTrendSuppliers } from "@/lib/api";
 import { VoiceTrend } from "@/types";
 import {
   Breadcrumb,
@@ -55,13 +55,18 @@ const ThemesBarChart = dynamic(
 );
 
 function formatMonth(monthStr: string): string {
-  const date = new Date(monthStr + "-01");
+  const date = new Date(monthStr.slice(0, 7) + "-01");
   return date.toLocaleDateString("en-US", { month: "short", year: "numeric" });
 }
 
 export default function VoiceTrendsPage() {
   const [params, setParams] = useQueryStates({
     supplierId: parseAsString.withDefault("all"),
+  });
+
+  const { data: suppliers } = useQuery({
+    queryKey: ["voice-trend-suppliers"],
+    queryFn: fetchVoiceTrendSuppliers,
   });
 
   const { data: trends, isLoading } = useQuery({
@@ -130,7 +135,12 @@ export default function VoiceTrendsPage() {
             <SelectValue placeholder="Global" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Global</SelectItem>
+            <SelectItem value="all">Global (All Suppliers)</SelectItem>
+            {(suppliers ?? []).map((s) => (
+              <SelectItem key={s.id} value={s.id}>
+                {s.name}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
@@ -143,7 +153,9 @@ export default function VoiceTrendsPage() {
           <CardContent>
             <div className="text-center p-6">
               <p className="text-sm text-muted-foreground mb-1">
-                Global Sentiment Shift
+                {params.supplierId === "all"
+                  ? "Global Sentiment Shift"
+                  : "Supplier Sentiment Shift"}
               </p>
               <p
                 className={`text-4xl font-bold ${
