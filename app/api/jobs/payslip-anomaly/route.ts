@@ -4,8 +4,10 @@ import { payslipAnomaly } from "@/lib/jobs/handlers/payslip-anomaly";
 
 export const maxDuration = 300;
 
-async function _postHandler(_request: Request) {
-  const result = await payslipAnomaly();
+async function _postHandler(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const limit = searchParams.get("limit") ? parseInt(searchParams.get("limit")!) : undefined;
+  const result = await payslipAnomaly(limit ? { limit } : undefined);
   if (!result.success) {
     return NextResponse.json({ error: "Payslip anomaly detection failed" }, { status: 500 });
   }

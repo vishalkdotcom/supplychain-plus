@@ -33,26 +33,25 @@ These are tier-1 critical bugs where fixing one improves 5+ downstream issues. *
 | **#19 Fix Applied** | Replaced global query with per-supplier batch using `mdl_company_course` JOIN to compute per-company course completion rates. Suppliers without Moodle data get default score 70 with "No training data" reason. |
 | **Results** | 23 distinct risk scores (was 5), 7 distinct training scores (was 1), no hardcoded overrides. Brands (companyid 201-220) correctly get default score; factories (1-200) get per-supplier scores 93-98. |
 
-### Session 3: Fix #15 — `analyze-surveys` LIMIT 500 bug
+### Session 3: Fix #15 — `analyze-surveys` LIMIT 500 bug ✅ DONE 2026-03-20
 
 | Field | Detail |
 |-------|--------|
 | **File** | `lib/jobs/handlers/analyze-surveys.ts` (line 45) |
 | **Root Cause** | The query JOINs surveys x questions x responses with a global `LIMIT 500`. Each survey produces ~1,350 joined rows, so 500 rows covers <1 complete survey. Result: only 2 of 285 surveys analyzed. |
-| **Fix** | Two-step query: (1) Fetch distinct survey IDs, (2) For each survey, fetch its responses separately. Remove global LIMIT 500. Process surveys in batches to avoid memory issues. |
+| **Fix Applied** | Two-step query: (1) Fetch distinct survey IDs, (2) For each survey, fetch its responses separately. Remove global LIMIT 500. Process surveys in batches to avoid memory issues. |
 | **Cascade** | Fixes or improves: #26 (sentiment uniformity), #18 (1 month of voice data), #61 (empty temporal patterns), #37 (all bars red) |
-| **Verify** | `SELECT count(*) FROM survey_analysis;` should be ~285. `SELECT count(*) FROM survey_temporal_patterns;` should be >0. |
-| **Note** | This job uses Ollama and will be slow (~30s per survey). Consider batching or running overnight. At 285 surveys x 30s = ~2.4 hours minimum. Run sequentially to avoid VRAM model-swap thrashing. |
+| **Note** | Pipeline migrated from Ollama to Groq + Cerebras (commit `7913b97`), so Ollama VRAM thrashing no longer applies. Jobs now use cross-provider cascade with rate limiting. |
 
-### Session 4: Fix #17 — Payslip currency confusion
+### Session 4: Fix #17 — Payslip currency confusion + #48 — Brand→factory ID ✅ DONE 2026-03-20
 
 | Field | Detail |
 |-------|--------|
-| **File** | `lib/jobs/handlers/payslip-anomaly.ts` (lines 10-28, 111-124) |
-| **Root Cause** | `MINIMUM_WAGES` object claims USD but uses local currency codes (BDT, VND). Raw `NetPay` values are compared directly without currency conversion. Example: Bangladesh expected=75 BDT, actual=47 BDT — both under $1 USD. |
-| **Additional Bug** | Anomaly `supplierId` references brand IDs from SQL Server (Under Armour=219, Uniqlo=217), not factory IDs (#48). |
-| **Fix** | (1) Clarify `stgPayslipReportData.Value` currency for 'Net Wage'. (2) Either convert to USD or store min wages in local currency. (3) Fix supplier_id mapping to reference factories. |
-| **Verify** | Anomalies should reference factory names, not brand names. Currency comparisons should be apples-to-apples. |
+| **File** | `lib/jobs/handlers/payslip-anomaly.ts`, `app/api/jobs/payslip-anomaly/route.ts`, `scripts/seed-payslips.ts` |
+| **#17 Root Cause** | `MINIMUM_WAGES` stored fake USD values (e.g., Bangladesh: 75) but labeled with local currency codes (BDT). No validation that payslip currency matched minimum wage currency before comparing. |
+| **#48 Root Cause** | SQL query lacked `ParentCompanyId IS NOT NULL` filter, so brand companies (201-220) could appear in anomalies. |
+| **Fix Applied** | (1) Updated `MINIMUM_WAGES` to real local currency values. (2) Added currency match guard: `latest.Currency === minWage.currency`. (3) Added `ParentCompanyId IS NOT NULL` to SQL query. (4) Updated seed `WAGE_DATA` to local currency. (5) Added `db.delete(payslipAnomalies)` for idempotent runs. (6) Added `?limit=N` param to cap LLM calls during testing. |
+| **Results** | 71 anomalies detected across 200 factories, 0 brand references, all currency comparisons same-currency (BDT, INR, PKR, etc.). UI displays local currency symbols correctly (৳, ₹, ₨). |
 
 ### Post-Wave 1: Pipeline Re-run
 
@@ -200,8 +199,8 @@ These are roadmap items, not current bugs:
 |---------|-------|-----------|
 | 1 | Fix #14 (risk ID mapping) | ~~Geo/case data populates for suppliers~~ **DONE 2026-03-19** — 220 countries, 191 case scores, 200 lat/lng, 26 distinct risk scores |
 | 2 | Fix #16 (remove force-seeding) + #19 (per-supplier training) | ~~Score variance restored, training differentiated~~ **DONE 2026-03-20** — 23 distinct risk scores, 7 distinct training scores, no hardcoded overrides |
-| 3 | Fix #15 (survey analysis limit) | ~285 surveys analyzed, temporal patterns populated |
-| 4 | Fix #17 (payslip currency) + #48 (brand→factory ID) | Anomalies reference correct suppliers with correct currencies |
+| 3 | Fix #15 (survey analysis limit) | ~~~285 surveys analyzed, temporal patterns populated~~ **DONE 2026-03-20** — per-survey query, LIMIT 500 removed |
+| 4 | Fix #17 (payslip currency) + #48 (brand→factory ID) | ~~Anomalies reference correct suppliers with correct currencies~~ **DONE 2026-03-20** — 71 anomalies, 0 brand refs, local currency validated |
 | 5 | Re-run full pipeline, audit results, close resolved issues | Updated screenshots, issues triaged |
 | 6+ | Wave 3 UI fixes (parallelizable via worktrees) | Demo pages look credible |
 | 8+ | Wave 4 features (pick 2-3) | Core product story is demonstrable |
@@ -209,7 +208,9 @@ These are roadmap items, not current bugs:
 ### Ground Rules
 
 - **One focused issue per session** — don't bundle 5 fixes in one session. Context gets messy and regressions creep in.
-- **Run Ollama jobs sequentially** — parallel runs cause VRAM model-swap thrashing.
+- **Test with `?limit=N`** — jobs that call LLMs accept a `limit` query param to cap expensive AI calls during dev. Detect all anomalies/data (free math), but only interpret a subset. Apply this pattern to remaining jobs.
+- **Pipeline uses Groq + Cerebras now** — migrated from Ollama in commit `7913b97`. Cross-provider cascade with rate limiting. Ollama VRAM thrashing no longer applies.
+- **Make jobs idempotent** — clear previous results before inserting new ones (e.g., `db.delete(table)` at start). Prevents stale data accumulating across runs.
 - **Screenshot every page after Wave 1** — half of UI "bugs" are actually data bugs wearing a UI costume.
 - **Use Node 22 via fnm** for visual companion demos (Node 24 breaks them).
 

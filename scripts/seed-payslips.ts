@@ -13,24 +13,24 @@
 
 import { getPool } from "../lib/db/sql-server";
 
-// Minimum wages by country (monthly USD) — mirrors the anomaly job
+// Minimum monthly wages in LOCAL currency — mirrors the anomaly job
 const WAGE_DATA: Record<string, { minWage: number; currency: string; avgWage: number }> = {
-  Bangladesh: { minWage: 75, currency: "BDT", avgWage: 120 },
-  Vietnam: { minWage: 180, currency: "VND", avgWage: 280 },
-  Cambodia: { minWage: 200, currency: "KHR", avgWage: 250 },
-  Myanmar: { minWage: 80, currency: "MMK", avgWage: 130 },
-  Indonesia: { minWage: 150, currency: "IDR", avgWage: 220 },
-  Thailand: { minWage: 280, currency: "THB", avgWage: 400 },
-  Philippines: { minWage: 220, currency: "PHP", avgWage: 320 },
-  India: { minWage: 120, currency: "INR", avgWage: 190 },
-  China: { minWage: 300, currency: "CNY", avgWage: 500 },
-  Pakistan: { minWage: 100, currency: "PKR", avgWage: 160 },
-  Nepal: { minWage: 90, currency: "NPR", avgWage: 140 },
-  "Sri Lanka": { minWage: 110, currency: "LKR", avgWage: 170 },
-  Ethiopia: { minWage: 60, currency: "ETB", avgWage: 95 },
-  Kenya: { minWage: 130, currency: "KES", avgWage: 200 },
-  Mexico: { minWage: 260, currency: "MXN", avgWage: 380 },
-  Turkey: { minWage: 350, currency: "TRY", avgWage: 500 },
+  Bangladesh: { minWage: 12500, currency: "BDT", avgWage: 18000 },
+  Vietnam: { minWage: 4680000, currency: "VND", avgWage: 7000000 },
+  Cambodia: { minWage: 800000, currency: "KHR", avgWage: 1000000 },
+  Myanmar: { minWage: 144000, currency: "MMK", avgWage: 230000 },
+  Indonesia: { minWage: 2700000, currency: "IDR", avgWage: 4000000 },
+  Thailand: { minWage: 9900, currency: "THB", avgWage: 14000 },
+  Philippines: { minWage: 12000, currency: "PHP", avgWage: 17000 },
+  India: { minWage: 10000, currency: "INR", avgWage: 16000 },
+  China: { minWage: 2200, currency: "CNY", avgWage: 3500 },
+  Pakistan: { minWage: 32000, currency: "PKR", avgWage: 50000 },
+  Nepal: { minWage: 15000, currency: "NPR", avgWage: 22000 },
+  "Sri Lanka": { minWage: 35000, currency: "LKR", avgWage: 55000 },
+  Ethiopia: { minWage: 3600, currency: "ETB", avgWage: 5500 },
+  Kenya: { minWage: 15000, currency: "KES", avgWage: 23000 },
+  Mexico: { minWage: 5186, currency: "MXN", avgWage: 8000 },
+  Turkey: { minWage: 11402, currency: "TRY", avgWage: 17000 },
 };
 
 async function seedPayslips() {
@@ -40,7 +40,7 @@ async function seedPayslips() {
 
   // Get all companies with their countries
   const companies = await pool.request().query(`
-    SELECT Id, Name, MailingCountry FROM Company WHERE Deleted = 0 ORDER BY Id
+    SELECT Id, Name, MailingCountry FROM Company WHERE Deleted = 0 AND ParentCompanyId IS NOT NULL ORDER BY Id
   `);
 
   console.log(`   Found ${companies.recordset.length} companies\n`);
