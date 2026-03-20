@@ -65,11 +65,14 @@ export function MLInsightCards() {
           <CardContent className="p-4">
             <IconNetwork className="h-4 w-4 text-muted-foreground mb-2" />
             <div className="text-2xl font-bold">{clusterCount}</div>
-            <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
-              {topCriticalLabel}
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Systemic Patterns
             </p>
-            <div className="flex items-center gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-              <span className="text-xs text-primary">Systemic Patterns</span>
+            <p className="text-[10px] text-muted-foreground/70 line-clamp-1 mt-0.5">
+              Top: {topCriticalLabel.replace(/^\d+\s+/, "")}
+            </p>
+            <div className="flex items-center gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <span className="text-xs text-primary">View all</span>
               <IconArrowRight className="h-3 w-3 text-primary" />
             </div>
           </CardContent>

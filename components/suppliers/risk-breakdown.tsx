@@ -1,5 +1,3 @@
-import { useMemo } from "react";
-
 import type { Supplier } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -16,9 +14,10 @@ import { getScoreColor, getImpactClasses } from "@/lib/risk-utils";
 
 interface RiskBreakdownProps {
   supplier: Supplier;
+  previousRiskScore?: number;
 }
 
-export function RiskBreakdown({ supplier }: RiskBreakdownProps) {
+export function RiskBreakdown({ supplier, previousRiskScore }: RiskBreakdownProps) {
   const { riskBreakdown, riskScore, riskLevel } = supplier;
 
   const getModuleIcon = (module: string) => {
@@ -45,18 +44,14 @@ export function RiskBreakdown({ supplier }: RiskBreakdownProps) {
     },
   ];
 
-  // Mock previous score for trend calculation (in real app, fetch from history)
-  const previousRiskScore = useMemo(() => {
-    // Deterministic mock value based on risk score
-    const pseudoRandom = (riskScore * 13) % 10;
-    return Math.max(0, Math.min(100, riskScore + (pseudoRandom > 5 ? 5 : -5)));
-  }, [riskScore]);
   const trend =
-    riskScore < previousRiskScore
-      ? "improving"
-      : riskScore > previousRiskScore
-        ? "worsening"
-        : "stable";
+    previousRiskScore == null
+      ? "stable"
+      : riskScore < previousRiskScore
+        ? "improving"
+        : riskScore > previousRiskScore
+          ? "worsening"
+          : "stable";
 
   return (
     <Card

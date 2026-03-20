@@ -132,6 +132,7 @@ export async function caseClustering(): Promise<JobResult> {
 
   // Step 4: Label each cluster with AI
   let clustersCreated = 0;
+  const usedLabels = new Map<string, number>();
 
   await db.delete(caseClusters);
 
@@ -163,10 +164,17 @@ Respond with ONLY this JSON structure:
       });
 
       if (labelResult.output) {
+        let label = labelResult.output.label.replace(/^\d+\s+/, "");
+        const count = usedLabels.get(label) ?? 0;
+        usedLabels.set(label, count + 1);
+        if (count > 0) {
+          label = regions.length > 0 ? `${label} (${regions[0]})` : `${label} #${count + 1}`;
+        }
+
         const inserted = await db
           .insert(caseClusters)
           .values({
-            clusterLabel: labelResult.output.label,
+            clusterLabel: label,
             caseCount: members.length,
             supplierCount: regions.length,
             regions,

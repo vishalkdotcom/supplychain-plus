@@ -71,7 +71,7 @@ export function DashboardView() {
   const { data: suppliersRes, isLoading: isSuppliersLoading } = useQuery({
     queryKey: ["suppliers", parentCompanyId],
     queryFn: () =>
-      fetchSuppliers({ parentCompanyId: parentCompanyId || undefined }),
+      fetchSuppliers({ parentCompanyId: parentCompanyId || undefined, perPage: 50 }),
   });
 
   const { data: brands } = useQuery({

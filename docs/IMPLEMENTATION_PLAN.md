@@ -129,27 +129,39 @@ These are independent of each other and good for parallel worktree sessions.
 
 ### Batch A: Dashboard Credibility
 
-| Issue | Title | Effort |
+| Issue | Title | Status |
 |-------|-------|--------|
-| #38 | Dashboard cluster card shows confusing "106 Child Labor Exploitation" | Small — separate count from label |
-| #35 | Add risk distribution chart to dashboard | Medium — new Recharts PieChart/BarChart |
-| #52 | Brands page identical scores (if still open after Wave 1) | Verify only |
+| #38 | Dashboard cluster card shows confusing "106 Child Labor Exploitation" | **RESOLVED Session 7** — separated count from label, stripped leading numbers |
+| #35 | Add risk distribution chart to dashboard | Medium — new Recharts BarChart histogram |
+| #52 | Brands page identical scores (if still open after Wave 1) | **VERIFIED Session 7** — 6 distinct values (44-49), acceptable for MVP |
 
 ### Batch B: Supplier Detail Story
 
-| Issue | Title | Effort |
+| Issue | Title | Status |
 |-------|-------|--------|
-| #40 | Risk breakdown uses mock `previousRiskScore` | Small — query `supplier_risk_history` |
-| #39 | Supply chain network graph truncated to ~2 nodes | Small — add "and X more" indicator |
+| #40 | Risk breakdown uses mock `previousRiskScore` | **RESOLVED Session 7** — now uses real `supplier_risk_history` data |
+| #39 | Supply chain network graph truncated to ~2 nodes | **RESOLVED Session 7** — increased perPage to 50, added "+N more" overflow nodes |
 | #28 | `lastActivityDate` always returns "today" | Medium — calculate from case/survey timestamps |
 
 ### Batch C: Connect Module
 
-| Issue | Title | Effort |
+| Issue | Title | Status |
 |-------|-------|--------|
-| #59 | Cluster detail can't drill down to individual cases | Medium — add `/connect?clusterId=X` filter |
+| #59 | Cluster detail can't drill down to individual cases | Medium — add `/connect/clusters/[id]` detail page |
 | #50 | No cluster/anomaly trend visualization | Medium — add time-series charts |
-| #25 | Duplicate cluster labels ("Wage Theft" x7) | Small — post-process or deduplicate labels |
+| #25 | Duplicate cluster labels ("Wage Theft" x7) | **RESOLVED Session 7** — added region-based dedup in case-clustering.ts |
+
+### Session 7: Fix #38, #40, #25, #39 + Verify #52 — Wave 3 quick wins ✅ DONE 2026-03-20
+
+| Field | Detail |
+|-------|--------|
+| **Files** | `components/dashboard/ml-insight-cards.tsx`, `components/suppliers/risk-breakdown.tsx`, `app/suppliers/[id]/page.tsx`, `lib/jobs/handlers/case-clustering.ts`, `components/dashboard/dashboard-view.tsx`, `components/dashboard/supply-chain-network.tsx` |
+| **#38 Fix** | Restructured cluster card: "Systemic Patterns" as primary subtitle, `topCriticalLabel` as secondary "Top: ..." line. Strip leading numbers from labels (`label.replace(/^\d+\s+/, "")`). |
+| **#40 Fix** | Removed mock `previousRiskScore` formula `(riskScore * 13) % 10`. Added `previousRiskScore?: number` prop to `RiskBreakdown`. Parent page fetches `supplier_risk_history` via `useQuery` and passes `history[length-2].riskScore`. |
+| **#25 Fix** | Added `usedLabels` Map before cluster creation loop. After LLM generates label, checks for duplicates and appends region disambiguation (e.g. "Wage Theft (Vietnam)"). |
+| **#39 Fix** | Changed dashboard `fetchSuppliers` to `perPage: 50` (was default 12). Added "+N more" overflow nodes in network graph when a region group exceeds 6 displayed suppliers. |
+| **#52 Verified** | Brands page shows 6 distinct avgRiskScore values (44-49 range). No code change needed. |
+| **Results** | Dashboard cluster card clear and unambiguous. Supplier detail shows real trend ("Degrading"/"Improving"/"Stable") from history. Network graph shows full parent-child hierarchy with overflow indicators. Build passes, zero console errors. |
 
 ### Batch D: Engage Module ✅ DONE 2026-03-20
 
@@ -234,8 +246,12 @@ These are roadmap items, not current bugs:
 | 4 | Fix #17 (payslip currency) + #48 (brand→factory ID) | ~~Anomalies reference correct suppliers with correct currencies~~ **DONE 2026-03-20** — 71 anomalies, 0 brand refs, local currency validated |
 | 5 | Re-run full pipeline, audit results, close resolved issues | ~~Updated screenshots, issues triaged~~ **DONE 2026-03-20** — 4 RESOLVED (#26, #61, #20, #19), 2 RESOLVED-with-caveats (#52, #51), 2 STILL OPEN (#37, #18), 1 IMPROVED (#23) |
 | 6 | Fix #18 (multi-month voice) + #37 (all bars red) + supplier dropdown | **DONE 2026-03-20** — 25 months, 182 suppliers, 52% neg / 26% pos / 22% neutral, "Invalid Date" fixed, supplier dropdown added |
-| 7+ | Wave 3 UI fixes — Batches A, B, C (parallelizable via worktrees) | Demo pages look credible |
-| 8+ | Wave 4 features (pick 2-3) | Core product story is demonstrable |
+| 7 | Wave 3 quick wins: #38 (cluster card) + #40 (mock risk) + #25 (dedup labels) + #39 (network graph) + #52 (verify) | **DONE 2026-03-20** — 5 small fixes bundled, all verified visually, build clean |
+| 8 | Wave 3: #35 (risk distribution chart) | Recharts BarChart histogram on dashboard — bucket suppliers by risk score range, color by risk level |
+| 9 | Wave 3: #28 (lastActivityDate) | Replace hardcoded `new Date()` with cross-DB MAX(activity dates) |
+| 10 | Wave 3: #59 (cluster drill-down) | New `/connect/clusters/[id]` page + API to show individual cases |
+| 11 | Wave 3: #50 (trend visualization) | Recharts LineChart for anomaly/cluster trends over time |
+| 12+ | Wave 4 features (pick 2-3) | Core product story is demonstrable |
 
 ### Ground Rules
 

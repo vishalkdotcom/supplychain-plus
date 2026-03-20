@@ -49,7 +49,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { IconFileText, IconWand, IconLoader2, IconDownload, IconListCheck } from "@tabler/icons-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useQuery } from "@tanstack/react-query";
-import { fetchSupplier, fetchCases, fetchSurveys, fetchRecommendations, fetchTimeline, fetchTraining, fetchBrands } from "@/lib/api";
+import { fetchSupplier, fetchSupplierHistory, fetchCases, fetchSurveys, fetchRecommendations, fetchTimeline, fetchTraining, fetchBrands } from "@/lib/api";
 import { Case, Survey, AIRecommendation, EvidenceLink } from "@/types";
 import { SupplierHero } from "@/components/suppliers/supplier-hero";
 import { toast } from "sonner";
@@ -97,6 +97,11 @@ export default function SupplierDetailPage({
   const { data: training } = useQuery({
     queryKey: ["training", id],
     queryFn: () => fetchTraining(id),
+  });
+
+  const { data: riskHistory } = useQuery({
+    queryKey: ["supplier-history", id],
+    queryFn: () => fetchSupplierHistory(id),
   });
 
   // Fetch brands to resolve parent company name for breadcrumb
@@ -254,7 +259,7 @@ export default function SupplierDetailPage({
           <RiskTrendChart supplierId={supplier.id} />
         </div>
         <div className="h-full">
-          <RiskBreakdown supplier={supplier} />
+          <RiskBreakdown supplier={supplier} previousRiskScore={riskHistory && riskHistory.length >= 2 ? riskHistory[riskHistory.length - 2].riskScore : undefined} />
         </div>
       </div>
       

@@ -239,7 +239,10 @@ export function SupplyChainNetwork({ suppliers }: SupplyChainNetworkProps) {
         style: { stroke: "#94a3b8", strokeWidth: 2, strokeDasharray: "5,5" },
       });
 
-      regionSuppliers.slice(0, 6).forEach((s, sIdx) => {
+      const displayedSuppliers = regionSuppliers.slice(0, 6);
+      const overflowCount = regionSuppliers.length - displayedSuppliers.length;
+
+      displayedSuppliers.forEach((s, sIdx) => {
         const sX = nodeX + sIdx * CHILD_SPACING;
         initialNodes.push({
           id: s.id,
@@ -261,6 +264,24 @@ export function SupplyChainNetwork({ suppliers }: SupplyChainNetworkProps) {
           style: { stroke: "#cbd5e1", strokeWidth: 1.5 },
         });
       });
+
+      if (overflowCount > 0) {
+        const overflowId = `overflow-${regionNodeId}`;
+        const overflowX = nodeX + displayedSuppliers.length * CHILD_SPACING;
+        initialNodes.push({
+          id: overflowId,
+          type: "default",
+          data: { label: `+${overflowCount} more` },
+          position: { x: overflowX, y: CHILD_Y },
+          style: { background: "#f1f5f9", border: "1px dashed #94a3b8", borderRadius: 8, fontSize: 10, color: "#64748b", padding: "4px 8px" },
+        });
+        initialEdges.push({
+          id: `edge-${regionNodeId}-${overflowId}`,
+          source: regionNodeId,
+          target: overflowId,
+          style: { stroke: "#cbd5e1", strokeWidth: 1, strokeDasharray: "4,4" },
+        });
+      }
 
       nodeX += groupWidth + 40;
     }
