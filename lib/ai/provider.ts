@@ -213,7 +213,6 @@ function buildCascadeModel(provider: string, modelId: string): LanguageModelV3 {
 const DEFAULT_CASCADE: Array<[string, string]> = [
   // Tier 1 – Best quality (70B+)
   ["cerebras", "qwen-3-235b-a22b-instruct-2507"],
-  ["cerebras", "gpt-oss-120b"],
   ["groq", "openai/gpt-oss-120b"],
   ["groq", "llama-3.3-70b-versatile"],
   // Tier 2 – Good quality (17B–32B)
@@ -290,8 +289,23 @@ export function getJobModel(): LanguageModelV3 {
   return cascade[0].model;
 }
 
-/** HTTP status codes that trigger cascade fallthrough. */
+/** HTTP status codes that trigger cascade fallthrough (transient). */
 const RETRYABLE_STATUS_CODES = new Set([429, 500, 502, 503]);
+
+/** HTTP status codes indicating the model is permanently unavailable. */
+const PERMANENT_FAILURE_CODES = new Set([400, 401, 403, 404]);
+
+/** Models that returned permanent errors — skip for rest of process lifetime. */
+const deadModels = new Set<string>();
+
+function getErrorStatus(err: unknown): number | undefined {
+  if (typeof err !== "object" || err === null) return undefined;
+  const e = err as Record<string, unknown>;
+  const status = (e.statusCode ?? e.status) as number | undefined;
+  if (status) return status;
+  const lastError = e.lastError as Record<string, unknown> | undefined;
+  return (lastError?.statusCode ?? lastError?.status) as number | undefined;
+}
 
 function isRetryableError(err: unknown): boolean {
   if (typeof err !== "object" || err === null) return false;
@@ -314,8 +328,16 @@ function isRetryableError(err: unknown): boolean {
   return false;
 }
 
+function isPermanentFailure(err: unknown): boolean {
+  const status = getErrorStatus(err);
+  return status !== undefined && PERMANENT_FAILURE_CODES.has(status);
+}
+
 /** Max time (ms) to wait for a higher-quality model before trying a faster one. */
 const THROTTLE_THRESHOLD_MS = Number(process.env.JOB_CASCADE_THROTTLE_MS) || 5_000;
+
+/** Track which models have been logged as daily-exhausted (log once, not per request). */
+const dailyExhaustedLogged = new Set<string>();
 
 /**
  * Drop-in replacement for `generateText` with rate limiting and
@@ -338,12 +360,19 @@ export const generateTextWithFallback: typeof aiGenerateText = async (
 
   for (let i = 0; i < cascade.length; i++) {
     const entry = cascade[i];
+    const key = `${entry.provider}:${entry.modelId}`;
+
+    if (deadModels.has(key)) continue;
+
     const limiter = getRateLimiter(entry.provider, entry.modelId);
 
     if (await limiter.isDailyExhausted(estimatedTokens)) {
-      console.log(
-        `[ai/cascade] skipping ${entry.provider}:${entry.modelId} (${i + 1}/${cascade.length}) — daily budget exhausted`,
-      );
+      if (!dailyExhaustedLogged.has(key)) {
+        console.log(
+          `[ai/cascade] skipping ${key} (${i + 1}/${cascade.length}) — daily budget exhausted`,
+        );
+        dailyExhaustedLogged.add(key);
+      }
       continue;
     }
 
@@ -375,8 +404,10 @@ export const generateTextWithFallback: typeof aiGenerateText = async (
 
   for (const i of tryOrder) {
     const entry = cascade[i];
+    const key = `${entry.provider}:${entry.modelId}`;
     const limiter = getRateLimiter(entry.provider, entry.modelId);
 
+    if (deadModels.has(key)) continue;
     if (i !== selectedIdx && await limiter.isDailyExhausted(estimatedTokens)) {
       continue;
     }
@@ -401,14 +432,23 @@ export const generateTextWithFallback: typeof aiGenerateText = async (
         limiter.reportRetryAfter(30);
       }
 
-      if (isRetryableError(err)) {
-        const status = (err as { statusCode?: number }).statusCode ?? "network";
+      if (isPermanentFailure(err)) {
+        deadModels.add(key);
+        const status = getErrorStatus(err);
         console.warn(
-          `[ai/cascade] ${entry.provider}:${entry.modelId} failed (${status}), trying next model...`,
+          `[ai/cascade] ${key} marked as dead (${status}), trying next model...`,
         );
         continue;
       }
-      // Non-retryable error — don't cascade
+
+      if (isRetryableError(err)) {
+        const status = (err as { statusCode?: number }).statusCode ?? "network";
+        console.warn(
+          `[ai/cascade] ${key} failed (${status}), trying next model...`,
+        );
+        continue;
+      }
+      // Non-retryable, non-permanent error — don't cascade
       throw err;
     }
   }
