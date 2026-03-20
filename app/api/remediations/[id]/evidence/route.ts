@@ -43,28 +43,32 @@ export async function POST(request: Request, { params }: RouteParams) {
       );
     }
 
-    const [result] = await db
-      .insert(remediationEvidence)
-      .values({
-        remediationId,
-        evidenceType,
-        referenceId: referenceId ?? null,
-        title,
-        description: description ?? null,
-        date,
-      })
-      .returning();
-
-    // Write audit log entry for evidence addition
     const actorId = request.headers.get("x-demo-user-id") || "system";
-    await db.insert(remediationAuditLog).values({
-      remediationId,
-      action: "evidence_added",
-      field: "evidence",
-      previousValue: null,
-      newValue: title,
-      actorId,
-      actorType: actorId === "system" ? "system" : "user",
+
+    const [result] = await db.transaction(async (tx) => {
+      const rows = await tx
+        .insert(remediationEvidence)
+        .values({
+          remediationId,
+          evidenceType,
+          referenceId: referenceId ?? null,
+          title,
+          description: description ?? null,
+          date,
+        })
+        .returning();
+
+      await tx.insert(remediationAuditLog).values({
+        remediationId,
+        action: "evidence_added",
+        field: "evidence",
+        previousValue: null,
+        newValue: title,
+        actorId,
+        actorType: actorId === "system" ? "system" : "user",
+      });
+
+      return rows;
     });
 
     return NextResponse.json(result, { status: 201 });

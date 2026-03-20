@@ -95,13 +95,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     if (body.targetDate !== undefined) updates.targetDate = body.targetDate;
     if (body.title !== undefined) updates.title = body.title;
 
-    const [result] = await db
-      .update(remediationPlans)
-      .set(updates)
-      .where(eq(remediationPlans.id, remediationId))
-      .returning();
-
-    // Write audit log entries for each changed field
+    // Build audit entries by diffing current vs incoming
     const auditEntries: Array<{
       remediationId: number;
       action: string;
@@ -180,9 +174,19 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       });
     }
 
-    if (auditEntries.length > 0) {
-      await db.insert(remediationAuditLog).values(auditEntries);
-    }
+    const [result] = await db.transaction(async (tx) => {
+      const rows = await tx
+        .update(remediationPlans)
+        .set(updates)
+        .where(eq(remediationPlans.id, remediationId))
+        .returning();
+
+      if (auditEntries.length > 0) {
+        await tx.insert(remediationAuditLog).values(auditEntries);
+      }
+
+      return rows;
+    });
 
     return NextResponse.json(result);
   } catch (error) {

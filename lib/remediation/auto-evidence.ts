@@ -81,26 +81,28 @@ export async function attachAutoEvidence(
 
     const today = new Date().toISOString().slice(0, 10);
 
-    // Insert evidence — unique index (remediationId, referenceId) prevents duplicates
+    // Insert evidence + audit log atomically
+    // Unique index (remediationId, referenceId) prevents duplicates
     // if a concurrent job passed the SELECT check above
-    await db.insert(remediationEvidence).values({
-      remediationId,
-      evidenceType,
-      referenceId,
-      title,
-      description,
-      date: today,
-    });
+    await db.transaction(async (tx) => {
+      await tx.insert(remediationEvidence).values({
+        remediationId,
+        evidenceType,
+        referenceId,
+        title,
+        description,
+        date: today,
+      });
 
-    // Write audit log
-    await db.insert(remediationAuditLog).values({
-      remediationId,
-      action: "evidence_auto_attached",
-      field: "evidence",
-      previousValue: null,
-      newValue: title,
-      actorId: "system",
-      actorType: "auto_evidence_job",
+      await tx.insert(remediationAuditLog).values({
+        remediationId,
+        action: "evidence_auto_attached",
+        field: "evidence",
+        previousValue: null,
+        newValue: title,
+        actorId: "system",
+        actorType: "auto_evidence_job",
+      });
     });
 
     logger.info(

@@ -75,31 +75,35 @@ export async function POST(request: Request) {
       );
     }
 
-    const [result] = await db
-      .insert(remediationPlans)
-      .values({
-        supplierId,
-        title,
-        sourceType,
-        sourceId: sourceId ?? null,
-        rootCause: rootCause ?? null,
-        actionPlan: actionPlan ?? null,
-        assignedTo: assignedTo ?? null,
-        targetDate: targetDate ?? null,
-        status: "detected",
-      })
-      .returning();
-
-    // Write audit log entry for creation
     const actorId = request.headers.get("x-demo-user-id") || "system";
-    await db.insert(remediationAuditLog).values({
-      remediationId: result.id,
-      action: "status_change",
-      field: "status",
-      previousValue: null,
-      newValue: "detected",
-      actorId,
-      actorType: actorId === "system" ? "system" : "user",
+
+    const [result] = await db.transaction(async (tx) => {
+      const rows = await tx
+        .insert(remediationPlans)
+        .values({
+          supplierId,
+          title,
+          sourceType,
+          sourceId: sourceId ?? null,
+          rootCause: rootCause ?? null,
+          actionPlan: actionPlan ?? null,
+          assignedTo: assignedTo ?? null,
+          targetDate: targetDate ?? null,
+          status: "detected",
+        })
+        .returning();
+
+      await tx.insert(remediationAuditLog).values({
+        remediationId: rows[0].id,
+        action: "status_change",
+        field: "status",
+        previousValue: null,
+        newValue: "detected",
+        actorId,
+        actorType: actorId === "system" ? "system" : "user",
+      });
+
+      return rows;
     });
 
     return NextResponse.json(result, { status: 201 });
