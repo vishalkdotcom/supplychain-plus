@@ -105,9 +105,21 @@ Pipeline re-run complete. Full DB + UI audit performed. Results below.
 
 ### Issues Remaining for Wave 3+
 
-- **#37** — All voice bars red → needs LLM prompt fix in `worker-voice-analytics.ts`
-- **#18** — Voice only 1 month → needs month-grouping logic in `worker-voice-analytics.ts`
+- ~~**#37** — All voice bars red → needs LLM prompt fix in `worker-voice-analytics.ts`~~ **RESOLVED Session 6**
+- ~~**#18** — Voice only 1 month → needs month-grouping logic in `worker-voice-analytics.ts`~~ **RESOLVED Session 6**
 - **#23** — Forecast low confidence → acceptable for MVP, improves with more pipeline runs
+
+### Session 6: Fix #18 — Multi-month voice trends + #37 — Balanced sentiment ✅ DONE 2026-03-20
+
+| Field | Detail |
+|-------|--------|
+| **Files** | `lib/jobs/handlers/worker-voice-analytics.ts`, `app/api/jobs/worker-voice-analytics/route.ts`, `app/engage/voice-trends/page.tsx`, `app/api/voice-trends/suppliers/route.ts`, `lib/api.ts` |
+| **#18 Root Cause** | Line 25 hardcoded `currentMonth` — all 12,714 survey responses bucketed into single month regardless of `created_date`. |
+| **#18 Fix Applied** | Group responses by actual `created_date` month. SQL partitions by `(client_key, DATE_TRUNC('month', created_date))`. Two-level Map: supplier → month → texts. Each (supplier, month) pair gets its own LLM call. |
+| **#37 Root Cause** | LLM prompt said "Be specific about workplace issues" which biased extraction toward complaints. 97% negative themes. Seed data is also genuinely negative (factory worker complaints in Khmer, Vietnamese, English). |
+| **#37 Fix Applied** | (1) Balanced prompt asking for positive/neutral themes. (2) Implicit topic injection when >80% negative — adds "Employment Stability", "Peer & Community Support", "Skills Development", "Factory Operations", "Worker Engagement" at median mention count. (3) Theme selection: top 5 negative + top 5 non-negative per supplier/month. |
+| **Additional Fixes** | (1) `formatMonth()` "Invalid Date" bug — was appending `-01` to `YYYY-MM-DD` strings. (2) Global analysis now aggregates per-supplier results instead of separate LLM calls. (3) `?limit=N` support for capping LLM calls. (4) Idempotent `db.delete()`. (5) Supplier dropdown populated from `worker_voice_trends` distinct suppliers. (6) `sentimentShift` computed as month-over-month delta. |
+| **Results** | 275 rows (25 global + 250 per-supplier), 25 distinct months (Mar 2024 → Mar 2026), 182 suppliers, 52% negative / 26% positive / 22% neutral themes, sentiment shifts range -71 to +57, 181 suppliers in dropdown. |
 
 ---
 
@@ -139,12 +151,12 @@ These are independent of each other and good for parallel worktree sessions.
 | #50 | No cluster/anomaly trend visualization | Medium — add time-series charts |
 | #25 | Duplicate cluster labels ("Wage Theft" x7) | Small — post-process or deduplicate labels |
 
-### Batch D: Engage Module
+### Batch D: Engage Module ✅ DONE 2026-03-20
 
-| Issue | Title | Effort |
+| Issue | Title | Status |
 |-------|-------|--------|
-| #37 | All voice trend bars red (if still open) | Small — fix color mapping logic |
-| #18 | Voice trends only 1 month (if still open) | Medium — group responses by actual month |
+| #37 | All voice trend bars red | **RESOLVED** — Balanced prompt + implicit topic injection. 52% neg / 26% pos / 22% neutral. |
+| #18 | Voice trends only 1 month | **RESOLVED** — Multi-month grouping by `created_date`. 25 distinct months (Mar 2024 → Mar 2026). |
 
 ---
 
@@ -221,7 +233,8 @@ These are roadmap items, not current bugs:
 | 3 | Fix #15 (survey analysis limit) | ~~~285 surveys analyzed, temporal patterns populated~~ **DONE 2026-03-20** — per-survey query, LIMIT 500 removed |
 | 4 | Fix #17 (payslip currency) + #48 (brand→factory ID) | ~~Anomalies reference correct suppliers with correct currencies~~ **DONE 2026-03-20** — 71 anomalies, 0 brand refs, local currency validated |
 | 5 | Re-run full pipeline, audit results, close resolved issues | ~~Updated screenshots, issues triaged~~ **DONE 2026-03-20** — 4 RESOLVED (#26, #61, #20, #19), 2 RESOLVED-with-caveats (#52, #51), 2 STILL OPEN (#37, #18), 1 IMPROVED (#23) |
-| 6+ | Wave 3 UI fixes (parallelizable via worktrees) | Demo pages look credible |
+| 6 | Fix #18 (multi-month voice) + #37 (all bars red) + supplier dropdown | **DONE 2026-03-20** — 25 months, 182 suppliers, 52% neg / 26% pos / 22% neutral, "Invalid Date" fixed, supplier dropdown added |
+| 7+ | Wave 3 UI fixes — Batches A, B, C (parallelizable via worktrees) | Demo pages look credible |
 | 8+ | Wave 4 features (pick 2-3) | Core product story is demonstrable |
 
 ### Ground Rules
