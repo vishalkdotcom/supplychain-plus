@@ -27,6 +27,7 @@ import {
   IntelligenceBriefingResponse,
   RemediationAuditEntry,
   DemoUser,
+  RegionalInsightsResponse,
 } from "@/types";
 
 const API_BASE = "/api";
@@ -395,6 +396,27 @@ export async function fetchMonitoringSignals(
   });
   const res = await fetch(`${API_BASE}/monitoring-signals${qs}`);
   if (!res.ok) throw new Error("Failed to fetch monitoring signals");
+  return res.json();
+}
+
+// ===============================
+// Regional Insights
+// ===============================
+
+interface RegionalInsightsParams {
+  region?: string;
+  supplierId?: string;
+}
+
+export async function fetchRegionalInsights(
+  params: RegionalInsightsParams = {},
+): Promise<RegionalInsightsResponse> {
+  const qs = buildQueryString({
+    region: params.region,
+    supplierId: params.supplierId,
+  });
+  const res = await fetch(`${API_BASE}/regional-insights${qs}`);
+  if (!res.ok) throw new Error("Failed to fetch regional insights");
   return res.json();
 }
 

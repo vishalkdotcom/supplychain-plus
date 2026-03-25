@@ -16,6 +16,7 @@ import {
   IconReportAnalytics,
   IconShieldCheck,
   IconSparkles,
+  IconWorld,
 } from "@tabler/icons-react";
 import {
   Sidebar,
@@ -205,18 +206,45 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarGroupLabel>Govern</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={pathname.startsWith("/intelligence")}
-                  tooltip="Intelligence"
-                >
-                  <Link href="/intelligence">
-                    <IconReportAnalytics />
-                    <span>Intelligence</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+              <Collapsible
+                defaultOpen={pathname.startsWith("/intelligence")}
+                className="group/collapsible"
+              >
+                <SidebarMenuItem>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton
+                      tooltip="Intelligence"
+                      isActive={pathname.startsWith("/intelligence")}
+                    >
+                      <IconReportAnalytics />
+                      <span>Intelligence</span>
+                      <IconChevronRight className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-90" />
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarMenuSub>
+                      <SidebarMenuSubItem>
+                        <SidebarMenuSubButton
+                          asChild
+                          isActive={pathname === "/intelligence"}
+                          size="sm"
+                        >
+                          <Link href="/intelligence">Briefing</Link>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                      <SidebarMenuSubItem>
+                        <SidebarMenuSubButton
+                          asChild
+                          isActive={pathname === "/intelligence/regional-insights"}
+                          size="sm"
+                        >
+                          <Link href="/intelligence/regional-insights">Regional Insights</Link>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                </SidebarMenuItem>
+              </Collapsible>
               <SidebarMenuItem>
                 <SidebarMenuButton
                   asChild
