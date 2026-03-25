@@ -69,6 +69,44 @@ export interface PayslipAnomalyDetails {
   country: string;
   employeeCount: number;
 }
+export interface RegionalIssuePrevalence {
+  issueType: string;
+  count: number;
+  supplierIds: string[];
+  severity: "critical" | "warning" | "info";
+  trend?: "rising" | "falling" | "stable";
+}
+export interface PeerComparison {
+  supplierId: string;
+  supplierName: string;
+  riskScore: number;
+  caseScore: number;
+  surveyScore: number;
+  trainingScore: number;
+  engagementScore: number;
+  deviations: {
+    risk: number;
+    case: number;
+    survey: number;
+    training: number;
+    engagement: number;
+  };
+}
+export interface ContextualSilenceAlert {
+  supplierId: string;
+  supplierName: string;
+  daysSilent: number;
+  peerIssues: string[];
+  peerActiveCount: number;
+  severity: "critical" | "warning";
+}
+export interface RegionalClusterOverlap {
+  clusterId: number;
+  clusterLabel: string;
+  severity: string;
+  supplierCount: number;
+  caseCount: number;
+}
 // ===============================
 // CACHE LAYER
 // ===============================
@@ -368,6 +406,39 @@ export const surveyTemporalPatterns = pgTable(
   (table) => [
     uniqueIndex("idx_temporal_theme").on(table.themeName),
   ],
+);
+
+// Regional Benchmarks (pre-computed peer comparisons per region)
+export const regionalBenchmarks = pgTable(
+  "regional_benchmarks",
+  {
+    id: serial("id").primaryKey(),
+    region: varchar("region", { length: 100 }).notNull(),
+    supplierCount: integer("supplier_count").default(0),
+    avgRiskScore: real("avg_risk_score").default(0),
+    avgCaseScore: real("avg_case_score").default(0),
+    avgSurveyScore: real("avg_survey_score").default(0),
+    avgTrainingScore: real("avg_training_score").default(0),
+    avgEngagementScore: real("avg_engagement_score").default(0),
+    highRiskCount: integer("high_risk_count").default(0),
+    silentCount: integer("silent_count").default(0),
+    issuePrevalence: jsonb("issue_prevalence")
+      .$type<RegionalIssuePrevalence[]>()
+      .default([]),
+    peerComparisons: jsonb("peer_comparisons")
+      .$type<PeerComparison[]>()
+      .default([]),
+    contextualSilenceAlerts: jsonb("contextual_silence_alerts")
+      .$type<ContextualSilenceAlert[]>()
+      .default([]),
+    clusterOverlap: jsonb("cluster_overlap")
+      .$type<RegionalClusterOverlap[]>()
+      .default([]),
+    computedAt: timestamp("computed_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [uniqueIndex("idx_benchmark_region").on(table.region)],
 );
 
 // ===============================

@@ -6,6 +6,7 @@ import { caseClustering } from "./case-clustering";
 import { payslipAnomaly } from "./payslip-anomaly";
 import { riskForecast } from "./risk-forecast";
 import { workerVoiceAnalytics } from "./worker-voice-analytics";
+import { regionalBenchmarking } from "./regional-benchmarking";
 import { generateBriefing } from "./generate-briefing";
 import { remediationEvidenceSweep } from "./remediation-evidence-sweep";
 
@@ -22,6 +23,7 @@ export const JOB_REGISTRY: Record<JobType, JobHandler> = {
   "payslip-anomaly": payslipAnomaly,
   "risk-forecast": riskForecast,
   "worker-voice-analytics": workerVoiceAnalytics,
+  "regional-benchmarking": regionalBenchmarking,
   "generate-briefing": generateBriefing,
   "remediation-evidence-sweep": remediationEvidenceSweep,
 };

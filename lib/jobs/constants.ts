@@ -5,6 +5,7 @@ export const JOB_TYPES = [
   "payslip-anomaly",
   "risk-forecast",
   "worker-voice-analytics",
+  "regional-benchmarking",
   "generate-briefing",
   "remediation-evidence-sweep",
 ] as const;
@@ -24,6 +25,7 @@ export const RUN_ALL_ORDER: JobType[] = [
   "payslip-anomaly",
   "risk-forecast",
   "worker-voice-analytics",
+  "regional-benchmarking",
   "generate-briefing",
   "remediation-evidence-sweep",
 ];
@@ -36,6 +38,7 @@ export const JOB_LABELS: Record<JobType, string> = {
   "payslip-anomaly": "Payslip Anomaly Detection",
   "risk-forecast": "Risk Forecasting",
   "worker-voice-analytics": "Worker Voice Analytics",
+  "regional-benchmarking": "Regional Benchmarking",
   "generate-briefing": "Intelligence Briefing",
   "remediation-evidence-sweep": "Evidence Sweep",
 };
@@ -48,6 +51,7 @@ export const JOB_DESCRIPTIONS: Record<JobType, string> = {
   "payslip-anomaly": "Detect wage anomalies and minimum wage violations",
   "risk-forecast": "Predict supplier risk scores 60 days ahead",
   "worker-voice-analytics": "Extract emerging topics and sentiment trends from worker feedback",
+  "regional-benchmarking": "Compare suppliers against regional peers and detect contextual silence",
   "generate-briefing": "Aggregate intelligence from all jobs into a daily briefing digest",
   "remediation-evidence-sweep": "Cross-reference resolved cases, training completions, and case volumes against active remediations",
 };

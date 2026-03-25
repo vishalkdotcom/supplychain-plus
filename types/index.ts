@@ -375,6 +375,35 @@ export interface UrgentCase {
 }
 
 // ===============================
+// Regional Insights & Benchmarking
+// ===============================
+
+export interface RegionalBenchmark {
+  id: number;
+  region: string;
+  supplierCount: number;
+  avgRiskScore: number;
+  avgCaseScore: number;
+  avgSurveyScore: number;
+  avgTrainingScore: number;
+  avgEngagementScore: number;
+  highRiskCount: number;
+  silentCount: number;
+  issuePrevalence: import("@/lib/db/schema").RegionalIssuePrevalence[];
+  peerComparisons: import("@/lib/db/schema").PeerComparison[];
+  contextualSilenceAlerts: import("@/lib/db/schema").ContextualSilenceAlert[];
+  clusterOverlap: import("@/lib/db/schema").RegionalClusterOverlap[];
+  computedAt: string;
+  focusedSupplier?: import("@/lib/db/schema").PeerComparison | null;
+}
+
+export interface RegionalInsightsResponse {
+  regions: RegionalBenchmark[];
+  allRegions: string[];
+  computedAt: string | null;
+}
+
+// ===============================
 // Case Cross-Module Context
 // ===============================
 
