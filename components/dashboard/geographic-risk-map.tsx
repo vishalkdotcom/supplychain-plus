@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Supplier } from "@/types";
 import {
   Card,
@@ -30,22 +31,61 @@ interface GeographicRiskMapProps {
 
 // Country centroid fallbacks — only used when real lat/lng is not available
 const countryCentroids: Record<string, [number, number]> = {
+  // Southeast Asia
   "Vietnam": [108.28, 14.06],
-  "Bangladesh": [90.36, 23.69],
-  "China": [104.20, 35.86],
-  "India": [78.96, 20.59],
   "Cambodia": [104.99, 12.57],
-  "Indonesia": [113.92, -0.79],
-  "Turkey": [35.24, 38.96],
-  "Mexico": [-102.55, 23.63],
-  "Taiwan": [120.96, 23.69],
   "Thailand": [100.99, 15.87],
   "Myanmar": [95.96, 21.91],
+  "Philippines": [121.77, 12.88],
+  "Malaysia": [101.98, 4.21],
+  "Laos": [102.50, 19.86],
+  // South Asia
+  "Bangladesh": [90.36, 23.69],
+  "India": [78.96, 20.59],
   "Pakistan": [69.35, 30.38],
   "Sri Lanka": [80.77, 7.87],
+  "Nepal": [84.12, 28.39],
+  // East Asia
+  "China": [104.20, 35.86],
+  "Taiwan": [120.96, 23.69],
+  "South Korea": [127.77, 35.91],
+  "Japan": [138.25, 36.20],
+  "Indonesia": [113.92, -0.79],
+  // Middle East & Türkiye
+  "Turkey": [35.24, 38.96],
+  "Jordan": [36.24, 30.59],
+  "United Arab Emirates": [53.85, 23.42],
+  // Africa
   "Ethiopia": [40.49, 9.15],
+  "Kenya": [37.91, -0.02],
+  "Tanzania": [34.89, -6.37],
+  "Madagascar": [46.87, -18.77],
+  "Mauritius": [57.55, -20.35],
+  "Morocco": [-7.09, 31.79],
+  "Egypt": [30.80, 26.82],
+  "South Africa": [22.94, -30.56],
+  "Nigeria": [8.68, 9.08],
+  "Ghana": [-1.02, 7.95],
+  // Central & South America
+  "Mexico": [-102.55, 23.63],
   "Honduras": [-86.24, 15.20],
   "Guatemala": [-90.23, 15.78],
+  "El Salvador": [-88.90, 13.79],
+  "Nicaragua": [-85.21, 12.87],
+  "Haiti": [-72.29, 18.97],
+  "Dominican Republic": [-70.16, 18.74],
+  "Colombia": [-74.30, 4.57],
+  "Peru": [-75.02, -9.19],
+  "Brazil": [-51.93, -14.24],
+  "Argentina": [-63.62, -38.42],
+  // Europe
+  "Italy": [12.57, 41.87],
+  "Portugal": [-8.22, 39.40],
+  "Romania": [24.97, 45.94],
+  "Bulgaria": [25.49, 42.73],
+  "Poland": [19.15, 51.92],
+  "United Kingdom": [-3.44, 55.38],
+  "Germany": [10.45, 51.17],
 };
 
 // Small offset for suppliers sharing the same coordinates
@@ -70,6 +110,7 @@ interface TooltipState {
 }
 
 export function GeographicRiskMap({ suppliers }: GeographicRiskMapProps) {
+  const router = useRouter();
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
   const [position, setPosition] = useState({ coordinates: [20, 15] as [number, number], zoom: 1 });
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -229,6 +270,7 @@ export function GeographicRiskMap({ suppliers }: GeographicRiskMapProps) {
                     stroke="#ffffff"
                     strokeWidth={1.5 / Math.pow(position.zoom, 0.5)}
                     style={{ cursor: "pointer", transition: "all 0.2s ease" }}
+                    onClick={() => router.push(`/suppliers/${marker.id}`)}
                     onMouseEnter={(e) => {
                       const rect = (e.target as SVGElement).getBoundingClientRect();
                       setTooltip({
@@ -276,6 +318,7 @@ export function GeographicRiskMap({ suppliers }: GeographicRiskMapProps) {
                   Risk: {tooltip.content.riskScore}
                 </span>
               </div>
+              <div className="text-[10px] mt-1 text-center" style={{ color: '#64748b' }}>Click to view supplier</div>
               <div 
                 className="absolute left-1/2 -bottom-1 -translate-x-1/2 w-2 h-2 border-b border-r border-slate-700 rotate-45" 
                 style={{ backgroundColor: '#0f172a' }}
