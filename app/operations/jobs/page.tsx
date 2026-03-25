@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { HelpButton } from "@/components/help";
 import { QueueStatusBar } from "@/components/operations/queue-status-bar";
 import { JobCards } from "@/components/operations/job-cards";
 import { RunHistoryTable } from "@/components/operations/run-history-table";
@@ -80,7 +81,7 @@ export default function JobsPage() {
     <div className="container mx-auto p-4 md:p-8 max-w-6xl space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight mb-1">Jobs</h1>
+          <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight mb-1">Jobs <HelpButton infographicId="inf-19" /></h1>
           <p className="text-muted-foreground text-sm">
             Monitor, trigger, and schedule ML batch jobs.
           </p>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { HelpButton } from "@/components/help";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { IconSparkles, IconLoader2, IconPlus } from "@tabler/icons-react";
@@ -223,6 +224,7 @@ function AIAssistantContent() {
         <div className="flex items-center gap-2">
           <IconSparkles className="w-5 h-5 text-indigo-500" />
           <span className="text-sm font-semibold text-foreground">AI Assistant</span>
+          <HelpButton infographicId="inf-12" />
         </div>
         <div className="h-4 w-px bg-border" />
 

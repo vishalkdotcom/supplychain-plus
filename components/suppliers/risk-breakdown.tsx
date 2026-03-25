@@ -1,5 +1,8 @@
+"use client";
+
 import type { Supplier } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { HelpButton } from "@/components/help";
 import {
   IconAlertTriangle,
   IconMessage,
@@ -65,7 +68,10 @@ export function RiskBreakdown({ supplier, previousRiskScore }: RiskBreakdownProp
     >
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center justify-between text-base">
-          <span>Why {riskLevel.toUpperCase()} Risk?</span>
+          <span className="flex items-center gap-1.5">
+            Why {riskLevel.toUpperCase()} Risk?
+            <HelpButton infographicId="inf-02" />
+          </span>
           <div className="flex items-center gap-2">
             <div
               className={`flex items-center text-sm font-normal px-2 py-0.5 rounded-full ${

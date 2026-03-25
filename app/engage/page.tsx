@@ -3,6 +3,7 @@
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { HelpButton } from "@/components/help";
 import { useView } from "@/components/view-context";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -236,7 +237,7 @@ export default function EngagePage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold tracking-tight">Engage Insights</h1>
+        <h1 className="flex items-center gap-2 text-3xl font-bold tracking-tight">Engage Insights <HelpButton infographicId="inf-07" /></h1>
         <p className="text-muted-foreground">
           AI-powered survey design and analysis.
         </p>

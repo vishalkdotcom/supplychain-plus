@@ -32,6 +32,7 @@ import {
 } from "@tabler/icons-react";
 import { PlanCard } from "@/components/remediation/plan-card";
 import { CreatePlanDialog, type RemediationSource } from "@/components/remediation/create-plan-dialog";
+import { HelpButton } from "@/components/help";
 
 function severityIcon(severity: string) {
   switch (severity) {
@@ -113,7 +114,10 @@ export default function RemediationPage() {
       </Breadcrumb>
 
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Remediation Workflow</h1>
+        <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight">
+          Remediation Workflow
+          <HelpButton infographicId="inf-13" />
+        </h1>
         <p className="text-muted-foreground">
           Detect issues, create action plans, and collect evidence of resolution
         </p>

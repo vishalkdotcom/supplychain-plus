@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
+import { HelpButton } from "@/components/help";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -331,7 +332,7 @@ export default function EducatePage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold tracking-tight">Educate Studio</h1>
+        <h1 className="flex items-center gap-2 text-3xl font-bold tracking-tight">Educate Studio <HelpButton infographicId="inf-09" /></h1>
         <p className="text-muted-foreground">
           AI-assisted course creation and localization.
         </p>

@@ -30,6 +30,7 @@ import {
   IconInfoCircle,
   IconRadar,
 } from "@tabler/icons-react";
+import { HelpButton } from "@/components/help";
 
 interface MLSignalsPanelProps {
   supplierId: string;
@@ -106,7 +107,10 @@ export function MLSignalsPanel({ supplierId }: MLSignalsPanelProps) {
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="text-base">ML Intelligence Signals</CardTitle>
+        <CardTitle className="flex items-center gap-1.5 text-base">
+          ML Intelligence Signals
+          <HelpButton infographicId="inf-05" />
+        </CardTitle>
         <CardDescription>
           AI-detected patterns, anomalies, and trends for this supplier
         </CardDescription>
@@ -255,6 +259,10 @@ export function MLSignalsPanel({ supplierId }: MLSignalsPanelProps) {
 
           {/* Monitoring Tab */}
           <TabsContent value="monitoring" className="space-y-3 mt-3">
+            <div className="flex items-center gap-1.5 mb-1">
+              <span className="text-xs font-medium text-muted-foreground">Monitoring Signals</span>
+              <HelpButton infographicId="inf-10" />
+            </div>
             {loadingMonitoring ? (
               <LoadingSkeleton />
             ) : signals.length === 0 ? (
@@ -358,6 +366,10 @@ export function MLSignalsPanel({ supplierId }: MLSignalsPanelProps) {
 
           {/* Forecast Tab */}
           <TabsContent value="forecast" className="space-y-3 mt-3">
+            <div className="flex items-center gap-1.5 mb-1">
+              <span className="text-xs font-medium text-muted-foreground">Risk Forecast</span>
+              <HelpButton infographicId="inf-11" />
+            </div>
             {loadingForecasts ? (
               <LoadingSkeleton />
             ) : !latestForecast ? (

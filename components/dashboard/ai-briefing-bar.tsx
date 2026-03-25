@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchBriefing } from "@/lib/api";
 import { IconSparkles } from "@tabler/icons-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { HelpButton } from "@/components/help";
 import { useEffect, useState } from "react";
 
 const LAST_VISIT_KEY = "wovo_last_visit";
@@ -62,9 +63,10 @@ export function AIBriefingBar() {
         <div className={`p-2 rounded-lg shrink-0 ${hasActivity ? "bg-primary/10" : "bg-muted"}`}>
           <IconSparkles className={`h-5 w-5 ${hasActivity ? "text-primary" : "text-muted-foreground"}`} />
         </div>
-        <p className="text-sm font-medium">
+        <p className="text-sm font-medium flex items-center gap-1.5">
           <span className="text-muted-foreground mr-1">AI Briefing —</span>
           {briefing.summary}
+          <HelpButton infographicId="inf-17" />
         </p>
       </div>
     </div>

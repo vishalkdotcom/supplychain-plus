@@ -33,6 +33,7 @@ import {
   IconChevronDown,
   IconChevronUp,
 } from "@tabler/icons-react";
+import { HelpButton } from "@/components/help";
 
 const GeographicRiskMap = dynamic(
   () =>
@@ -116,8 +117,9 @@ export function DashboardView() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">
+        <h1 className="flex items-center gap-2 text-3xl font-bold tracking-tight">
           WOVO AI Control Center
+          <HelpButton infographicId="inf-03" />
         </h1>
         <p className="text-muted-foreground">
           {viewMode === "brand" && currentBrandId
@@ -184,13 +186,15 @@ export function DashboardView() {
       <RiskDistributionChart suppliers={suppliers} />
 
       {/* Row 3: Collapsible Visualizations */}
+      <div className="flex items-center gap-1.5 text-sm text-muted-foreground mb-1">
+        <IconMap className="h-4 w-4" />
+        <span>Visualizations</span>
+        <HelpButton infographicId="inf-18" />
+      </div>
       <Collapsible open={vizOpen} onOpenChange={setVizOpen}>
         <CollapsibleTrigger asChild>
           <Button variant="ghost" className="w-full justify-between text-sm text-muted-foreground hover:text-foreground">
-            <div className="flex items-center gap-2">
-              <IconMap className="h-4 w-4" />
-              Visualizations
-            </div>
+            <span>{vizOpen ? "Hide" : "Show"} visualizations</span>
             {vizOpen ? (
               <IconChevronUp className="h-4 w-4" />
             ) : (
