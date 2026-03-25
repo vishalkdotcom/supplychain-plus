@@ -42,12 +42,13 @@ export async function computeMonitoringSignals(): Promise<{
     const suppliers = await db.select().from(supplierRiskScores);
 
     // Run signal detectors in parallel
-    const [silenceSignals, contagionSignals] = await Promise.all([
+    const [silenceSignals, contagionSignals, decaySignals] = await Promise.all([
       detectSilence(suppliers),
       detectRegionalContagion(suppliers),
+      detectEngagementDecay(suppliers),
     ]);
 
-    const allSignals = [...silenceSignals, ...contagionSignals];
+    const allSignals = [...silenceSignals, ...contagionSignals, ...decaySignals];
 
     // Upsert signals (insert new, update existing, resolve stale)
     for (const signal of allSignals) {
@@ -278,6 +279,120 @@ async function detectRegionalContagion(
     }
   } catch (error) {
     logger.error(TAG, "Regional contagion detection failed", error);
+  }
+
+  return signals;
+}
+
+// ===============================
+// Engagement Decay Detection
+// ===============================
+
+/**
+ * Detects declining survey participation rates per supplier.
+ * Compares the most recent month's response count against the trailing
+ * 3-month average. Moderate thresholds:
+ *   - Warning:  latest < 60% of trailing avg
+ *   - Critical: latest < 40% of trailing avg OR 3+ consecutive declining months
+ */
+async function detectEngagementDecay(
+  suppliers: Array<{ supplierId: string; supplierName: string | null }>,
+): Promise<SignalInput[]> {
+  const signals: SignalInput[] = [];
+
+  try {
+    // Get monthly response counts per supplier over the last 6 months
+    // COUNT(DISTINCT survey_user_response_id) gives unique respondents, not individual answers
+    const result = await pgQuery(`
+      SELECT
+        ci.client_key AS supplier_id,
+        DATE_TRUNC('month', r.created_date) AS month,
+        COUNT(DISTINCT r.survey_user_response_id) AS response_count
+      FROM survey_mdlsurveyquestionresponses r
+      JOIN survey_mdlsurvey s ON r.survey_id = s.id
+      JOIN clients_clientinfo ci ON s.client_id = ci.id
+      WHERE r.created_date >= NOW() - INTERVAL '6 months'
+      GROUP BY ci.client_key, DATE_TRUNC('month', r.created_date)
+      ORDER BY ci.client_key, month
+    `);
+
+    // Build monthly response map: supplierId → [{month, count}]
+    const monthlyBySupplier = new Map<
+      string,
+      Array<{ month: Date; count: number }>
+    >();
+    for (const row of result.rows as Array<{
+      supplier_id: string;
+      month: Date;
+      response_count: string;
+    }>) {
+      const existing = monthlyBySupplier.get(row.supplier_id) ?? [];
+      existing.push({
+        month: new Date(row.month),
+        count: parseInt(row.response_count, 10),
+      });
+      monthlyBySupplier.set(row.supplier_id, existing);
+    }
+
+    const supplierMap = new Map(
+      suppliers.map((s) => [s.supplierId, s.supplierName]),
+    );
+
+    for (const [supplierId, months] of monthlyBySupplier) {
+      // Need at least 3 months of data to detect a trend
+      if (months.length < 3) continue;
+
+      // Sort chronologically
+      months.sort((a, b) => a.month.getTime() - b.month.getTime());
+
+      const latest = months[months.length - 1];
+      // Trailing average excludes the latest month
+      const trailing = months.slice(0, -1);
+      const trailingAvg =
+        trailing.reduce((sum, m) => sum + m.count, 0) / trailing.length;
+
+      if (trailingAvg === 0) continue; // No baseline to compare against
+
+      const ratio = latest.count / trailingAvg;
+
+      // Check for consecutive decline (3+ months dropping)
+      let consecutiveDeclines = 0;
+      for (let i = 1; i < months.length; i++) {
+        if (months[i].count < months[i - 1].count) {
+          consecutiveDeclines++;
+        } else {
+          consecutiveDeclines = 0;
+        }
+      }
+
+      const isCritical = ratio < 0.4 || consecutiveDeclines >= 3;
+      const isWarning = ratio < 0.6;
+
+      if (!isCritical && !isWarning) continue;
+
+      const supplierName = supplierMap.get(supplierId) ?? "Supplier";
+      const dropPct = Math.round((1 - ratio) * 100);
+
+      signals.push({
+        supplierId,
+        signalType: "engagement_decay",
+        severity: isCritical ? "critical" : "warning",
+        title: `${supplierName} survey participation declining`,
+        description: `Survey responses dropped ${dropPct}% compared to the trailing average (${latest.count} vs avg ${Math.round(trailingAvg)}).${consecutiveDeclines >= 3 ? ` Participation has declined for ${consecutiveDeclines} consecutive months.` : ""} This may indicate survey fatigue or suppressed access.`,
+        metadata: {
+          latestCount: latest.count,
+          trailingAvg: Math.round(trailingAvg),
+          dropPercent: dropPct,
+          consecutiveDeclines,
+          monthlyTrend: months.map((m) => ({
+            month: m.month.toISOString().slice(0, 7),
+            count: m.count,
+          })),
+        },
+      });
+    }
+  } catch (error) {
+    logger.error(TAG, "Engagement decay detection failed", error);
   }
 
   return signals;

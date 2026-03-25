@@ -42,6 +42,7 @@ import {
   IconExternalLink,
   IconPencil,
   IconAlertTriangle,
+  IconDownload,
 } from "@tabler/icons-react";
 import { toast } from "sonner";
 import type { RemediationStatus } from "@/types";
@@ -218,14 +219,26 @@ export default function RemediationDetailPage({ params }: RemediationDetailPageP
               </span>
             </div>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => openEditDialog("details")}
-          >
-            <IconPencil className="h-4 w-4 mr-1" />
-            Edit Details
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              asChild
+            >
+              <a href={`/api/remediations/${id}/export`} download>
+                <IconDownload className="h-4 w-4 mr-1" />
+                Export Evidence
+              </a>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => openEditDialog("details")}
+            >
+              <IconPencil className="h-4 w-4 mr-1" />
+              Edit Details
+            </Button>
+          </div>
         </div>
       </div>
 
