@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
+import { HelpButton } from "@/components/help";
 import { fetchBrands } from "@/lib/api";
 import {
   Card,
@@ -40,7 +41,7 @@ export default function BrandsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Brands</h1>
+          <h1 className="flex items-center gap-2 text-3xl font-bold tracking-tight">Brands <HelpButton infographicId="inf-16" /></h1>
           <p className="text-muted-foreground">
             {brands?.length || 0} parent companies across your supply chain
           </p>

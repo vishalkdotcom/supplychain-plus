@@ -2,6 +2,7 @@
 
 import type { Case, Survey } from "@/types";
 import Link from "next/link";
+import { HelpButton } from "@/components/help";
 import {
   Card,
   CardContent,
@@ -45,6 +46,7 @@ export function CrossModulePanel({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           Cross-Module Intelligence
+          <HelpButton infographicId="inf-20" />
         </CardTitle>
         <CardDescription>
           Cases, surveys, and training data linked to this supplier

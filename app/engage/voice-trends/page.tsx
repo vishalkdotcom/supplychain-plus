@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { HelpButton } from "@/components/help";
 import { useQuery } from "@tanstack/react-query";
 import { useQueryStates, parseAsString } from "nuqs";
 import { fetchVoiceTrends, fetchVoiceTrendSuppliers } from "@/lib/api";
@@ -117,8 +118,9 @@ export default function VoiceTrendsPage() {
 
       {/* Header */}
       <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold tracking-tight">
+        <h1 className="flex items-center gap-2 text-3xl font-bold tracking-tight">
           Worker Voice Analytics
+          <HelpButton infographicId="inf-08" />
         </h1>
         <p className="text-muted-foreground">
           Emerging topics and sentiment trends from worker feedback

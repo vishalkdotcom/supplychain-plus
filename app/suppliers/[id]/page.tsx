@@ -2,6 +2,7 @@
 
 import { use, useState } from "react";
 import { notFound } from "next/navigation";
+import { HelpButton } from "@/components/help";
 import { RiskBreakdown } from "@/components/suppliers/risk-breakdown";
 import { CrossModulePanel } from "@/components/suppliers/cross-module-panel";
 import { SupplierTimeline } from "@/components/suppliers/supplier-timeline";
@@ -248,6 +249,7 @@ export default function SupplierDetailPage({
           <IconFileText className="w-4 h-4 mr-2" />
           Export HRDD Report
         </Button>
+        <HelpButton infographicId="inf-15" />
       </div>
 
       {/* Hero */}

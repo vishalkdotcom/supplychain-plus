@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { HelpButton } from "@/components/help";
 import {
   IconCircleCheck,
   IconChartLine,
@@ -46,6 +47,10 @@ export function EvidenceTimeline({ evidence, onAddEvidence }: EvidenceTimelinePr
 
   return (
     <div className="space-y-4">
+      <div className="flex items-center gap-1.5">
+        <span className="text-xs font-medium text-muted-foreground">Evidence Timeline</span>
+        <HelpButton infographicId="inf-14" />
+      </div>
       {sorted.length === 0 && (
         <p className="text-sm text-muted-foreground text-center py-4">
           No evidence collected yet

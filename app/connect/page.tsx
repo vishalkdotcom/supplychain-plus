@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { IconArrowRight, IconCurrencyDollar, IconNetwork, IconRobot, IconClock } from "@tabler/icons-react";
+import { HelpButton } from "@/components/help";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { fetchCases } from "@/lib/api";
 import { useView } from "@/components/view-context";
@@ -162,7 +163,7 @@ export default function ConnectPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Case Inbox</CardTitle>
+          <CardTitle className="flex items-center gap-1.5">Case Inbox <HelpButton infographicId="inf-04" /></CardTitle>
           <CardDescription>
             Click any case to view details, AI guidance, and take action.
           </CardDescription>

@@ -186,13 +186,15 @@ export function DashboardView() {
       <RiskDistributionChart suppliers={suppliers} />
 
       {/* Row 3: Collapsible Visualizations */}
+      <div className="flex items-center gap-1.5 text-sm text-muted-foreground mb-1">
+        <IconMap className="h-4 w-4" />
+        <span>Visualizations</span>
+        <HelpButton infographicId="inf-18" />
+      </div>
       <Collapsible open={vizOpen} onOpenChange={setVizOpen}>
         <CollapsibleTrigger asChild>
           <Button variant="ghost" className="w-full justify-between text-sm text-muted-foreground hover:text-foreground">
-            <div className="flex items-center gap-2">
-              <IconMap className="h-4 w-4" />
-              Visualizations
-            </div>
+            <span>{vizOpen ? "Hide" : "Show"} visualizations</span>
             {vizOpen ? (
               <IconChevronUp className="h-4 w-4" />
             ) : (

@@ -259,6 +259,10 @@ export function MLSignalsPanel({ supplierId }: MLSignalsPanelProps) {
 
           {/* Monitoring Tab */}
           <TabsContent value="monitoring" className="space-y-3 mt-3">
+            <div className="flex items-center gap-1.5 mb-1">
+              <span className="text-xs font-medium text-muted-foreground">Monitoring Signals</span>
+              <HelpButton infographicId="inf-10" />
+            </div>
             {loadingMonitoring ? (
               <LoadingSkeleton />
             ) : signals.length === 0 ? (
@@ -362,6 +366,10 @@ export function MLSignalsPanel({ supplierId }: MLSignalsPanelProps) {
 
           {/* Forecast Tab */}
           <TabsContent value="forecast" className="space-y-3 mt-3">
+            <div className="flex items-center gap-1.5 mb-1">
+              <span className="text-xs font-medium text-muted-foreground">Risk Forecast</span>
+              <HelpButton infographicId="inf-11" />
+            </div>
             {loadingForecasts ? (
               <LoadingSkeleton />
             ) : !latestForecast ? (

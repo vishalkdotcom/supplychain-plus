@@ -58,6 +58,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { SearchInput } from "@/components/search-input";
 import { getSeverityVariant } from "@/lib/risk-utils";
 import { IconAlertTriangle, IconArrowRight, IconShieldCheck } from "@tabler/icons-react";
+import { HelpButton } from "@/components/help";
 import { Button } from "@/components/ui/button";
 import { CreatePlanDialog, type RemediationSource } from "@/components/remediation/create-plan-dialog";
 
@@ -206,8 +207,9 @@ export default function PayslipAnomaliesPage() {
 
       {/* Header */}
       <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold tracking-tight">
+        <h1 className="flex items-center gap-2 text-3xl font-bold tracking-tight">
           Wage Anomaly Detection
+          <HelpButton infographicId="inf-06" />
         </h1>
         <p className="text-muted-foreground">
           Payslip irregularities flagged by AI
