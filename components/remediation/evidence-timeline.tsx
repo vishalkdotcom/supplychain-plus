@@ -16,7 +16,7 @@ import {
 } from "@tabler/icons-react";
 import type { RemediationEvidence } from "@/types";
 
-const EVIDENCE_TYPE_CONFIG: Record<
+export const EVIDENCE_TYPE_CONFIG: Record<
   string,
   { icon: typeof IconCircleCheck; color: string; label: string }
 > = {

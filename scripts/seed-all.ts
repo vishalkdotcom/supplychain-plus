@@ -122,7 +122,12 @@ async function main() {
     await run(job.name, () => callJob(job.path));
   }
 
-  // 6. Generate intelligence briefing (aggregates all ML outputs)
+  // 6. Seed regulatory frameworks
+  await run("Seed regulatory frameworks", async () => {
+    return await shell("bun run scripts/seed-regulatory.ts");
+  });
+
+  // 7. Generate intelligence briefing (aggregates all ML outputs)
   await run("Generate intelligence briefing", () =>
     callJob("/api/jobs/generate-briefing"),
   );

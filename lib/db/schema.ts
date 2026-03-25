@@ -709,3 +709,88 @@ export const rateLimitDailyUsage = pgTable(
     ),
   ],
 );
+
+// ─────────────────────────────────────────────────
+// REGULATORY LAYER
+// ─────────────────────────────────────────────────
+
+export const regulatoryFrameworks = pgTable("regulatory_frameworks", {
+  id: serial("id").primaryKey(),
+  slug: varchar("slug", { length: 50 }).notNull().unique(),
+  name: varchar("name", { length: 255 }).notNull(),
+  shortName: varchar("short_name", { length: 50 }).notNull(),
+  jurisdiction: varchar("jurisdiction", { length: 100 }).notNull(),
+  effectiveDate: date("effective_date"),
+  nextDeadline: date("next_deadline"),
+  description: text("description"),
+  websiteUrl: varchar("website_url", { length: 500 }),
+  riskWeightProfile: jsonb("risk_weight_profile").$type<Record<string, number>>(),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const frameworkRequirements = pgTable(
+  "framework_requirements",
+  {
+    id: serial("id").primaryKey(),
+    frameworkId: integer("framework_id")
+      .notNull()
+      .references(() => regulatoryFrameworks.id),
+    code: varchar("code", { length: 50 }).notNull(),
+    title: varchar("title", { length: 500 }).notNull(),
+    description: text("description"),
+    category: varchar("category", { length: 100 }).notNull(),
+    evidenceTypes: jsonb("evidence_types").$type<string[]>().default([]),
+    sortOrder: integer("sort_order").default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("idx_fw_req_framework").on(table.frameworkId),
+    uniqueIndex("idx_fw_req_code").on(table.frameworkId, table.code),
+  ],
+);
+
+export const supplierFrameworkCompliance = pgTable(
+  "supplier_framework_compliance",
+  {
+    id: serial("id").primaryKey(),
+    supplierId: varchar("supplier_id", { length: 50 }).notNull(),
+    frameworkId: integer("framework_id")
+      .notNull()
+      .references(() => regulatoryFrameworks.id),
+    status: varchar("status", { length: 30 }).notNull().default("not_assessed"),
+    completedRequirements: integer("completed_requirements").default(0),
+    totalRequirements: integer("total_requirements").default(0),
+    lastAssessedAt: timestamp("last_assessed_at", { withTimezone: true }),
+    assessedBy: varchar("assessed_by", { length: 100 }),
+    notes: text("notes"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("idx_sfc_supplier_framework").on(table.supplierId, table.frameworkId),
+    index("idx_sfc_framework").on(table.frameworkId),
+    index("idx_sfc_status").on(table.status),
+  ],
+);
+
+export const requirementEvidence = pgTable(
+  "requirement_evidence",
+  {
+    id: serial("id").primaryKey(),
+    requirementId: integer("requirement_id")
+      .notNull()
+      .references(() => frameworkRequirements.id),
+    evidenceId: integer("evidence_id")
+      .notNull()
+      .references(() => remediationEvidence.id),
+    supplierId: varchar("supplier_id", { length: 50 }).notNull(),
+    linkedAt: timestamp("linked_at", { withTimezone: true }).defaultNow().notNull(),
+    linkedBy: varchar("linked_by", { length: 100 }).notNull().default("system"),
+  },
+  (table) => [
+    uniqueIndex("idx_re_req_evidence").on(table.requirementId, table.evidenceId),
+    index("idx_re_supplier").on(table.supplierId),
+  ],
+);

@@ -541,3 +541,55 @@ export interface MLInsightsSummary {
   globalSentimentShift: number;
   topEmergingTopic: VoiceTopic | null;
 }
+
+// ─────────────────────────────────────────────────
+// Regulatory Radar
+// ─────────────────────────────────────────────────
+
+export interface RegulatoryFramework {
+  id: number;
+  slug: string;
+  name: string;
+  shortName: string;
+  jurisdiction: string;
+  effectiveDate: string | null;
+  nextDeadline: string | null;
+  description: string | null;
+  websiteUrl: string | null;
+  riskWeightProfile: Record<string, number> | null;
+  isActive: boolean;
+}
+
+export interface FrameworkRequirement {
+  id: number;
+  frameworkId: number;
+  code: string;
+  title: string;
+  description: string | null;
+  category: string;
+  evidenceTypes: string[];
+  sortOrder: number;
+}
+
+export type ComplianceStatus = "not_assessed" | "non_compliant" | "partial" | "compliant";
+
+export interface SupplierComplianceSummary {
+  supplierId: string;
+  supplierName: string;
+  frameworkId: number;
+  status: ComplianceStatus;
+  completedRequirements: number;
+  totalRequirements: number;
+  percentage: number;
+}
+
+export interface FrameworkOverview extends RegulatoryFramework {
+  supplierStats: {
+    total: number;
+    compliant: number;
+    partial: number;
+    nonCompliant: number;
+    notAssessed: number;
+  };
+  requirementCount: number;
+}

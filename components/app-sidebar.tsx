@@ -15,6 +15,7 @@ import {
   IconSettings,
   IconReportAnalytics,
   IconShieldCheck,
+  IconScale,
   IconSparkles,
   IconWorld,
 } from "@tabler/icons-react";
@@ -245,6 +246,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   </CollapsibleContent>
                 </SidebarMenuItem>
               </Collapsible>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname.startsWith("/governance")}
+                  tooltip="Regulatory Radar"
+                >
+                  <Link href="/governance/regulatory-radar">
+                    <IconScale />
+                    <span>Regulatory Radar</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton
                   asChild

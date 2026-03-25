@@ -28,6 +28,8 @@ import {
   RemediationAuditEntry,
   DemoUser,
   RegionalInsightsResponse,
+  FrameworkOverview,
+  SupplierComplianceSummary,
 } from "@/types";
 
 const API_BASE = "/api";
@@ -564,4 +566,41 @@ export async function resolveAlert(alertId: number): Promise<void> {
     body: JSON.stringify({ alertId, isRead: true, resolve: true }),
   });
   if (!res.ok) throw new Error("Failed to resolve alert");
+}
+
+// ─────────────────────────────────────────────────
+// Regulatory Radar
+// ─────────────────────────────────────────────────
+
+export async function fetchFrameworks(): Promise<FrameworkOverview[]> {
+  const res = await fetch(`${API_BASE}/regulatory/frameworks`);
+  if (!res.ok) throw new Error("Failed to fetch regulatory frameworks");
+  return res.json();
+}
+
+export async function fetchFramework(id: number) {
+  const res = await fetch(`${API_BASE}/regulatory/frameworks/${id}`);
+  if (!res.ok) throw new Error("Failed to fetch framework detail");
+  return res.json();
+}
+
+export async function fetchComplianceMatrix(params?: {
+  frameworkId?: number;
+  status?: string;
+  supplierId?: string;
+}): Promise<SupplierComplianceSummary[]> {
+  const qs = new URLSearchParams();
+  if (params?.frameworkId) qs.set("frameworkId", String(params.frameworkId));
+  if (params?.status) qs.set("status", params.status);
+  if (params?.supplierId) qs.set("supplierId", params.supplierId);
+  const query = qs.toString() ? `?${qs.toString()}` : "";
+  const res = await fetch(`${API_BASE}/regulatory/compliance${query}`);
+  if (!res.ok) throw new Error("Failed to fetch compliance matrix");
+  return res.json();
+}
+
+export async function fetchSupplierCompliance(supplierId: string) {
+  const res = await fetch(`${API_BASE}/regulatory/compliance/${supplierId}`);
+  if (!res.ok) throw new Error("Failed to fetch supplier compliance");
+  return res.json();
 }

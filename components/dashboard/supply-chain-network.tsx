@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { Supplier } from "@/types";
+import { Brand, Supplier } from "@/types";
 import {
   Card,
   CardContent,
@@ -27,39 +27,35 @@ import { getScoreBadgeClasses } from "@/lib/risk-utils";
 
 interface SupplyChainNetworkProps {
   suppliers: Supplier[];
+  brands: Brand[];
 }
 
-export function SupplyChainNetwork({ suppliers }: SupplyChainNetworkProps) {
+export function SupplyChainNetwork({ suppliers, brands }: SupplyChainNetworkProps) {
   const { nodes, edges } = useMemo(() => {
     const initialNodes: Node[] = [];
     const initialEdges: Edge[] = [];
 
-    // Build real parent→child hierarchy from parentCompanyId
-    const parentIds = new Set<string>();
-    const childMap = new Map<string, Supplier[]>(); // parentId → children
-    const orphans: Supplier[] = []; // suppliers with no parent
+    // Build brand ID set for quick lookup
+    const brandIds = new Set(brands.map((b) => b.id));
+
+    // Map parentCompanyId → child suppliers
+    const childMap = new Map<string, Supplier[]>();
+    const standalone: Supplier[] = [];
 
     for (const s of suppliers) {
       if (s.parentCompanyId) {
-        parentIds.add(s.parentCompanyId);
         const children = childMap.get(s.parentCompanyId) || [];
         children.push(s);
         childMap.set(s.parentCompanyId, children);
-      } else {
-        orphans.push(s);
+      } else if (!brandIds.has(s.id)) {
+        // No parent and not a brand → standalone supplier
+        standalone.push(s);
       }
     }
 
-    // Find parent companies that are also suppliers (known parents)
-    const knownParents = suppliers.filter((s) => parentIds.has(s.id));
-    // Unknown parents (referenced but not in supplier list)
-    const unknownParentIds = [...parentIds].filter(
-      (pid) => !suppliers.find((s) => s.id === pid),
-    );
-
-    // Create brand node at top
+    // WOVO Portfolio root node
     initialNodes.push({
-      id: "brand",
+      id: "root",
       type: "default",
       data: { label: "WOVO Portfolio" },
       position: { x: 400, y: 30 },
@@ -75,41 +71,32 @@ export function SupplyChainNetwork({ suppliers }: SupplyChainNetworkProps) {
     });
 
     let nodeX = 0;
-    const PARENT_Y = 150;
-    const CHILD_Y = 290;
+    const BRAND_Y = 150;
+    const SUPPLIER_Y = 290;
     const CHILD_SPACING = 160;
 
-    // Render known parent companies with their children
-    for (const parent of knownParents) {
-      const children = childMap.get(parent.id) || [];
+    // Render each brand and its child suppliers
+    for (const brand of brands) {
+      const children = childMap.get(brand.id) || [];
       const groupWidth = Math.max(children.length, 1) * CHILD_SPACING;
-      const parentX = nodeX + groupWidth / 2;
-
-      // Aggregated risk = weighted average of children's risk scores
-      const aggregatedRisk =
-        children.length > 0
-          ? Math.round(
-              children.reduce((sum, c) => sum + c.riskScore, 0) /
-                children.length,
-            )
-          : parent.riskScore;
+      const brandX = nodeX + groupWidth / 2;
 
       initialNodes.push({
-        id: parent.id,
-        type: "parent",
+        id: brand.id,
+        type: "brand",
         data: {
-          label: parent.name,
-          risk: aggregatedRisk,
+          label: brand.name,
+          risk: brand.avgRiskScore,
           childCount: children.length,
-          country: parent.country,
+          country: brand.country || "",
         },
-        position: { x: parentX, y: PARENT_Y },
+        position: { x: brandX, y: BRAND_Y },
       });
 
       initialEdges.push({
-        id: `edge-brand-${parent.id}`,
-        source: "brand",
-        target: parent.id,
+        id: `edge-root-${brand.id}`,
+        source: "root",
+        target: brand.id,
         animated: true,
         style: { stroke: "#94a3b8", strokeWidth: 2 },
       });
@@ -120,12 +107,12 @@ export function SupplyChainNetwork({ suppliers }: SupplyChainNetworkProps) {
           id: child.id,
           type: "supplier",
           data: { label: child.name, risk: child.riskScore },
-          position: { x: cX, y: CHILD_Y },
+          position: { x: cX, y: SUPPLIER_Y },
         });
 
         initialEdges.push({
-          id: `edge-${parent.id}-${child.id}`,
-          source: parent.id,
+          id: `edge-${brand.id}-${child.id}`,
+          source: brand.id,
           target: child.id,
           markerEnd: {
             type: MarkerType.ArrowClosed,
@@ -140,154 +127,33 @@ export function SupplyChainNetwork({ suppliers }: SupplyChainNetworkProps) {
       nodeX += groupWidth + 40;
     }
 
-    // Render unknown parent groups
-    for (const parentId of unknownParentIds) {
-      const children = childMap.get(parentId) || [];
-      const groupWidth = Math.max(children.length, 1) * CHILD_SPACING;
-      const parentX = nodeX + groupWidth / 2;
-
-      const aggregatedRisk = Math.round(
-        children.reduce((sum, c) => sum + c.riskScore, 0) / children.length,
-      );
-
+    // Render standalone suppliers directly under root
+    for (const s of standalone) {
       initialNodes.push({
-        id: `parent-${parentId}`,
-        type: "parent",
-        data: {
-          label: `Parent Group #${parentId}`,
-          risk: aggregatedRisk,
-          childCount: children.length,
-          country: children[0]?.country || "Unknown",
-        },
-        position: { x: parentX, y: PARENT_Y },
+        id: s.id,
+        type: "supplier",
+        data: { label: s.name, risk: s.riskScore },
+        position: { x: nodeX, y: SUPPLIER_Y },
       });
 
       initialEdges.push({
-        id: `edge-brand-parent-${parentId}`,
-        source: "brand",
-        target: `parent-${parentId}`,
-        animated: true,
-        style: { stroke: "#94a3b8", strokeWidth: 2 },
-      });
-
-      children.forEach((child, cIdx) => {
-        const cX = nodeX + cIdx * CHILD_SPACING;
-        initialNodes.push({
-          id: child.id,
-          type: "supplier",
-          data: { label: child.name, risk: child.riskScore },
-          position: { x: cX, y: CHILD_Y },
-        });
-
-        initialEdges.push({
-          id: `edge-parent-${parentId}-${child.id}`,
-          source: `parent-${parentId}`,
-          target: child.id,
-          markerEnd: {
-            type: MarkerType.ArrowClosed,
-            width: 20,
-            height: 20,
-            color: "#cbd5e1",
-          },
-          style: { stroke: "#cbd5e1", strokeWidth: 1.5 },
-        });
-      });
-
-      nodeX += groupWidth + 40;
-    }
-
-    // Render orphan suppliers (no parent) — group by region
-    const orphansByRegion = new Map<string, Supplier[]>();
-    for (const s of orphans) {
-      // Skip suppliers already rendered as known parents
-      if (knownParents.find((p) => p.id === s.id)) continue;
-      const region = s.region || "Other";
-      const list = orphansByRegion.get(region) || [];
-      list.push(s);
-      orphansByRegion.set(region, list);
-    }
-
-    for (const [region, regionSuppliers] of orphansByRegion) {
-      if (regionSuppliers.length === 0) continue;
-      const groupWidth =
-        Math.max(regionSuppliers.length, 1) * CHILD_SPACING;
-      const regionX = nodeX + groupWidth / 2;
-
-      const regionNodeId = `region-${region}`;
-      const avgRisk = Math.round(
-        regionSuppliers.reduce((sum, s) => sum + s.riskScore, 0) /
-          regionSuppliers.length,
-      );
-
-      initialNodes.push({
-        id: regionNodeId,
-        type: "parent",
-        data: {
-          label: `${region}`,
-          risk: avgRisk,
-          childCount: regionSuppliers.length,
-          country: region,
+        id: `edge-root-standalone-${s.id}`,
+        source: "root",
+        target: s.id,
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          width: 20,
+          height: 20,
+          color: "#cbd5e1",
         },
-        position: { x: regionX, y: PARENT_Y },
+        style: { stroke: "#cbd5e1", strokeWidth: 1.5, strokeDasharray: "4,4" },
       });
 
-      initialEdges.push({
-        id: `edge-brand-${regionNodeId}`,
-        source: "brand",
-        target: regionNodeId,
-        animated: true,
-        style: { stroke: "#94a3b8", strokeWidth: 2, strokeDasharray: "5,5" },
-      });
-
-      const displayedSuppliers = regionSuppliers.slice(0, 6);
-      const overflowCount = regionSuppliers.length - displayedSuppliers.length;
-
-      displayedSuppliers.forEach((s, sIdx) => {
-        const sX = nodeX + sIdx * CHILD_SPACING;
-        initialNodes.push({
-          id: s.id,
-          type: "supplier",
-          data: { label: s.name, risk: s.riskScore },
-          position: { x: sX, y: CHILD_Y },
-        });
-
-        initialEdges.push({
-          id: `edge-${regionNodeId}-${s.id}`,
-          source: regionNodeId,
-          target: s.id,
-          markerEnd: {
-            type: MarkerType.ArrowClosed,
-            width: 20,
-            height: 20,
-            color: "#cbd5e1",
-          },
-          style: { stroke: "#cbd5e1", strokeWidth: 1.5 },
-        });
-      });
-
-      if (overflowCount > 0) {
-        const overflowId = `overflow-${regionNodeId}`;
-        const overflowX = nodeX + displayedSuppliers.length * CHILD_SPACING;
-        initialNodes.push({
-          id: overflowId,
-          type: "default",
-          data: { label: `+${overflowCount} more` },
-          position: { x: overflowX, y: CHILD_Y },
-          style: { background: "#f1f5f9", border: "1px dashed #94a3b8", borderRadius: 8, fontSize: 10, color: "#64748b", padding: "4px 8px" },
-        });
-        initialEdges.push({
-          id: `edge-${regionNodeId}-${overflowId}`,
-          source: regionNodeId,
-          target: overflowId,
-          style: { stroke: "#cbd5e1", strokeWidth: 1, strokeDasharray: "4,4" },
-        });
-      }
-
-      nodeX += groupWidth + 40;
+      nodeX += CHILD_SPACING;
     }
 
     return { nodes: initialNodes, edges: initialEdges };
-  }, [suppliers]);
+  }, [suppliers, brands]);
 
   return (
     <Card className="col-span-full">
@@ -297,7 +163,7 @@ export function SupplyChainNetwork({ suppliers }: SupplyChainNetworkProps) {
           Supply Chain Network
         </CardTitle>
         <CardDescription>
-          Corporate hierarchy with aggregated risk scores
+          Brand hierarchy with aggregated risk scores
         </CardDescription>
       </CardHeader>
       <CardContent className="p-0 sm:p-6 sm:pt-0">
@@ -327,7 +193,7 @@ export function SupplyChainNetwork({ suppliers }: SupplyChainNetworkProps) {
 
 const nodeTypes = {
   supplier: SupplierNode,
-  parent: ParentNode,
+  brand: BrandNode,
 };
 
 interface SupplierNodeData {
@@ -363,16 +229,16 @@ function SupplierNode({ data }: { data: SupplierNodeData }) {
   );
 }
 
-interface ParentNodeData {
+interface BrandNodeData {
   label: string;
   risk: number;
   childCount: number;
   country: string;
 }
 
-function ParentNode({ data }: { data: ParentNodeData }) {
+function BrandNode({ data }: { data: BrandNodeData }) {
   return (
-    <div className="px-5 py-3 shadow-lg rounded-lg bg-slate-50 border-2 border-slate-300">
+    <div className="px-5 py-3 shadow-lg rounded-lg bg-indigo-50 border-2 border-indigo-200">
       <Handle
         type="target"
         position={Position.Top}
@@ -383,8 +249,8 @@ function ParentNode({ data }: { data: ParentNodeData }) {
           {data.label}
         </div>
         <div className="text-[10px] text-muted-foreground mt-0.5">
-          {data.childCount} supplier{data.childCount !== 1 ? "s" : ""} &middot;{" "}
-          {data.country}
+          {data.childCount} supplier{data.childCount !== 1 ? "s" : ""}
+          {data.country ? ` \u00b7 ${data.country}` : ""}
         </div>
         <Badge
           variant="outline"
