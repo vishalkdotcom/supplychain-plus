@@ -10,6 +10,7 @@ import {
   IconArrowRight,
 } from "@tabler/icons-react";
 import type { RemediationStatus } from "@/types";
+import { HelpButton } from "@/components/help";
 
 export const STATUS_STEPS: {
   key: RemediationStatus;
@@ -69,6 +70,10 @@ export function StatusPipeline({
 
   return (
     <div className="space-y-3">
+      <div className="flex items-center gap-1.5 mb-1">
+        <span className="text-xs font-medium text-muted-foreground">Remediation Pipeline</span>
+        <HelpButton infographicId="inf-01" />
+      </div>
       <div className="flex items-center gap-1">
         {STATUS_STEPS.map((step, idx) => {
           const StepIcon = step.icon;

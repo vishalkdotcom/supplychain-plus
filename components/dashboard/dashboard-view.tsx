@@ -33,6 +33,7 @@ import {
   IconChevronDown,
   IconChevronUp,
 } from "@tabler/icons-react";
+import { HelpButton } from "@/components/help";
 
 const GeographicRiskMap = dynamic(
   () =>
@@ -116,8 +117,9 @@ export function DashboardView() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">
+        <h1 className="flex items-center gap-2 text-3xl font-bold tracking-tight">
           WOVO AI Control Center
+          <HelpButton infographicId="inf-03" />
         </h1>
         <p className="text-muted-foreground">
           {viewMode === "brand" && currentBrandId
