@@ -91,7 +91,7 @@ export function DashboardView() {
   const { data: brands } = useQuery({
     queryKey: ["brands"],
     queryFn: () => fetchBrands(),
-    enabled: viewMode === "brand" && !!currentBrandId,
+    // Always fetch brands — used by SupplyChainNetwork and brand view mode
   });
 
   const currentBrandName = brands?.find((b) => b.id === currentBrandId)?.name;
@@ -208,7 +208,7 @@ export function DashboardView() {
               <GeographicRiskMap suppliers={suppliers} />
             </div>
             <div className="col-span-full xl:col-span-1">
-              <SupplyChainNetwork suppliers={suppliers} />
+              <SupplyChainNetwork suppliers={suppliers} brands={brands ?? []} />
             </div>
           </div>
         </CollapsibleContent>

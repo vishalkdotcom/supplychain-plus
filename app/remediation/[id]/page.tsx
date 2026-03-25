@@ -43,6 +43,7 @@ import {
   IconPencil,
   IconAlertTriangle,
   IconDownload,
+  IconPrinter,
 } from "@tabler/icons-react";
 import { toast } from "sonner";
 import type { RemediationStatus } from "@/types";
@@ -227,7 +228,17 @@ export default function RemediationDetailPage({ params }: RemediationDetailPageP
             >
               <a href={`/api/remediations/${id}/export`} download>
                 <IconDownload className="h-4 w-4 mr-1" />
-                Export Evidence
+                Export JSON
+              </a>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              asChild
+            >
+              <a href={`/remediation/${id}/export`} target="_blank" rel="noopener noreferrer">
+                <IconPrinter className="h-4 w-4 mr-1" />
+                Print Report
               </a>
             </Button>
             <Button
