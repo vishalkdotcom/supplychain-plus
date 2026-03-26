@@ -93,6 +93,8 @@ function getJobStatus(
   if (latest.status === "completed") return "completed";
   if (latest.status === "failed") return "failed";
   if (latest.status === "cancelled") return "cancelled";
+  if (latest.status === "queued") return "queued";
+  if (latest.status === "running") return "running";
   return "idle";
 }
 
