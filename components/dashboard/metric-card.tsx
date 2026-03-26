@@ -67,7 +67,7 @@ export function MetricCard({
           )}
         </div>
         {progress !== undefined && (
-          <Progress value={progress} className="mt-2 h-1.5" />
+          <Progress value={progress} className="mt-2 h-2" />
         )}
         {subtitle && (
           <div className="flex items-center gap-1 mt-1">
