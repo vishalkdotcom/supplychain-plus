@@ -1,4 +1,5 @@
-import { query as sqlQuery } from "@/lib/db/sql-server";
+import { query as sqlQuery, paramQuery as sqlParamQuery } from "@/lib/db/sql-server";
+import mssql from "mssql";
 import { db } from "@/lib/db/drizzle";
 import { supplierRiskScores } from "@/lib/db/schema";
 import { sql } from "drizzle-orm";
@@ -125,11 +126,12 @@ export async function getMetricsBriefing(
   // 5. Resolved cases since timestamp
   let resolvedCases = 0;
   try {
-    const resolvedRes = await sqlQuery(`
-      SELECT COUNT(*) as count FROM [Case]
+    const resolvedRes = await sqlParamQuery(
+      `SELECT COUNT(*) as count FROM [Case]
       WHERE Deleted = 0 AND CaseStatusId = 3
-      AND Modified >= '${sinceDate.toISOString()}'
-    `);
+      AND Modified >= @sinceDate`,
+      { sinceDate: { type: mssql.DateTime, value: sinceDate } },
+    );
     resolvedCases = resolvedRes.recordset[0]?.count ?? 0;
   } catch (e) {
     logger.warn(TAG, "Could not count resolved cases", e);

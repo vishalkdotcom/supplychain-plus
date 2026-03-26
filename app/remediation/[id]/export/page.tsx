@@ -7,7 +7,7 @@ import {
   supplierRiskScores,
 } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
-import { STATUS_STEPS } from "@/components/remediation/status-pipeline";
+import { STATUS_STEPS } from "@/lib/remediation/status-steps";
 import { EvidenceExportHeader } from "@/components/remediation/evidence-export-header";
 
 interface PageProps {
