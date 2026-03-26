@@ -155,8 +155,8 @@ export function DashboardView() {
         <MetricCard
           title="Supplier Trends"
           icon={<IconHeartRateMonitor className="h-4 w-4" />}
-          value={`${metrics.trendsImproving} / ${metrics.trendsWorsening}`}
-          subtitle="Improving vs worsening"
+          value={`${metrics.trendsImproving - metrics.trendsWorsening > 0 ? "+" : ""}${metrics.trendsImproving - metrics.trendsWorsening}`}
+          subtitle={`${metrics.trendsImproving} improving · ${metrics.trendsWorsening} worsening`}
           trend={metrics.trendsImproving > metrics.trendsWorsening ? "up" : "down"}
           trendIsPositive={true}
         />

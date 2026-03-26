@@ -531,6 +531,7 @@ export interface MLInsightsSummary {
   clusterCount: number;
   criticalClusters: CaseCluster[];
   unresolvedAnomalies: { critical: number; warning: number; info: number };
+  totalForecasts: number;
   risingForecastSuppliers: Array<{
     supplierId: string;
     supplierName: string;

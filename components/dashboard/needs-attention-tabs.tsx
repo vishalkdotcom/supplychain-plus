@@ -56,6 +56,7 @@ export function NeedsAttentionTabs() {
   const urgentCount = briefing?.urgentCases?.length ?? 0;
   const movementCount = briefing?.riskMovements?.length ?? 0;
   const forecastCount = mlInsights?.risingForecastSuppliers?.length ?? 0;
+  const totalForecasts = mlInsights?.totalForecasts ?? 0;
 
   return (
     <Card className="flex flex-col">
@@ -95,8 +96,8 @@ export function NeedsAttentionTabs() {
             <TabsTrigger value="forecasts" className="text-xs gap-1">
               <IconTrendingUp className="h-3.5 w-3.5" />
               Forecasts
-              {forecastCount > 0 && (
-                <Badge variant="outline" className="text-[10px] px-1.5 py-0 ml-1">
+              {totalForecasts > 0 && (
+                <Badge variant={forecastCount > 0 ? "outline" : "secondary"} className="text-[10px] px-1.5 py-0 ml-1">
                   {forecastCount}
                 </Badge>
               )}
@@ -124,10 +125,23 @@ export function NeedsAttentionTabs() {
           <TabsContent value="forecasts">
             <ScrollArea className="h-[340px]">
               {forecastCount === 0 ? (
-                <div className="flex flex-col items-center justify-center h-[200px] text-muted-foreground">
-                  <IconCheck className="h-8 w-8 mb-2" />
-                  <p className="text-sm">No rising risk forecasts</p>
-                </div>
+                totalForecasts === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-[200px] text-muted-foreground">
+                    <IconInfoCircle className="h-8 w-8 mb-2" />
+                    <p className="text-sm">Forecasts not generated yet</p>
+                    <Link href="/operations/jobs">
+                      <Button variant="link" size="sm" className="mt-1 text-xs">
+                        Run forecast job →
+                      </Button>
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-[200px] text-muted-foreground">
+                    <IconCheck className="h-8 w-8 mb-2" />
+                    <p className="text-sm">All suppliers forecasted stable or improving</p>
+                    <p className="text-xs mt-1">{totalForecasts} forecasts analyzed — no rising risk detected</p>
+                  </div>
+                )
               ) : (
                 <div className="space-y-2 p-1">
                   {mlInsights?.risingForecastSuppliers.map((f) => (

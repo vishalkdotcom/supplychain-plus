@@ -40,7 +40,12 @@ export async function GET() {
       }
     }
 
-    // 3. Rising forecast suppliers (next 30 days)
+    // 3. Forecast suppliers — total count + rising (next 30 days)
+    const totalForecastResult = await db
+      .select({ count: count() })
+      .from(supplierRiskForecast);
+    const totalForecasts = totalForecastResult[0]?.count ?? 0;
+
     const thirtyDaysFromNow = new Date();
     thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
     const risingForecasts = await db
@@ -79,6 +84,7 @@ export async function GET() {
       clusterCount: clusterCountResult[0]?.count ?? 0,
       criticalClusters,
       unresolvedAnomalies,
+      totalForecasts,
       risingForecastSuppliers: risingForecasts.map((f) => ({
         supplierId: f.supplierId,
         supplierName: f.supplierName || "Unknown",
