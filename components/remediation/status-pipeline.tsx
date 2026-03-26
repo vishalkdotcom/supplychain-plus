@@ -9,31 +9,28 @@ import {
   IconCircleCheckFilled,
   IconArrowRight,
 } from "@tabler/icons-react";
-import type { RemediationStatus } from "@/types";
 import { HelpButton } from "@/components/help";
+import {
+  STATUS_STEPS as BASE_STEPS,
+  getStatusIndex,
+  getNextStatus,
+} from "@/lib/remediation/status-steps";
 
-export const STATUS_STEPS: {
-  key: RemediationStatus;
-  label: string;
-  icon: typeof IconSearch;
-}[] = [
-  { key: "detected", label: "Detected", icon: IconSearch },
-  { key: "root_cause", label: "Root Cause", icon: IconSearch },
-  { key: "action_plan", label: "Action Plan", icon: IconClipboardList },
-  { key: "implementing", label: "Implementing", icon: IconProgress },
-  { key: "verifying", label: "Verifying", icon: IconEye },
-  { key: "closed", label: "Closed", icon: IconCircleCheckFilled },
-];
+export { getStatusIndex, getNextStatus };
 
-export function getStatusIndex(status: string): number {
-  return STATUS_STEPS.findIndex((s) => s.key === status);
-}
+const ICON_MAP: Record<string, typeof IconSearch> = {
+  detected: IconSearch,
+  root_cause: IconSearch,
+  action_plan: IconClipboardList,
+  implementing: IconProgress,
+  verifying: IconEye,
+  closed: IconCircleCheckFilled,
+};
 
-export function getNextStatus(current: string): RemediationStatus | null {
-  const idx = getStatusIndex(current);
-  if (idx < 0 || idx >= STATUS_STEPS.length - 1) return null;
-  return STATUS_STEPS[idx + 1].key;
-}
+export const STATUS_STEPS = BASE_STEPS.map((step) => ({
+  ...step,
+  icon: ICON_MAP[step.key],
+}));
 
 interface StatusPipelineProps {
   status: string;

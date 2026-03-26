@@ -44,9 +44,9 @@ export function SentimentDonut({ positive, negative, neutral }: SentimentDonutPr
               ))}
             </Pie>
             <Tooltip
-              formatter={(value: number, name: string) => [
-                `${value} (${Math.round((value / total) * 100)}%)`,
-                name,
+              formatter={(value, name) => [
+                `${value ?? 0} (${Math.round((Number(value ?? 0) / total) * 100)}%)`,
+                name ?? "",
               ]}
             />
           </PieChart>

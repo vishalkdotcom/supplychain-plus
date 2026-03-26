@@ -5,7 +5,8 @@
       "name": "Next.js Dev Server",
       "runtimeExecutable": "cmd",
       "runtimeArgs": ["/c", "cd /d C:\\vishal\\xp\\wovo && bun run dev"],
-      "port": 3030
+      "port": 3030,
+      "autoPort": false
     },
     {
       "name": "Worktree Dev",

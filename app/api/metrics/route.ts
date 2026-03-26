@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query as pgQuery } from "@/lib/db/postgres";
-import { query as sqlQuery } from "@/lib/db/sql-server";
+import { query as sqlQuery, paramQuery as sqlParamQuery } from "@/lib/db/sql-server";
+import mssql from "mssql";
 import { query as mysqlQuery } from "@/lib/db/mysql";
 import { db } from "@/lib/db/drizzle";
 import { supplierRiskScores } from "@/lib/db/schema";
@@ -71,9 +72,14 @@ export async function GET(request: NextRequest) {
     // 3. Get active cases count from SQL Server
     let activeCases: number;
     if (brandSupplierIds) {
-      const companyIds = brandSupplierIds.map(Number).join(",");
-      const sqlRes = await sqlQuery(
-        `SELECT COUNT(*) as count FROM [Case] WHERE Deleted = 0 AND CaseStatusId IN (1, 2) AND CompanyId IN (${companyIds})`,
+      const caseParams: Record<string, { type: () => mssql.ISqlType; value: unknown }> = {};
+      const casePlaceholders = brandSupplierIds.map((id, i) => {
+        caseParams[`cid${i}`] = { type: mssql.Int, value: Number(id) };
+        return `@cid${i}`;
+      });
+      const sqlRes = await sqlParamQuery(
+        `SELECT COUNT(*) as count FROM [Case] WHERE Deleted = 0 AND CaseStatusId IN (1, 2) AND CompanyId IN (${casePlaceholders.join(", ")})`,
+        caseParams,
       );
       activeCases = sqlRes.recordset[0].count;
     } else {
