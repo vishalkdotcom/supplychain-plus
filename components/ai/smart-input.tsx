@@ -171,15 +171,26 @@ export function SmartInput({ value, onChange, onSubmit, isLoading }: SmartInputP
 
         {/* Command hints */}
         <div className="hidden sm:flex items-center gap-1 mb-0.5">
-          {["/risk", "/clusters", "/forecast", "/voice"].map((cmd) => (
-            <button
-              key={cmd}
-              onClick={() => onChange(cmd)}
-              className="rounded-md px-2 py-0.5 text-[10px] text-muted-foreground bg-background hover:bg-accent transition-colors cursor-pointer"
-            >
-              {cmd}
-            </button>
-          ))}
+          {["/risk", "/clusters", "/forecast", "/voice"].map((shortcut) => {
+            const match = SLASH_COMMANDS.find((c) => c.command === shortcut);
+            return (
+              <button
+                key={shortcut}
+                onClick={() => {
+                  if (match) {
+                    onSubmit(match.query);
+                    onChange("");
+                  } else {
+                    onChange(shortcut);
+                  }
+                }}
+                disabled={isLoading}
+                className="rounded-md px-2 py-0.5 text-[10px] text-muted-foreground bg-background hover:bg-accent disabled:opacity-50 transition-colors cursor-pointer"
+              >
+                {shortcut}
+              </button>
+            );
+          })}
         </div>
 
         <button

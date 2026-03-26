@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { IconLoader2, IconClock } from "@tabler/icons-react";
@@ -19,8 +20,9 @@ interface QueueStatusData {
   waitingCount: number;
 }
 
-function formatElapsed(startedAt: string): string {
-  const ms = Date.now() - new Date(startedAt).getTime();
+function formatElapsed(startedAt: string, now: number): string {
+  const ms = now - new Date(startedAt).getTime();
+  if (ms < 0) return "0s";
   const seconds = Math.floor(ms / 1000);
   const minutes = Math.floor(seconds / 60);
   const secs = seconds % 60;
@@ -34,6 +36,15 @@ export function QueueStatusBar({
   data?: QueueStatusData;
   isLoading: boolean;
 }) {
+  const [now, setNow] = useState(Date.now());
+  const hasRunning = (data?.runningCount ?? 0) > 0;
+
+  useEffect(() => {
+    if (!hasRunning) return;
+    const interval = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, [hasRunning]);
+
   if (isLoading) return <Skeleton className="h-14 w-full" />;
   if (!data || (data.runningCount === 0 && data.waitingCount === 0))
     return null;
@@ -49,7 +60,7 @@ export function QueueStatusBar({
             </span>
             {item.run?.startedAt && (
               <span className="text-muted-foreground">
-                ({formatElapsed(item.run.startedAt)})
+                ({formatElapsed(item.run.startedAt, now)})
               </span>
             )}
           </div>

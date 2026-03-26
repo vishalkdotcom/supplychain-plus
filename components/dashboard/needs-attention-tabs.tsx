@@ -87,7 +87,7 @@ export function NeedsAttentionTabs() {
               <IconTrendingUp className="h-3.5 w-3.5" />
               Risk
               {movementCount > 0 && (
-                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 ml-1">
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0 ml-1">
                   {movementCount}
                 </Badge>
               )}
@@ -96,7 +96,7 @@ export function NeedsAttentionTabs() {
               <IconTrendingUp className="h-3.5 w-3.5" />
               Forecasts
               {forecastCount > 0 && (
-                <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px]">
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0 ml-1">
                   {forecastCount}
                 </Badge>
               )}

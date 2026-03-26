@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { HelpButton } from "@/components/help";
 import { QueueStatusBar } from "@/components/operations/queue-status-bar";
 import { JobCards } from "@/components/operations/job-cards";
@@ -24,6 +24,7 @@ export default function JobsPage() {
       return res.json();
     },
     refetchInterval: 5000,
+    placeholderData: keepPreviousData,
   });
 
   const runs = useQuery({

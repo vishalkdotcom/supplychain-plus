@@ -131,7 +131,7 @@ function AIAssistantContent() {
       .catch(() => {});
   }, [urlSessionId, setMessages]);
 
-  const isLoading = status === "streaming" || status === "submitted";
+  const isLoading = (status === "streaming" || status === "submitted") && !error;
 
   const handleSubmit = async (query: string) => {
     if (!query.trim() || isLoading) return;
