@@ -4,14 +4,13 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { fetchMLInsights } from "@/lib/api";
 import { MLInsightsSummary } from "@/types";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   IconNetwork,
   IconTrendingUp,
   IconCurrencyDollar,
   IconMessageCircle,
-  IconArrowRight,
 } from "@tabler/icons-react";
 
 export function MLInsightCards() {
@@ -40,8 +39,11 @@ export function MLInsightCards() {
   const clusterCount = insights?.clusterCount ?? 0;
   const topCriticalLabel =
     insights?.criticalClusters?.[0]?.clusterLabel ?? "No critical patterns";
+  const criticalCaseCount = insights?.criticalClusters?.reduce((sum, c) => sum + c.caseCount, 0) ?? 0;
+  const criticalSupplierCount = insights?.criticalClusters?.reduce((sum, c) => sum + c.supplierCount, 0) ?? 0;
 
   const forecastCount = insights?.risingForecastSuppliers?.length ?? 0;
+  const topRisingSupplier = insights?.risingForecastSuppliers?.[0];
 
   const totalAnomalies =
     (insights?.unresolvedAnomalies?.critical ?? 0) +
@@ -56,25 +58,29 @@ export function MLInsightCards() {
       ? `+${sentimentShift.toFixed(1)}`
       : sentimentShift.toFixed(1);
   const topTopicName = insights?.topEmergingTopic?.name ?? "No trend data";
+  const sentimentLabel =
+    sentimentShift >= 1 ? "Improving" :
+    sentimentShift >= 0.3 ? "Slight improvement" :
+    sentimentShift > -0.3 ? "Stable" :
+    sentimentShift > -1 ? "Slight decline" :
+    "Declining";
 
   return (
     <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
       {/* Systemic Patterns */}
       <Link href="/connect/clusters" className="group">
         <Card className="hover:shadow-md transition-shadow h-full">
-          <CardContent className="p-4">
-            <IconNetwork className="h-4 w-4 text-muted-foreground mb-2" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Systemic Patterns</CardTitle>
+            <IconNetwork className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
             <div className="text-2xl font-bold">{clusterCount}</div>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Systemic Patterns
+            <p className="text-xs text-muted-foreground line-clamp-1 mt-1">
+              {criticalCaseCount > 0
+                ? `${criticalCaseCount} cases across ${criticalSupplierCount} suppliers`
+                : topCriticalLabel.replace(/^\d+\s+/, "")}
             </p>
-            <p className="text-[10px] text-muted-foreground/70 line-clamp-1 mt-0.5">
-              Top: {topCriticalLabel.replace(/^\d+\s+/, "")}
-            </p>
-            <div className="flex items-center gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-              <span className="text-xs text-primary">View all</span>
-              <IconArrowRight className="h-3 w-3 text-primary" />
-            </div>
           </CardContent>
         </Card>
       </Link>
@@ -82,20 +88,24 @@ export function MLInsightCards() {
       {/* Forecast Alerts */}
       <Link href="/suppliers" className="group">
         <Card className="hover:shadow-md transition-shadow h-full">
-          <CardContent className="p-4">
-            <IconTrendingUp className="h-4 w-4 text-muted-foreground mb-2" />
-            <div
-              className={`text-2xl font-bold ${forecastCount > 0 ? "text-red-500" : ""}`}
-            >
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Forecast Alerts</CardTitle>
+            <IconTrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className={`text-2xl font-bold ${forecastCount > 0 ? "text-red-500" : ""}`}>
               {forecastCount}
             </div>
-            <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
-              predicted to increase risk
+            <p className="text-xs text-muted-foreground line-clamp-1 mt-1">
+              {forecastCount > 0
+                ? `predicted to increase risk in 30 days`
+                : "No rising risk forecasts"}
             </p>
-            <div className="flex items-center gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-              <span className="text-xs text-primary">Forecast Alerts</span>
-              <IconArrowRight className="h-3 w-3 text-primary" />
-            </div>
+            {topRisingSupplier && (
+              <p className="text-[10px] text-muted-foreground/70 line-clamp-1 mt-0.5">
+                Highest: {topRisingSupplier.supplierName} ({topRisingSupplier.predictedRiskScore})
+              </p>
+            )}
           </CardContent>
         </Card>
       </Link>
@@ -103,16 +113,15 @@ export function MLInsightCards() {
       {/* Wage Anomalies */}
       <Link href="/connect/payslip-anomalies" className="group">
         <Card className="hover:shadow-md transition-shadow h-full">
-          <CardContent className="p-4">
-            <IconCurrencyDollar className="h-4 w-4 text-muted-foreground mb-2" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Wage Anomalies</CardTitle>
+            <IconCurrencyDollar className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
             <div className="text-2xl font-bold">{totalAnomalies}</div>
-            <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
-              {criticalAnomalies} critical, {warningAnomalies} warning
+            <p className="text-xs text-muted-foreground line-clamp-1 mt-1">
+              Unresolved: {criticalAnomalies} critical, {warningAnomalies} warning
             </p>
-            <div className="flex items-center gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-              <span className="text-xs text-primary">Wage Anomalies</span>
-              <IconArrowRight className="h-3 w-3 text-primary" />
-            </div>
           </CardContent>
         </Card>
       </Link>
@@ -120,16 +129,18 @@ export function MLInsightCards() {
       {/* Voice Trends */}
       <Link href="/engage/voice-trends" className="group">
         <Card className="hover:shadow-md transition-shadow h-full">
-          <CardContent className="p-4">
-            <IconMessageCircle className="h-4 w-4 text-muted-foreground mb-2" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Voice Trends</CardTitle>
+            <IconMessageCircle className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
             <div className="text-2xl font-bold">{formattedSentiment}</div>
-            <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
-              {topTopicName}
+            <p className="text-xs text-muted-foreground line-clamp-1 mt-1">
+              {sentimentLabel} &middot; sentiment shift
             </p>
-            <div className="flex items-center gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-              <span className="text-xs text-primary">Voice Trends</span>
-              <IconArrowRight className="h-3 w-3 text-primary" />
-            </div>
+            <p className="text-[10px] text-muted-foreground/70 line-clamp-1 mt-0.5">
+              Top: {topTopicName}{insights?.topEmergingTopic?.mentions ? ` (${insights.topEmergingTopic.mentions} mentions)` : ""}
+            </p>
           </CardContent>
         </Card>
       </Link>

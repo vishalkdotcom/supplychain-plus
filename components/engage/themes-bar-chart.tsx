@@ -26,6 +26,7 @@ const SENTIMENT_COLORS: Record<VoiceTopic["sentiment"], string> = {
   positive: "#10b981",
   negative: "#ef4444",
   neutral: "#6b7280",
+  mixed: "#f59e0b",
 };
 
 interface CustomTooltipProps {

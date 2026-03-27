@@ -65,6 +65,7 @@ export function RiskTrendChart({ supplierId }: RiskTrendChartProps) {
     forecastScore: null as number | null,
     upperBound: null as number | null,
     lowerBound: null as number | null,
+    confidence: null as number | null,
   }));
 
   // Last historical point label for the reference line
@@ -98,6 +99,7 @@ export function RiskTrendChart({ supplierId }: RiskTrendChartProps) {
         forecastScore: f.predictedRiskScore as number | null,
         upperBound: upper as number | null,
         lowerBound: lower as number | null,
+        confidence: f.confidence as number | null,
       };
     });
 
@@ -183,8 +185,37 @@ export function RiskTrendChart({ supplierId }: RiskTrendChartProps) {
                 domain={[0, 100]}
               />
               <Tooltip
-                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                itemStyle={{ color: '#111827', fontWeight: 500 }}
+                content={({ active, payload, label }) => {
+                  if (!active || !payload?.length) return null;
+                  const d = payload[0]?.payload;
+                  const isForecast = d?.forecastScore != null && d?.riskScore == null;
+                  return (
+                    <div className="rounded-lg border bg-background p-3 shadow-md text-sm">
+                      <p className="font-medium mb-1">{label}</p>
+                      {isForecast ? (
+                        <>
+                          <p>Predicted Risk: <span className="font-semibold">{d.forecastScore}</span></p>
+                          <p className="text-muted-foreground">
+                            Range: {Math.round(d.lowerBound)} &ndash; {Math.round(d.upperBound)}
+                          </p>
+                          {d.confidence != null && (
+                            <p className="text-muted-foreground">
+                              Confidence: {Math.round(d.confidence * 100)}%
+                            </p>
+                          )}
+                        </>
+                      ) : (
+                        payload
+                          .filter((p: Record<string, unknown>) => p.value != null && p.dataKey !== "upperBound" && p.dataKey !== "lowerBound" && p.dataKey !== "confidence")
+                          .map((p: Record<string, unknown>, i: number) => (
+                            <p key={i} style={{ color: p.color as string }}>
+                              {p.name as string}: <span className="font-semibold">{p.value as number}</span>
+                            </p>
+                          ))
+                      )}
+                    </div>
+                  );
+                }}
               />
               <Area
                 type="monotone"
@@ -229,6 +260,22 @@ export function RiskTrendChart({ supplierId }: RiskTrendChartProps) {
             </AreaChart>
           </ResponsiveContainer>
         </div>
+        {forecasts && forecasts.length > 0 && (
+          <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1.5">
+              <span className="inline-block w-3 h-0.5 bg-red-500 rounded" />
+              Historical
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="inline-block w-3 h-0.5 bg-blue-500 rounded" style={{ borderBottom: "1px dashed" }} />
+              Forecast
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="inline-block w-3 h-3 bg-blue-500/10 rounded border border-blue-500/20" />
+              Prediction range
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
