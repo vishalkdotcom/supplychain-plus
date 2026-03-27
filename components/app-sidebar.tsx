@@ -11,7 +11,6 @@ import {
   IconMessage,
   IconPlayerPlay,
   IconSchool,
-  IconSettings,
   IconReportAnalytics,
   IconShieldCheck,
   IconScale,
@@ -296,17 +295,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarMenu>
           <SidebarMenuItem>
             <DemoUserSelector />
-          </SidebarMenuItem>
-        </SidebarMenu>
-        <SidebarSeparator />
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild>
-              <Link href="/settings">
-                <IconSettings className="mr-2" />
-                <span>Settings</span>
-              </Link>
-            </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
