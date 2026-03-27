@@ -1,141 +1,98 @@
 import { NextResponse } from "next/server";
 import { generateText, Output } from "ai";
-import { model } from "@/lib/ai/provider";
-import { db } from "@/lib/db/drizzle";
-import { courseTranslations } from "@/lib/db/schema";
-import { and, eq } from "drizzle-orm";
+import { getModelFromRequest } from "@/lib/ai/provider";
+import { SUPPORTED_LANGUAGES } from "@/lib/ai/languages";
 import { z } from "zod";
 import { logger } from "@/lib/logger";
 
 export const maxDuration = 60;
 
-const SUPPORTED_LANGUAGES: Record<string, string> = {
-  vi: "Vietnamese",
-  bn: "Bengali",
-  zh: "Chinese (Simplified)",
-  km: "Khmer",
-  my: "Burmese",
-  id: "Indonesian",
-  th: "Thai",
-  tl: "Filipino/Tagalog",
-  hi: "Hindi",
-  ta: "Tamil",
-  ne: "Nepali",
-  es: "Spanish",
-  fr: "French",
-  ar: "Arabic",
-};
+const MAX_TEXTS = 50;
+const MAX_TOTAL_CHARS = 10_000;
 
-const translatedCourseSchema = z.object({
-  title: z.string(),
-  description: z.string(),
-  lessons: z.array(
-    z.object({
-      title: z.string(),
-      content: z.string(),
-    }),
-  ),
-  quiz: z.array(
-    z.object({
-      question: z.string(),
-      options: z.array(z.string()),
-      correctAnswerIndex: z.number(),
-    }),
-  ),
+const translationsSchema = z.object({
+  translations: z.array(z.string()),
 });
 
+/**
+ * POST /api/ai/translate
+ * Translate one or more text strings into a target language.
+ *
+ * Body: { texts: string[], targetLanguage: string }
+ * Response: { translations: string[], targetLanguage: string, languageName: string }
+ */
 export async function POST(request: Request) {
   try {
-    const { courseId, course, language } = await request.json();
+    const { texts, targetLanguage } = await request.json();
 
-    if (!course || !language) {
+    if (!Array.isArray(texts) || texts.length === 0 || !targetLanguage) {
       return NextResponse.json(
-        { error: "Course content and target language are required" },
+        { error: "texts (non-empty array) and targetLanguage are required" },
         { status: 400 },
       );
     }
 
-    const languageName = SUPPORTED_LANGUAGES[language];
+    if (texts.length > MAX_TEXTS) {
+      return NextResponse.json(
+        { error: `Maximum ${MAX_TEXTS} texts per request` },
+        { status: 400 },
+      );
+    }
+
+    const totalChars = texts.reduce((sum: number, t: string) => sum + (t?.length ?? 0), 0);
+    if (totalChars > MAX_TOTAL_CHARS) {
+      return NextResponse.json(
+        { error: `Total input exceeds ${MAX_TOTAL_CHARS} characters` },
+        { status: 400 },
+      );
+    }
+
+    const languageName = SUPPORTED_LANGUAGES[targetLanguage];
     if (!languageName) {
       return NextResponse.json(
-        { error: `Unsupported language: ${language}` },
+        { error: `Unsupported language: ${targetLanguage}. Use GET /api/ai/translate for available languages.` },
         { status: 400 },
       );
     }
 
-    // Check cache first
-    if (courseId) {
-      try {
-        const cached = await db
-          .select()
-          .from(courseTranslations)
-          .where(
-            and(
-              eq(courseTranslations.courseId, courseId),
-              eq(courseTranslations.language, language),
-            ),
-          )
-          .limit(1);
-
-        if (cached.length > 0) {
-          return NextResponse.json({
-            translated: cached[0].translatedContent,
-            language,
-            languageName,
-            fromCache: true,
-          });
-        }
-      } catch (e) {
-        logger.warn("ai/translate", "Translation cache miss", e);
-      }
-    }
+    const resolvedModel = getModelFromRequest(request);
 
     const result = await generateText({
-      model,
-      system: `You are an expert translator specializing in worker training materials. Translate accurately while keeping the content accessible to factory workers. Maintain the exact same structure — same number of lessons, same number of quiz questions, same correctAnswerIndex values. Only translate the text content.`,
-      prompt: `Translate the following training course from English to ${languageName}.\n\n${JSON.stringify(course, null, 2)}`,
-      output: Output.object({ schema: translatedCourseSchema }),
+      model: resolvedModel,
+      system: `You are a translator. Translate the given texts to ${languageName}. Return exactly ${texts.length} translation(s) in the same order. Keep translations natural and accessible.`,
+      prompt: texts.length === 1
+        ? `Translate to ${languageName}:\n\n${texts[0]}`
+        : `Translate each of these ${texts.length} texts to ${languageName}:\n\n${texts.map((t: string, i: number) => `[${i + 1}] ${t}`).join("\n")}`,
+      output: Output.object({ schema: translationsSchema }),
     });
 
-    const translated = result.output;
-
-    // Cache the translation
-    if (courseId) {
-      try {
-        await db
-          .insert(courseTranslations)
-          .values({
-            courseId,
-            language,
-            translatedContent: translated,
-          })
-          .onConflictDoUpdate({
-            target: [courseTranslations.courseId, courseTranslations.language],
-            set: {
-              translatedContent: translated,
-              translatedAt: new Date(),
-            },
-          });
-      } catch (e) {
-        logger.warn("ai/translate", "Translation cache write failed", e);
-      }
+    const output = result.output;
+    if (!output || output.translations.length !== texts.length) {
+      logger.error("ai/translate", "Translation count mismatch", {
+        expected: texts.length,
+        got: output?.translations?.length,
+      });
+      return NextResponse.json(
+        { error: "Translation produced unexpected number of results" },
+        { status: 500 },
+      );
     }
 
     return NextResponse.json({
-      translated,
-      language,
+      translations: output.translations,
+      targetLanguage,
       languageName,
-      fromCache: false,
     });
   } catch (error) {
     logger.error("ai/translate", "Translation failed", error);
     return NextResponse.json(
-      { error: "Failed to translate course" },
+      { error: "Failed to translate" },
       { status: 500 },
     );
   }
 }
 
+/** GET /api/ai/translate — returns available languages. */
 export async function GET() {
   return NextResponse.json({ languages: SUPPORTED_LANGUAGES });
 }
