@@ -117,7 +117,7 @@ export async function caseClustering(): Promise<JobResult> {
   const vecLiteral = (v: number[]) => `[${v.join(",")}]`;
 
   for (const emb of allEmbeddings) {
-    const neighbors = await db.execute(sql`
+    const neighbors = await db.execute<{ message_id: string }>(sql`
       SELECT message_id
       FROM case_embeddings
       WHERE message_id != ${emb.messageId}
@@ -126,7 +126,7 @@ export async function caseClustering(): Promise<JobResult> {
       LIMIT 50
     `);
 
-    for (const row of neighbors as Array<{ message_id: string }>) {
+    for (const row of neighbors) {
       uf.union(emb.messageId, row.message_id);
     }
   }
