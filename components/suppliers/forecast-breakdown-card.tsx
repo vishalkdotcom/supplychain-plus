@@ -93,6 +93,23 @@ export function ForecastBreakdownCard({ supplierId }: ForecastBreakdownCardProps
           </div>
         </div>
 
+        {/* Confidence interpretation + predicted range */}
+        <div className="space-y-1">
+          <p className="text-sm text-muted-foreground">
+            Predicted risk score: <span className="font-semibold">{forecast.predictedRiskScore}</span>
+            <span className="ml-1">
+              (could range from {Math.max(0, Math.round(forecast.predictedRiskScore - (1 - forecast.confidence) * 15))} to {Math.min(100, Math.round(forecast.predictedRiskScore + (1 - forecast.confidence) * 15))})
+            </span>
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {confidencePct > 70
+              ? "High confidence — prediction well-supported by historical data."
+              : confidencePct >= 40
+                ? "Moderate confidence — prediction based on limited signals."
+                : "Low confidence — insufficient data for a reliable prediction."}
+          </p>
+        </div>
+
         {/* Predicted Sub-Scores */}
         <div className="grid grid-cols-3 gap-4">
           <div className="space-y-1">

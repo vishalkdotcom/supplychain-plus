@@ -143,7 +143,7 @@ export default function IntelligenceBriefingPage() {
   // Loading state
   if (isLoading) {
     return (
-      <div className="flex-1 space-y-6 p-6">
+      <div className="flex-1 space-y-6">
         <Skeleton className="h-8 w-64" />
         <Skeleton className="h-24 w-full" />
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
@@ -162,7 +162,7 @@ export default function IntelligenceBriefingPage() {
   // Empty state — no briefings ever generated
   if (!current && data?.stale) {
     return (
-      <div className="flex-1 p-6">
+      <div className="flex-1">
         <Breadcrumb className="mb-6">
           <BreadcrumbList>
             <BreadcrumbItem>
@@ -192,7 +192,7 @@ export default function IntelligenceBriefingPage() {
   }
 
   return (
-    <div className="flex-1 space-y-6 p-6">
+    <div className="flex-1 space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -438,7 +438,7 @@ export default function IntelligenceBriefingPage() {
                   <div key={c.id} className="space-y-1">
                     <div className="flex items-center justify-between gap-2">
                       <Link
-                        href={`/connect/${c.id.replace("CASE-", "")}`}
+                        href={`/connect/${c.id}`}
                         className="text-sm font-medium hover:underline truncate"
                       >
                         {c.topic}

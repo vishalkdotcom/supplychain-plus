@@ -171,6 +171,16 @@ export default function VoiceTrendsPage() {
                 {overallShift > 0 ? "+" : ""}
                 {overallShift.toFixed(1)}
               </p>
+              <p className="text-sm font-medium mt-1">
+                {overallShift >= 1.5 ? "Strong improvement" :
+                 overallShift >= 0.5 ? "Improving" :
+                 overallShift > -0.5 ? "Stable" :
+                 overallShift > -1.5 ? "Declining" :
+                 "Sharp decline"}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Average change in worker sentiment vs. previous period
+              </p>
             </div>
           </CardContent>
         </Card>
