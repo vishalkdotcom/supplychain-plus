@@ -28,25 +28,39 @@ export async function getMetricsBriefing(
   const riskMovements: RiskMovement[] = [];
   try {
     const movementRes = await db.execute(sql`
-      WITH latest AS (
+      WITH brand_ids AS (
+        SELECT DISTINCT parent_company_id
+        FROM supplier_risk_scores
+        WHERE parent_company_id IS NOT NULL
+      ),
+      latest AS (
         SELECT DISTINCT ON (supplier_id) supplier_id, risk_score, snapshot_date
         FROM supplier_risk_history
+        WHERE supplier_id NOT IN (SELECT parent_company_id FROM brand_ids)
         ORDER BY supplier_id, snapshot_date DESC
       ),
       previous AS (
         SELECT DISTINCT ON (supplier_id) supplier_id, risk_score
         FROM supplier_risk_history
         WHERE snapshot_date < (SELECT MAX(snapshot_date) FROM supplier_risk_history)
+          AND supplier_id NOT IN (SELECT parent_company_id FROM brand_ids)
         ORDER BY supplier_id, snapshot_date DESC
       )
-      SELECT l.supplier_id, l.risk_score as current_score, p.risk_score as previous_score
-      FROM latest l
-      JOIN previous p ON l.supplier_id = p.supplier_id
-      WHERE (l.risk_score > 70 AND p.risk_score <= 70)
-         OR (l.risk_score <= 70 AND p.risk_score > 70)
-         OR ABS(l.risk_score - p.risk_score) >= 10
-      ORDER BY ABS(l.risk_score - p.risk_score) DESC
-      LIMIT 10
+      (SELECT l.supplier_id, l.risk_score as current_score, p.risk_score as previous_score
+       FROM latest l
+       JOIN previous p ON l.supplier_id = p.supplier_id
+       WHERE l.risk_score > p.risk_score
+         AND ((l.risk_score > 70 AND p.risk_score <= 70) OR ABS(l.risk_score - p.risk_score) >= 5)
+       ORDER BY ABS(l.risk_score - p.risk_score) DESC
+       LIMIT 5)
+      UNION ALL
+      (SELECT l.supplier_id, l.risk_score as current_score, p.risk_score as previous_score
+       FROM latest l
+       JOIN previous p ON l.supplier_id = p.supplier_id
+       WHERE l.risk_score < p.risk_score
+         AND ((l.risk_score <= 70 AND p.risk_score > 70) OR ABS(l.risk_score - p.risk_score) >= 5)
+       ORDER BY ABS(l.risk_score - p.risk_score) DESC
+       LIMIT 5)
     `);
 
     if (Array.isArray(movementRes) && movementRes.length > 0) {

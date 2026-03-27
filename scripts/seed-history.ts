@@ -22,13 +22,18 @@ async function seedHistory() {
   for (const supplier of suppliers) {
     const rows = [];
 
+    // Each supplier randomly improves, worsens, or stays flat
+    // 40% worsen, 30% improve, 30% flat — mirrors realistic distribution
+    const rand = Math.random();
+    const trendDirection = rand < 0.4 ? 1 : rand < 0.7 ? -1 : 0;
+
     for (let i = 29; i >= 0; i--) {
       const date = new Date(now);
       date.setDate(now.getDate() - i);
       const dateString = date.toISOString().split("T")[0];
 
-      // Work backwards from current score with slight drift + daily noise
-      const drift = (29 - i) * 0.3; // scores were slightly lower in the past
+      // Work backwards from current score with per-supplier drift + daily noise
+      const drift = (29 - i) * 0.3 * trendDirection;
       const noise = () => Math.floor(Math.random() * 10) - 5; // +/- 5
 
       const riskScore = clamp((supplier.riskScore ?? 50) - drift + noise());

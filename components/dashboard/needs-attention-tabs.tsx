@@ -54,7 +54,7 @@ export function NeedsAttentionTabs() {
 
   const alertCount = alerts?.length ?? 0;
   const urgentCount = briefing?.urgentCases?.length ?? 0;
-  const movementCount = briefing?.riskMovements?.length ?? 0;
+  const movementCount = briefing?.riskMovements?.filter((m) => m.direction === "worsened").length ?? 0;
   const forecastCount = mlInsights?.risingForecastSuppliers?.length ?? 0;
   const totalForecasts = mlInsights?.totalForecasts ?? 0;
 
@@ -408,45 +408,91 @@ function RiskMovementsTabContent() {
     );
   }
 
-  return (
-    <div className="space-y-2">
-      {movements.map((m) => (
-        <Link
-          key={m.supplierId}
-          href={`/suppliers/${m.supplierId}`}
-          className="block p-3 rounded-lg border hover:bg-muted/30 transition-colors group"
-        >
-          <div className="flex items-center justify-between gap-2">
+  const worsened = movements.filter((m) => m.direction === "worsened");
+
+  const riskLevelColor = (score: number) => {
+    if (score > 70) return { bg: "bg-red-500", text: "text-red-700 dark:text-red-400", label: "High" };
+    if (score > 40) return { bg: "bg-amber-500", text: "text-amber-700 dark:text-amber-400", label: "Medium" };
+    return { bg: "bg-green-500", text: "text-green-700 dark:text-green-400", label: "Low" };
+  };
+
+  const renderMovement = (m: typeof movements[0]) => {
+    const delta = m.currentScore - m.previousScore;
+    const deltaStr = delta > 0 ? `+${delta}` : `${delta}`;
+    const level = riskLevelColor(m.currentScore);
+    const isWorsened = m.direction === "worsened";
+
+    return (
+      <Link
+        key={m.supplierId}
+        href={`/suppliers/${m.supplierId}`}
+        className={`block p-3 rounded-lg border transition-colors group ${
+          isWorsened
+            ? "border-red-200 bg-red-50/50 hover:bg-red-50 dark:border-red-900/30 dark:bg-red-950/20 dark:hover:bg-red-950/30"
+            : "border-green-200 bg-green-50/50 hover:bg-green-50 dark:border-green-900/30 dark:bg-green-950/20 dark:hover:bg-green-950/30"
+        }`}
+      >
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            {isWorsened ? (
+              <IconTrendingUp className="h-4 w-4 text-red-500 shrink-0" />
+            ) : (
+              <IconTrendingDown className="h-4 w-4 text-green-500 shrink-0" />
+            )}
             <span className="font-medium text-sm group-hover:text-primary transition-colors truncate">
               {m.supplierName}
             </span>
-            <div className="flex items-center gap-1.5 shrink-0">
-              <span className="text-xs text-muted-foreground">{m.previousScore}</span>
-              <IconArrowRight className="h-3 w-3 text-muted-foreground" />
-              <span
-                className={`text-xs font-bold ${
-                  m.direction === "worsened" ? "text-red-600" : "text-green-600"
-                }`}
-              >
-                {m.currentScore}
-              </span>
-              {m.direction === "worsened" ? (
-                <IconTrendingUp className="h-3.5 w-3.5 text-red-500" />
-              ) : (
-                <IconTrendingDown className="h-3.5 w-3.5 text-green-500" />
-              )}
-            </div>
           </div>
-          {m.crossedThreshold && (
-            <Badge
-              variant={m.direction === "worsened" ? "destructive" : "secondary"}
-              className="text-[10px] mt-1"
+          <div className="flex items-center gap-2 shrink-0">
+            <span
+              className={`text-xs font-bold px-1.5 py-0.5 rounded ${
+                isWorsened ? "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400" : "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400"
+              }`}
             >
-              {m.direction === "worsened" ? "Entered high risk" : "Left high risk"}
-            </Badge>
-          )}
-        </Link>
-      ))}
+              {deltaStr}
+            </span>
+            <span className={`text-xs font-semibold ${level.text}`}>
+              {m.currentScore}
+            </span>
+          </div>
+        </div>
+        {/* Score bar */}
+        <div className="mt-2 flex items-center gap-2">
+          <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+            <div
+              className={`h-full rounded-full ${level.bg} transition-all`}
+              style={{ width: `${Math.min(100, m.currentScore)}%` }}
+            />
+          </div>
+          <span className="text-[10px] text-muted-foreground w-16 text-right">
+            {m.previousScore} → {m.currentScore}
+          </span>
+        </div>
+        {m.crossedThreshold && (
+          <Badge
+            variant={isWorsened ? "destructive" : "secondary"}
+            className="text-[10px] mt-1.5"
+          >
+            {isWorsened ? "Entered high risk" : "Left high risk"}
+          </Badge>
+        )}
+      </Link>
+    );
+  };
+
+  if (worsened.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
+        <IconCheck className="w-10 h-10 text-green-300 mb-2" />
+        <p className="font-medium text-sm">No worsening suppliers</p>
+        <p className="text-xs">All supplier risk scores are stable or improving.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-1.5">
+      {worsened.map(renderMovement)}
     </div>
   );
 }
