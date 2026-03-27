@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 64" fill="none">
+  <defs>
+    <radialGradient id="wg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#818CF8" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#4F46E5" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Icon mark (scaled to 64x64) -->
+  <g transform="translate(0, 0)">
+    <!-- Background -->
+    <rect x="0" y="0" width="64" height="64" rx="14" fill="#1E1B4B"/>
+
+    <!-- Glow -->
+    <circle cx="32" cy="32" r="26" fill="url(#wg)"/>
+
+    <!-- Rings -->
+    <circle cx="32" cy="32" r="24" stroke="#818CF8" stroke-width="0.8" stroke-opacity="0.25" fill="none"/>
+    <circle cx="32" cy="32" r="19" stroke="#818CF8" stroke-width="0.8" stroke-opacity="0.3" fill="none"/>
+    <circle cx="32" cy="32" r="14" stroke="#6366F1" stroke-width="1" stroke-opacity="0.4" fill="none"/>
+
+    <!-- Arc fragments -->
+    <path d="M 46 18 A 20 20 0 0 1 52 28" stroke="#A5B4FC" stroke-width="1" stroke-opacity="0.45" fill="none" stroke-linecap="round"/>
+    <path d="M 12 42 A 22 22 0 0 1 18 50" stroke="#818CF8" stroke-width="0.8" stroke-opacity="0.3" fill="none" stroke-linecap="round"/>
+
+    <!-- Core -->
+    <circle cx="32" cy="32" r="5" fill="#4F46E5"/>
+    <circle cx="32" cy="32" r="2.5" fill="#818CF8"/>
+    <circle cx="32" cy="32" r="1" fill="#C7D2FE"/>
+
+    <!-- Amber dots -->
+    <circle cx="38" cy="25" r="1" fill="#FBBF24" opacity="0.6"/>
+    <circle cx="24" cy="36" r="0.8" fill="#FBBF24" opacity="0.5"/>
+  </g>
+
+  <!-- Wordmark -->
+  <text x="80" y="42" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="28" font-weight="600" fill="#1E1B4B" letter-spacing="-0.5">
+    WOVO<tspan fill="#4F46E5" font-weight="700">+</tspan>
+  </text>
+</svg>
