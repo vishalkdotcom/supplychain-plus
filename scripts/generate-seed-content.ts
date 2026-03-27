@@ -128,7 +128,7 @@ function progress(label: string, current: number, total: number) {
 // ─── Content Types ─────────────────────────────────────────
 
 interface SeedContent {
-  factoryNames: string[];
+  factoryNames: Array<{ name: string; country: string }>;
   workerFirstNames: string[];
   workerLastNames: string[];
   grievanceMessages: Record<string, string[]>;
@@ -140,18 +140,21 @@ interface SeedContent {
 
 // ─── Generators ────────────────────────────────────────────
 
-async function generateFactoryNames(): Promise<string[]> {
-  const allNames: string[] = [];
-  const batches: Array<{ label: string; countries: string; count: number }> = [];
+async function generateFactoryNames(): Promise<Array<{ name: string; country: string }>> {
+  const allNames: Array<{ name: string; country: string }> = [];
 
   const large = COUNTRIES.filter((c) => c.weight >= 10);
   const small = COUNTRIES.filter((c) => c.weight < 10);
 
+  // Each batch tracks which country(ies) it covers
+  interface Batch { label: string; countries: string; count: number; countryList: Array<{ name: string; weight: number }> }
+  const batches: Batch[] = [];
+
   for (const c of large) {
-    batches.push({ label: c.name, countries: c.name, count: Math.round((c.weight / 100) * 200) });
+    batches.push({ label: c.name, countries: c.name, count: Math.round((c.weight / 100) * 200), countryList: [c] });
   }
   const smallCount = small.reduce((s, c) => s + Math.max(2, Math.round((c.weight / 100) * 200)), 0);
-  batches.push({ label: "Others", countries: small.map((c) => c.name).join(", "), count: smallCount });
+  batches.push({ label: "Others", countries: small.map((c) => c.name).join(", "), count: smallCount, countryList: small });
 
   const totalTarget = 200;
   const currentTotal = batches.reduce((s, b) => s + b.count, 0);
@@ -161,12 +164,27 @@ async function generateFactoryNames(): Promise<string[]> {
   for (const batch of batches) {
     const perCall = 20;
     const calls = Math.ceil(batch.count / perCall);
+    // Build weighted country cycle for multi-country batches ("Others")
+    const countryCycle: string[] = [];
+    if (batch.countryList.length > 1) {
+      for (const c of batch.countryList) {
+        const n = Math.max(2, Math.round((c.weight / 100) * 200));
+        for (let j = 0; j < n; j++) countryCycle.push(c.name);
+      }
+    }
+    let cycleIdx = 0;
+
     for (let i = 0; i < calls; i++) {
       const n = Math.min(perCall, batch.count - i * perCall);
       const result = await ollamaJSON(
         `Generate a JSON object: {"names": ["name1", "name2", ...]} with exactly ${n} unique garment/textile factory names based in ${batch.countries}. Use local naming conventions + English words like "Garment", "Textile", "Apparel", "Manufacturing", "Industries", "Co., Ltd."`,
       );
-      allNames.push(...extractStrings(result).slice(0, n));
+      for (const name of extractStrings(result).slice(0, n)) {
+        const country = batch.countryList.length === 1
+          ? batch.countryList[0].name
+          : countryCycle[cycleIdx++ % countryCycle.length];
+        allNames.push({ name, country });
+      }
       done += n;
       progress("Factory names", Math.min(done, totalTarget), totalTarget);
     }
@@ -347,13 +365,16 @@ async function main() {
     } catch { /* start fresh */ }
   }
 
-  if (!content.factoryNames || content.factoryNames.length < 200) {
+  const needsFactoryRegen = !content.factoryNames
+    || content.factoryNames.length < 200
+    || (content.factoryNames.length > 0 && typeof content.factoryNames[0] === "string");
+  if (needsFactoryRegen) {
     console.log("1/7 Factory names");
     content.factoryNames = await generateFactoryNames();
     console.log(`  ✓ ${content.factoryNames.length} factory names\n`);
     saveProgress(content);
   } else {
-    console.log(`1/7 Factory names ✓ (${content.factoryNames.length} cached)\n`);
+    console.log(`1/7 Factory names ✓ (${content.factoryNames!.length} cached)\n`);
   }
 
   if (!content.workerFirstNames || content.workerFirstNames.length < 100) {
