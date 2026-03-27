@@ -47,7 +47,8 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { IconFileText, IconWand, IconLoader2, IconDownload, IconListCheck } from "@tabler/icons-react";
+import { IconFileText, IconWand, IconLoader2, IconDownload, IconListCheck, IconBrain, IconUsers, IconTimeline } from "@tabler/icons-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useQuery } from "@tanstack/react-query";
 import { fetchSupplier, fetchSupplierHistory, fetchCases, fetchSurveys, fetchRecommendations, fetchTimeline, fetchTraining, fetchBrands } from "@/lib/api";
@@ -265,39 +266,64 @@ export default function SupplierDetailPage({
         </div>
       </div>
       
-      {/* Forecast Breakdown */}
-      <ForecastBreakdownCard supplierId={supplier.id} />
+      {/* Detail Sections — tabbed for progressive disclosure */}
+      <Tabs defaultValue="intelligence">
+        <TabsList variant="line">
+          <TabsTrigger value="intelligence" className="gap-1.5">
+            <IconBrain className="w-4 h-4" />
+            Intelligence
+          </TabsTrigger>
+          <TabsTrigger value="remediation" className="gap-1.5">
+            <IconListCheck className="w-4 h-4" />
+            Remediation
+          </TabsTrigger>
+          <TabsTrigger value="engagement" className="gap-1.5">
+            <IconUsers className="w-4 h-4" />
+            Engagement
+          </TabsTrigger>
+          <TabsTrigger value="timeline" className="gap-1.5">
+            <IconTimeline className="w-4 h-4" />
+            Timeline
+          </TabsTrigger>
+        </TabsList>
 
-      {/* ML Intelligence Signals */}
-      <MLSignalsPanel supplierId={supplier.id} />
+        <TabsContent value="intelligence" className="space-y-6">
+          <ForecastBreakdownCard supplierId={supplier.id} />
+          <MLSignalsPanel supplierId={supplier.id} />
+        </TabsContent>
 
-      {/* Remediation Tracker */}
-      <RemediationTracker supplierId={supplier.id} />
+        <TabsContent value="remediation">
+          <RemediationTracker supplierId={supplier.id} />
+        </TabsContent>
 
-      {/* Engagement Health & Recommendations */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-1">
-          <EngagementHealthScore supplier={supplier} />
-        </div>
-        <div className="lg:col-span-2">
-          {/* AI Recommendations */}
-          {supplierRecommendations.length > 0 && (
-            <AIRecommendations recommendations={supplierRecommendations} />
+        <TabsContent value="engagement" className="space-y-6">
+          <div className="grid gap-6 lg:grid-cols-3">
+            <div className="lg:col-span-1">
+              <EngagementHealthScore supplier={supplier} />
+            </div>
+            <div className="lg:col-span-2">
+              {supplierRecommendations.length > 0 && (
+                <AIRecommendations recommendations={supplierRecommendations} />
+              )}
+            </div>
+          </div>
+          <CrossModulePanel
+            cases={cases}
+            surveys={surveys}
+            training={training || []}
+          />
+        </TabsContent>
+
+        <TabsContent value="timeline">
+          {timelineEvents.length > 0 ? (
+            <SupplierTimeline events={timelineEvents} />
+          ) : (
+            <p className="text-muted-foreground text-sm py-8 text-center">
+              No timeline events yet.
+            </p>
           )}
-        </div>
-      </div>
-
-      {/* Cross-Module Panel */}
-      <CrossModulePanel
-        cases={cases}
-        surveys={surveys}
-        training={training || []}
-      />
-
-      {/* Timeline */}
-      {timelineEvents.length > 0 && (
-        <SupplierTimeline events={timelineEvents} />
-      )}
+        </TabsContent>
+      </Tabs>
 
       {/* HRDD Export Dialog */}
       <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>

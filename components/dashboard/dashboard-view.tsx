@@ -203,11 +203,11 @@ export function DashboardView() {
           </Button>
         </CollapsibleTrigger>
         <CollapsibleContent className="mt-3">
-          <div className="grid gap-6 grid-cols-1 xl:grid-cols-3">
-            <div className="xl:col-span-2">
+          <div className="grid gap-6 grid-cols-1 xl:grid-cols-2">
+            <div>
               <GeographicRiskMap suppliers={suppliers} />
             </div>
-            <div className="col-span-full xl:col-span-1">
+            <div>
               <SupplyChainNetwork suppliers={suppliers} brands={brands ?? []} />
             </div>
           </div>

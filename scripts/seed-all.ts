@@ -10,6 +10,7 @@
  *   4. Backfill 30 days of risk history
  *   5. Run AI jobs sequentially (surveys, clustering, anomaly, forecast, voice)
  *   6. Generate intelligence briefing (aggregates all ML outputs)
+ *   7. Seed default job schedules (idempotent)
  *
  * Prerequisites:
  *   - All 3 Docker containers running (mysql, postgres, sqlserver)
@@ -60,10 +61,11 @@ async function shell(cmd: string): Promise<string> {
   return stdout.trim();
 }
 
-async function callJob(path: string): Promise<string> {
+async function callJob(path: string, body?: unknown): Promise<string> {
   const res = await fetch(`${BASE_URL}${path}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    ...(body ? { body: JSON.stringify(body) } : {}),
   });
   if (!res.ok) {
     const text = await res.text();
@@ -72,6 +74,12 @@ async function callJob(path: string): Promise<string> {
   const data = await res.json();
   if (data.error) throw new Error(data.error);
   return JSON.stringify(data);
+}
+
+async function fetchJson(path: string): Promise<unknown> {
+  const res = await fetch(`${BASE_URL}${path}`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
 }
 
 async function main() {
@@ -131,6 +139,27 @@ async function main() {
   await run("Generate intelligence briefing", () =>
     callJob("/api/jobs/generate-briefing"),
   );
+
+  // 8. Seed default job schedules (idempotent — skips existing)
+  await run("Seed job schedules", async () => {
+    const existing = (await fetchJson("/api/jobs/schedules")) as { jobType: string }[];
+    const existingTypes = new Set(existing.map((s) => s.jobType));
+
+    const defaults = [
+      { jobType: "calculate-risk", cronExpression: "0 4 * * *" },
+      { jobType: "worker-voice-analytics", cronExpression: "0 5 * * *" },
+      { jobType: "risk-forecast", cronExpression: "0 5 * * 1" },
+      { jobType: "generate-briefing", cronExpression: "0 6 * * *" },
+    ];
+
+    let created = 0;
+    for (const sched of defaults) {
+      if (existingTypes.has(sched.jobType)) continue;
+      await callJob("/api/jobs/schedules", sched);
+      created++;
+    }
+    return `${created} schedule(s) created, ${defaults.length - created} already existed`;
+  });
 
   // Summary
   console.log("\n=== Summary ===");
