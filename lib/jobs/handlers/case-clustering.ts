@@ -3,7 +3,7 @@ import { getJobModel, getOllamaEmbedding, generateTextWithFallback } from "@/lib
 import { query as mssqlQuery } from "@/lib/db/sql-server";
 import { db } from "@/lib/db/drizzle";
 import { caseEmbeddings, caseClusters } from "@/lib/db/schema";
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, isNotNull } from "drizzle-orm";
 import { z } from "zod";
 import { logger } from "@/lib/logger";
 import type { JobResult } from "./types";
@@ -89,6 +89,9 @@ export async function caseClustering(): Promise<JobResult> {
         .onConflictDoNothing();
 
       embeddedCount++;
+      if (embeddedCount % 100 === 0) {
+        logger.info("jobs/case-clustering", `Embedding progress: ${embeddedCount}/${messages.length}`);
+      }
     } catch (e) {
       logger.error(
         "jobs/case-clustering",
@@ -104,6 +107,15 @@ export async function caseClustering(): Promise<JobResult> {
   let clusterIdx = 0;
   const SIMILARITY_THRESHOLD = 0.75;
 
+  // Pre-compute magnitudes to avoid redundant sqrt in the O(n²) inner loop
+  const magnitudes = allEmbeddings.map((e) => {
+    let sum = 0;
+    for (let k = 0; k < e.embedding.length; k++) {
+      sum += e.embedding[k] * e.embedding[k];
+    }
+    return Math.sqrt(sum);
+  });
+
   for (let i = 0; i < allEmbeddings.length; i++) {
     if (assigned.has(i)) continue;
 
@@ -113,9 +125,9 @@ export async function caseClustering(): Promise<JobResult> {
     for (let j = i + 1; j < allEmbeddings.length; j++) {
       if (assigned.has(j)) continue;
 
-      const sim = cosineSimilarity(
-        allEmbeddings[i].embedding,
-        allEmbeddings[j].embedding,
+      const sim = cosineSimilarityPrecomputed(
+        allEmbeddings[i].embedding, magnitudes[i],
+        allEmbeddings[j].embedding, magnitudes[j],
       );
       if (sim >= SIMILARITY_THRESHOLD) {
         cluster.push(allEmbeddings[j]);
@@ -130,11 +142,18 @@ export async function caseClustering(): Promise<JobResult> {
     }
   }
 
-  // Step 4: Label each cluster with AI
-  let clustersCreated = 0;
+  // Step 4: Label each cluster with AI (outside transaction — LLM calls are slow)
   const usedLabels = new Map<string, number>();
-
-  await db.delete(caseClusters);
+  const labeledClusters: Array<{
+    label: string;
+    summary: string;
+    severity: string;
+    members: typeof allEmbeddings;
+    sampleTexts: string[];
+    regions: string[];
+    caseTypes: string[];
+    supplierIds: string[];
+  }> = [];
 
   for (const [, members] of clusters) {
     const sampleTexts = members.slice(0, 5).map((m) => m.text);
@@ -171,34 +190,62 @@ Respond with ONLY this JSON structure:
           label = regions.length > 0 ? `${label} (${regions[0]})` : `${label} #${count + 1}`;
         }
 
-        const inserted = await db
-          .insert(caseClusters)
-          .values({
-            clusterLabel: label,
-            caseCount: members.length,
-            supplierCount: regions.length,
-            regions,
-            caseTypes,
-            representativeMessages: sampleTexts,
-            aiSummary: labelResult.output.summary,
-            severity: labelResult.output.severity,
-            supplierIds,
-          })
-          .returning({ id: caseClusters.id });
-
-        const clusterId = inserted[0].id;
-        const messageIds = members.map((m) => m.messageId);
-        await db
-          .update(caseEmbeddings)
-          .set({ clusterId })
-          .where(inArray(caseEmbeddings.messageId, messageIds));
-
-        clustersCreated++;
+        labeledClusters.push({
+          label,
+          summary: labelResult.output.summary,
+          severity: labelResult.output.severity,
+          members,
+          sampleTexts,
+          regions,
+          caseTypes,
+          supplierIds,
+        });
       }
     } catch (e) {
       logger.error("jobs/case-clustering", "Cluster labeling failed", e);
     }
   }
+
+  // Step 5: Atomic swap — delete old clusters, insert new, update embeddings
+  let clustersCreated = 0;
+
+  await db.transaction(async (tx) => {
+    // Clear orphaned clusterId references
+    await tx
+      .update(caseEmbeddings)
+      .set({ clusterId: null })
+      .where(isNotNull(caseEmbeddings.clusterId));
+
+    // Delete all old clusters
+    await tx.delete(caseClusters);
+
+    // Insert new clusters and link embeddings
+    for (const cluster of labeledClusters) {
+      const inserted = await tx
+        .insert(caseClusters)
+        .values({
+          clusterLabel: cluster.label,
+          caseCount: cluster.members.length,
+          supplierCount: cluster.regions.length,
+          regions: cluster.regions,
+          caseTypes: cluster.caseTypes,
+          representativeMessages: cluster.sampleTexts,
+          aiSummary: cluster.summary,
+          severity: cluster.severity,
+          supplierIds: cluster.supplierIds,
+        })
+        .returning({ id: caseClusters.id });
+
+      const clusterId = inserted[0].id;
+      const messageIds = cluster.members.map((m) => m.messageId);
+      await tx
+        .update(caseEmbeddings)
+        .set({ clusterId })
+        .where(inArray(caseEmbeddings.messageId, messageIds));
+
+      clustersCreated++;
+    }
+  });
 
   // Auto-link evidence: cluster case count reduction for remediations linked to clusters
   try {
@@ -239,16 +286,16 @@ Respond with ONLY this JSON structure:
   };
 }
 
-function cosineSimilarity(a: number[], b: number[]): number {
+function cosineSimilarityPrecomputed(
+  a: number[], magA: number,
+  b: number[], magB: number,
+): number {
+  const mag = magA * magB;
+  if (mag === 0) return 0;
   let dot = 0;
-  let magA = 0;
-  let magB = 0;
   const len = Math.min(a.length, b.length);
   for (let i = 0; i < len; i++) {
     dot += a[i] * b[i];
-    magA += a[i] * a[i];
-    magB += b[i] * b[i];
   }
-  const mag = Math.sqrt(magA) * Math.sqrt(magB);
-  return mag === 0 ? 0 : dot / mag;
+  return dot / mag;
 }
