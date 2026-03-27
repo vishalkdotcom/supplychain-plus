@@ -130,6 +130,11 @@ async function main() {
     await run(job.name, () => callJob(job.path));
   }
 
+  // 5b. Backfill cluster history (6 months of trend snapshots)
+  await run("Seed cluster history (6 months)", async () => {
+    return await shell("bun run scripts/seed-cluster-history.ts");
+  });
+
   // 6. Seed regulatory frameworks
   await run("Seed regulatory frameworks", async () => {
     return await shell("bun run scripts/seed-regulatory.ts");

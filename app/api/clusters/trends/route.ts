@@ -1,12 +1,43 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db/drizzle";
-import { caseClusters } from "@/lib/db/schema";
+import { caseClusters, clusterSnapshots } from "@/lib/db/schema";
 import { sql } from "drizzle-orm";
 import { logger } from "@/lib/logger";
 import { ClusterTrendPoint } from "@/types";
 
 export async function GET() {
   try {
+    // Primary: query from cluster_snapshots (historical trend data)
+    const snapshotRows = await db.execute<{
+      month: string;
+      critical: string;
+      warning: string;
+      info: string;
+      total: string;
+    }>(sql`
+      SELECT
+        to_char(${clusterSnapshots.snapshotDate}, 'YYYY-MM') as month,
+        SUM(${clusterSnapshots.critical})::text as critical,
+        SUM(${clusterSnapshots.warning})::text as warning,
+        SUM(${clusterSnapshots.info})::text as info,
+        SUM(${clusterSnapshots.totalClusters})::text as total
+      FROM ${clusterSnapshots}
+      GROUP BY month
+      ORDER BY month ASC
+    `);
+
+    if (snapshotRows.length > 0) {
+      const points: ClusterTrendPoint[] = snapshotRows.map((row) => ({
+        month: row.month,
+        total: parseInt(row.total),
+        critical: parseInt(row.critical),
+        warning: parseInt(row.warning),
+        info: parseInt(row.info),
+      }));
+      return NextResponse.json(points);
+    }
+
+    // Fallback: if no snapshots yet, use current case_clusters.detectedAt
     const rows = await db.execute<{
       month: string;
       severity: string;
@@ -21,7 +52,6 @@ export async function GET() {
       ORDER BY month ASC
     `);
 
-    // Pivot flat rows into ClusterTrendPoint[] (one object per month)
     const monthMap = new Map<string, ClusterTrendPoint>();
 
     for (const row of rows) {

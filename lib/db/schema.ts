@@ -335,6 +335,27 @@ export const caseClusters = pgTable("case_clusters", {
     .notNull(),
 });
 
+// Cluster Snapshots (daily trend history — survives cluster re-generation)
+export const clusterSnapshots = pgTable(
+  "cluster_snapshots",
+  {
+    id: serial("id").primaryKey(),
+    snapshotDate: date("snapshot_date").notNull().defaultNow(),
+    totalClusters: integer("total_clusters").notNull().default(0),
+    critical: integer("critical").notNull().default(0),
+    warning: integer("warning").notNull().default(0),
+    info: integer("info").notNull().default(0),
+    totalCases: integer("total_cases").notNull().default(0),
+    totalSuppliers: integer("total_suppliers").notNull().default(0),
+    clusterDetails: jsonb("cluster_details")
+      .$type<Array<{ label: string; severity: string; caseCount: number; supplierCount: number }>>()
+      .default([]),
+  },
+  (table) => [
+    uniqueIndex("idx_cluster_snapshot_date").on(table.snapshotDate),
+  ],
+);
+
 // ===============================
 // CONTENT LAYER
 // ===============================
