@@ -187,7 +187,7 @@ What if 47 separate cases in 12 different factories are actually the *same probl
   3. AI labels each group: "Systematic Overtime Violations — Bangladesh Garment Sector" (critical)
   4. Groups shown on `/connect/clusters` with severity, affected factories, representative cases
 - **Why It's Different**: Traditional compliance = read each case. WOVO = see the forest, not just the trees.
-- **Technical Detail** (for tech audience): Ollama bge-m3 embeddings → pgvector storage → cosine similarity clustering → LLM labeling with Zod schema validation
+- **Technical Detail** (for tech audience): Ollama bge-m3 embeddings → pgvector HNSW kNN search → Union-Find connected components clustering → LLM labeling with Zod schema validation
 - **Real Example**: 47 messages about overtime from 12 Bangladesh factories → clustered → labeled "critical systemic pattern" → compliance team investigates regionally instead of case-by-case.
 
 **Suggested Visual**: Before/After split. Left: 47 scattered dots (individual cases). Right: dots grouped into 3 color-coded clusters with labels. Below: the pipeline (Messages → Embeddings → Clusters → Labels).

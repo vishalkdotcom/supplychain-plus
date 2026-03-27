@@ -310,6 +310,10 @@ export const caseEmbeddings = pgTable(
   (table) => [
     index("idx_embedding_case").on(table.caseId),
     index("idx_embedding_cluster").on(table.clusterId),
+    index("idx_embedding_hnsw").using(
+      "hnsw",
+      table.embedding.op("vector_cosine_ops"),
+    ),
   ],
 );
 // Case Clusters (detected systemic patterns)
