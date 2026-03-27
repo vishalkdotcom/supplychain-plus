@@ -17,8 +17,8 @@ import {
   Marker,
   ZoomableGroup,
 } from "react-simple-maps";
-import { IconMap, IconMinus, IconPlus, IconRefresh, IconMaximize, IconMinimize } from "@tabler/icons-react";
-import { Button } from "@/components/ui/button";
+import { IconMap } from "@tabler/icons-react";
+import { VisualizationControls } from "./visualization-controls";
 import { cn } from "@/lib/utils";
 import { getScoreHex } from "@/lib/risk-utils";
 
@@ -171,7 +171,7 @@ export function GeographicRiskMap({ suppliers }: GeographicRiskMapProps) {
   }, [suppliers]);
 
   return (
-    <Card className="col-span-full xl:col-span-2 relative">
+    <Card className="relative">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <IconMap className="w-5 h-5 text-indigo-500" />
@@ -184,49 +184,15 @@ export function GeographicRiskMap({ suppliers }: GeographicRiskMapProps) {
       <CardContent className="p-0 sm:p-6 sm:pt-0">
         <div className={cn(
           "bg-slate-50/50 rounded-xl overflow-hidden border border-slate-100 relative transition-all duration-300",
-          isFullscreen ? "fixed inset-0 z-50 rounded-none bg-white p-4" : "h-[400px]"
+          isFullscreen ? "fixed inset-0 z-50 rounded-none bg-white p-4" : "h-[450px]"
         )}>
-          {/* Controls */}
-          <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
-            <div className="flex flex-col bg-white/80 backdrop-blur-sm rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 rounded-none border-b border-slate-100"
-                onClick={handleZoomIn}
-                title="Zoom In"
-              >
-                <IconPlus className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 rounded-none"
-                onClick={handleZoomOut}
-                title="Zoom Out"
-              >
-                <IconMinus className="h-4 w-4" />
-              </Button>
-            </div>
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-8 w-8 bg-white/80 backdrop-blur-sm shadow-sm"
-              onClick={handleReset}
-              title="Reset View"
-            >
-              <IconRefresh className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-8 w-8 bg-white/80 backdrop-blur-sm shadow-sm"
-              onClick={toggleFullscreen}
-              title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
-            >
-              {isFullscreen ? <IconMinimize className="h-4 w-4" /> : <IconMaximize className="h-4 w-4" />}
-            </Button>
-          </div>
+          <VisualizationControls
+            onZoomIn={handleZoomIn}
+            onZoomOut={handleZoomOut}
+            onReset={handleReset}
+            onToggleFullscreen={toggleFullscreen}
+            isFullscreen={isFullscreen}
+          />
 
           <ComposableMap
             projection="geoMercator"

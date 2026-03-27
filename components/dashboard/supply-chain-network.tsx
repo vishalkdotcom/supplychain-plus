@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { Brand, Supplier } from "@/types";
 import {
   Card,
@@ -12,7 +12,6 @@ import {
 import { IconNetwork } from "@tabler/icons-react";
 import {
   ReactFlow,
-  Controls,
   Background,
   Node,
   Edge,
@@ -20,10 +19,13 @@ import {
   Handle,
   Position,
   ReactFlowProvider,
+  useReactFlow,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { Badge } from "@/components/ui/badge";
 import { getScoreBadgeClasses } from "@/lib/risk-utils";
+import { cn } from "@/lib/utils";
+import { VisualizationControls } from "./visualization-controls";
 
 interface SupplyChainNetworkProps {
   suppliers: Supplier[];
@@ -48,7 +50,6 @@ export function SupplyChainNetwork({ suppliers, brands }: SupplyChainNetworkProp
         children.push(s);
         childMap.set(s.parentCompanyId, children);
       } else if (!brandIds.has(s.id)) {
-        // No parent and not a brand → standalone supplier
         standalone.push(s);
       }
     }
@@ -75,7 +76,6 @@ export function SupplyChainNetwork({ suppliers, brands }: SupplyChainNetworkProp
     const SUPPLIER_Y = 290;
     const CHILD_SPACING = 160;
 
-    // Render each brand and its child suppliers
     for (const brand of brands) {
       const children = childMap.get(brand.id) || [];
       const groupWidth = Math.max(children.length, 1) * CHILD_SPACING;
@@ -127,7 +127,6 @@ export function SupplyChainNetwork({ suppliers, brands }: SupplyChainNetworkProp
       nodeX += groupWidth + 40;
     }
 
-    // Render standalone suppliers directly under root
     for (const s of standalone) {
       initialNodes.push({
         id: s.id,
@@ -156,7 +155,7 @@ export function SupplyChainNetwork({ suppliers, brands }: SupplyChainNetworkProp
   }, [suppliers, brands]);
 
   return (
-    <Card className="col-span-full">
+    <Card className="relative">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <IconNetwork className="w-5 h-5 text-purple-500" />
@@ -167,27 +166,50 @@ export function SupplyChainNetwork({ suppliers, brands }: SupplyChainNetworkProp
         </CardDescription>
       </CardHeader>
       <CardContent className="p-0 sm:p-6 sm:pt-0">
-        <div
-          className="w-full bg-slate-50/50 rounded-xl overflow-hidden border border-slate-100 relative"
-          style={{ height: "500px", minHeight: "500px", minWidth: "100%" }}
-        >
-          <ReactFlowProvider>
-            <ReactFlow
-              defaultNodes={nodes}
-              defaultEdges={edges}
-              nodeTypes={nodeTypes}
-              fitView
-              fitViewOptions={{ padding: 0.2 }}
-              attributionPosition="bottom-right"
-              style={{ width: "100%", height: "100%" }}
-            >
-              <Background color="#cbd5e1" gap={16} />
-              <Controls />
-            </ReactFlow>
-          </ReactFlowProvider>
-        </div>
+        <ReactFlowProvider>
+          <NetworkInner nodes={nodes} edges={edges} />
+        </ReactFlowProvider>
       </CardContent>
     </Card>
+  );
+}
+
+/** Inner component — uses useReactFlow() for zoom/pan control */
+function NetworkInner({ nodes, edges }: { nodes: Node[]; edges: Edge[] }) {
+  const { zoomIn, zoomOut, fitView } = useReactFlow();
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const handleZoomIn = () => zoomIn({ duration: 200 });
+  const handleZoomOut = () => zoomOut({ duration: 200 });
+  const handleReset = () => fitView({ padding: 0.2, duration: 300 });
+  const toggleFullscreen = () => setIsFullscreen((prev) => !prev);
+
+  return (
+    <div
+      className={cn(
+        "w-full bg-slate-50/50 rounded-xl overflow-hidden border border-slate-100 relative transition-all duration-300",
+        isFullscreen ? "fixed inset-0 z-50 rounded-none bg-white p-4" : "h-[450px]"
+      )}
+    >
+      <VisualizationControls
+        onZoomIn={handleZoomIn}
+        onZoomOut={handleZoomOut}
+        onReset={handleReset}
+        onToggleFullscreen={toggleFullscreen}
+        isFullscreen={isFullscreen}
+      />
+      <ReactFlow
+        defaultNodes={nodes}
+        defaultEdges={edges}
+        nodeTypes={nodeTypes}
+        fitView
+        fitViewOptions={{ padding: 0.2 }}
+        attributionPosition="bottom-right"
+        style={{ width: "100%", height: "100%" }}
+      >
+        <Background color="#cbd5e1" gap={16} />
+      </ReactFlow>
+    </div>
   );
 }
 

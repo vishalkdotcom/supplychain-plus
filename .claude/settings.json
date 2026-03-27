@@ -1,0 +1,19 @@
+{
+  "worktree": {
+    "symlinkDirectories": ["node_modules"]
+  },
+  "hooks": {
+    "WorktreeCreate": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.worktree_path' | { read -r wt; cp \"C:/vishal/xp/wovo/.env.local\" \"$wt/.env.local\" 2>/dev/null && echo '{\"systemMessage\": \"Copied .env.local to worktree\"}' || echo '{\"systemMessage\": \"Warning: .env.local not found in main repo\"}'; }",
+            "timeout": 30,
+            "statusMessage": "Setting up worktree environment..."
+          }
+        ]
+      }
+    ]
+  }
+}
