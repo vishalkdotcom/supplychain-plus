@@ -295,7 +295,7 @@ These are important for production but not critical for MVP demo.
 
 | Issue | Title | Notes |
 |-------|-------|-------|
-| #22 | O(n^2) cosine similarity in clustering | 2000x2000 pairs; consider pgvector HNSW |
+| #22 | O(n^2) cosine similarity in clustering | **RESOLVED** — pgvector HNSW index + Union-Find connected components replace O(n^2) JS loop |
 | #32 | N+1 query in briefing API | Simple JOIN fix |
 | #46 | Missing index on `risk_score` column | Trivial at 220 rows, matters at scale |
 | #30 | Chat history loads ALL sessions | Add pagination |

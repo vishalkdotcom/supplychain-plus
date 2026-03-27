@@ -43,6 +43,13 @@
       "when": 1774424268190,
       "tag": "0005_magenta_paper_doll",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1774600789541,
+      "tag": "0006_concerned_silver_centurion",
+      "breakpoints": true
     }
   ]
 }

@@ -3,7 +3,7 @@ import { getJobModel, getOllamaEmbedding, generateTextWithFallback } from "@/lib
 import { query as mssqlQuery } from "@/lib/db/sql-server";
 import { db } from "@/lib/db/drizzle";
 import { caseEmbeddings, caseClusters } from "@/lib/db/schema";
-import { eq, inArray, isNotNull } from "drizzle-orm";
+import { eq, inArray, isNotNull, sql } from "drizzle-orm";
 import { z } from "zod";
 import { logger } from "@/lib/logger";
 import type { JobResult } from "./types";
@@ -101,46 +101,59 @@ export async function caseClustering(): Promise<JobResult> {
     }
   }
 
-  // Step 3: Simple clustering using cosine similarity
+  // Step 3: Cluster via pgvector HNSW kNN + Union-Find connected components
+  const SIMILARITY_THRESHOLD = Number(process.env.CLUSTER_SIMILARITY_THRESHOLD) || 0.75;
+  const clusterStart = performance.now();
+
+  // Build a lookup from messageId → embedding metadata
+  const embeddingByMsgId = new Map(allEmbeddings.map((e) => [e.messageId, e]));
+
+  // 3a: For each embedding, find neighbors above threshold via HNSW index
+  const uf = new UnionFind();
+  for (const emb of allEmbeddings) {
+    uf.makeSet(emb.messageId);
+  }
+
+  const vecLiteral = (v: number[]) => `[${v.join(",")}]`;
+
+  for (const emb of allEmbeddings) {
+    const neighbors = await db.execute(sql`
+      SELECT message_id
+      FROM case_embeddings
+      WHERE message_id != ${emb.messageId}
+        AND 1 - (embedding <=> ${vecLiteral(emb.embedding)}::vector) > ${SIMILARITY_THRESHOLD}
+      ORDER BY embedding <=> ${vecLiteral(emb.embedding)}::vector
+      LIMIT 50
+    `);
+
+    for (const row of neighbors as Array<{ message_id: string }>) {
+      uf.union(emb.messageId, row.message_id);
+    }
+  }
+
+  // 3b: Extract connected components → filter by min size and supplier diversity
+  const componentMap = new Map<string, string[]>();
+  for (const emb of allEmbeddings) {
+    const root = uf.find(emb.messageId);
+    if (!componentMap.has(root)) componentMap.set(root, []);
+    componentMap.get(root)!.push(emb.messageId);
+  }
+
   const clusters: Map<number, Array<(typeof allEmbeddings)[0]>> = new Map();
-  const assigned = new Set<number>();
   let clusterIdx = 0;
-  const SIMILARITY_THRESHOLD = 0.75;
-
-  // Pre-compute magnitudes to avoid redundant sqrt in the O(n²) inner loop
-  const magnitudes = allEmbeddings.map((e) => {
-    let sum = 0;
-    for (let k = 0; k < e.embedding.length; k++) {
-      sum += e.embedding[k] * e.embedding[k];
-    }
-    return Math.sqrt(sum);
-  });
-
-  for (let i = 0; i < allEmbeddings.length; i++) {
-    if (assigned.has(i)) continue;
-
-    const cluster = [allEmbeddings[i]];
-    assigned.add(i);
-
-    for (let j = i + 1; j < allEmbeddings.length; j++) {
-      if (assigned.has(j)) continue;
-
-      const sim = cosineSimilarityPrecomputed(
-        allEmbeddings[i].embedding, magnitudes[i],
-        allEmbeddings[j].embedding, magnitudes[j],
-      );
-      if (sim >= SIMILARITY_THRESHOLD) {
-        cluster.push(allEmbeddings[j]);
-        assigned.add(j);
-      }
-    }
-
-    const uniqueSuppliers = new Set(cluster.map((m) => m.companyName));
-    if (cluster.length >= 3 && uniqueSuppliers.size >= 2) {
-      clusters.set(clusterIdx, cluster);
+  for (const [, memberIds] of componentMap) {
+    const members = memberIds.map((id) => embeddingByMsgId.get(id)!);
+    const uniqueSuppliers = new Set(members.map((m) => m.companyName));
+    if (members.length >= 3 && uniqueSuppliers.size >= 2) {
+      clusters.set(clusterIdx, members);
       clusterIdx++;
     }
   }
+
+  logger.info(
+    "jobs/case-clustering",
+    `Clustering ${allEmbeddings.length} embeddings → ${clusters.size} clusters in ${(performance.now() - clusterStart).toFixed(0)}ms (threshold=${SIMILARITY_THRESHOLD})`,
+  );
 
   // Step 4: Label each cluster with AI (outside transaction — LLM calls are slow)
   const usedLabels = new Map<string, number>();
@@ -286,16 +299,39 @@ Respond with ONLY this JSON structure:
   };
 }
 
-function cosineSimilarityPrecomputed(
-  a: number[], magA: number,
-  b: number[], magB: number,
-): number {
-  const mag = magA * magB;
-  if (mag === 0) return 0;
-  let dot = 0;
-  const len = Math.min(a.length, b.length);
-  for (let i = 0; i < len; i++) {
-    dot += a[i] * b[i];
+class UnionFind {
+  private parent = new Map<string, string>();
+  private rank = new Map<string, number>();
+
+  makeSet(x: string) {
+    this.parent.set(x, x);
+    this.rank.set(x, 0);
   }
-  return dot / mag;
+
+  find(x: string): string {
+    const p = this.parent.get(x);
+    if (p === undefined) return x;
+    if (p !== x) {
+      const root = this.find(p);
+      this.parent.set(x, root); // path compression
+      return root;
+    }
+    return x;
+  }
+
+  union(a: string, b: string) {
+    const ra = this.find(a);
+    const rb = this.find(b);
+    if (ra === rb) return;
+    const rankA = this.rank.get(ra) ?? 0;
+    const rankB = this.rank.get(rb) ?? 0;
+    if (rankA < rankB) {
+      this.parent.set(ra, rb);
+    } else if (rankA > rankB) {
+      this.parent.set(rb, ra);
+    } else {
+      this.parent.set(rb, ra);
+      this.rank.set(ra, rankA + 1);
+    }
+  }
 }
