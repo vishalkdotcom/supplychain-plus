@@ -44,6 +44,7 @@ import { CaseContextStrip } from "@/components/cases/case-context-strip";
 import { AIAnalysisCard } from "@/components/cases/ai-analysis-card";
 import { ActionPanel } from "@/components/cases/action-panel";
 import { CrossModuleContext } from "@/components/cases/cross-module-context";
+import { TranslateButton } from "@/components/translate-button";
 
 interface CaseDetailPageProps {
   params: Promise<{ id: string }>;
@@ -419,6 +420,16 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
             </CardHeader>
             <CardContent>
               <p className="text-sm leading-relaxed">{caseData.fullContent}</p>
+              <TranslateButton
+                texts={[caseData.fullContent]}
+                cacheKey={`case-${caseData.id}`}
+              >
+                {([translated]) => (
+                  <p className="text-sm leading-relaxed text-muted-foreground">
+                    {translated}
+                  </p>
+                )}
+              </TranslateButton>
             </CardContent>
           </Card>
 
