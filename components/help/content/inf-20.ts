@@ -11,7 +11,7 @@ export const inf20: InfoGraphicData = {
       type: "hero",
       title: "Cross-Module Context",
       subtitle:
-        "No silos. Every page in WOVO surfaces signals from every other module so you always see the full picture around any supplier, case, or worker.",
+        "No silos. Every page in WOVO+ surfaces signals from every other module so you always see the full picture around any supplier, case, or worker.",
       icon: "network",
     },
     {
@@ -66,7 +66,7 @@ export const inf20: InfoGraphicData = {
     },
     {
       type: "prose",
-      text: "Technically, cross-module context works because every entity in WOVO shares a common supplier identifier. When you open a supplier page, the platform issues parallel queries across all module tables \u2014 cases, surveys, training, remediations, forecasts, anomalies, monitoring signals, and voice analytics \u2014 and assembles the results into a unified view. The AI assistant uses the same approach: it decomposes your question into sub-queries across modules, retrieves relevant rows, and synthesizes a single response with inline citations pointing back to the originating module.",
+      text: "Technically, cross-module context works because every entity in WOVO+ shares a common supplier identifier. When you open a supplier page, the platform issues parallel queries across all module tables \u2014 cases, surveys, training, remediations, forecasts, anomalies, monitoring signals, and voice analytics \u2014 and assembles the results into a unified view. The AI assistant uses the same approach: it decomposes your question into sub-queries across modules, retrieves relevant rows, and synthesizes a single response with inline citations pointing back to the originating module.",
     },
     {
       type: "example",

@@ -118,7 +118,7 @@ export function DashboardView() {
       {/* Header */}
       <div>
         <h1 className="flex items-center gap-2 text-3xl font-bold tracking-tight">
-          WOVO AI Control Center
+          WOVO+ Control Center
           <HelpButton infographicId="inf-03" />
         </h1>
         <p className="text-muted-foreground">

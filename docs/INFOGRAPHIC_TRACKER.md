@@ -1,4 +1,4 @@
-# WOVO Infographic Tracker
+# WOVO+ Infographic Tracker
 
 > **Created**: 2026-03-25
 > **Purpose**: One infographic per feature — sell the idea, explain the value, show how it works. For business AND technical audiences alike.
@@ -53,10 +53,10 @@
 | **Domain** | Core Philosophy |
 | **Status** | `not-started` |
 | **Complexity** | Medium |
-| **Why this infographic exists** | This is the "elevator pitch" visual — the one you show first. It explains WOVO's core differentiator: not just detecting problems, but tracking the full lifecycle from detection through corrective action to documented evidence. |
+| **Why this infographic exists** | This is the "elevator pitch" visual — the one you show first. It explains WOVO+'s core differentiator: not just detecting problems, but tracking the full lifecycle from detection through corrective action to documented evidence. |
 
 **The Idea to Sell**:
-Most compliance platforms stop at detection — they show you a dashboard of problems. WOVO closes the loop. Every detected issue (cluster, anomaly, alert) can become a remediation plan. Every remediation plan automatically collects evidence as actions are taken. Every piece of evidence maps back to the original detection. This is the loop that EU CSDDD, OECD Guidelines, and UK Modern Slavery Act demand.
+Most compliance platforms stop at detection — they show you a dashboard of problems. WOVO+ closes the loop. Every detected issue (cluster, anomaly, alert) can become a remediation plan. Every remediation plan automatically collects evidence as actions are taken. Every piece of evidence maps back to the original detection. This is the loop that EU CSDDD, OECD Guidelines, and UK Modern Slavery Act demand.
 
 **Content Outline**:
 - **The Problem**: Compliance teams detect issues but struggle to prove they acted on them. Regulators ask "what did you do about it?" and teams scramble to compile evidence.
@@ -146,10 +146,10 @@ One screen answers "what needs my attention right now?" Six layers of informatio
 | **Domain** | Connect Module |
 | **Status** | `not-started` |
 | **Complexity** | Medium |
-| **Why this infographic exists** | Case management is WOVO's "detect" workhorse. The AI assistance layer (summarize, guide, draft response) is the key differentiator against manual case-by-case review. |
+| **Why this infographic exists** | Case management is WOVO+'s "detect" workhorse. The AI assistance layer (summarize, guide, draft response) is the key differentiator against manual case-by-case review. |
 
 **The Idea to Sell**:
-2,944 worker grievance cases with 8,277 messages — no human can read them all. WOVO's AI reads every case and provides: (1) a 1-2 sentence summary, (2) recommended investigation steps based on case type and region, (3) a draft response in the worker's language. The human makes the judgment call; the AI handles the paperwork.
+2,944 worker grievance cases with 8,277 messages — no human can read them all. WOVO+'s AI reads every case and provides: (1) a 1-2 sentence summary, (2) recommended investigation steps based on case type and region, (3) a draft response in the worker's language. The human makes the judgment call; the AI handles the paperwork.
 
 **Content Outline**:
 - **Scale of the Problem**: Hundreds of cases in multiple languages. Case officers spend 70% of time reading/summarizing, 30% actually helping.
@@ -174,10 +174,10 @@ One screen answers "what needs my attention right now?" Six layers of informatio
 | **Domain** | Connect Intelligence |
 | **Status** | `not-started` |
 | **Complexity** | Complex |
-| **Why this infographic exists** | This is WOVO's most unique ML feature. Individual cases look isolated — clustering reveals that 47 "overtime" cases across 12 factories are actually one regional systemic issue. This is the insight that manual review can never produce. |
+| **Why this infographic exists** | This is WOVO+'s most unique ML feature. Individual cases look isolated — clustering reveals that 47 "overtime" cases across 12 factories are actually one regional systemic issue. This is the insight that manual review can never produce. |
 
 **The Idea to Sell**:
-What if 47 separate cases in 12 different factories are actually the *same problem*? WOVO converts case messages into mathematical representations (embeddings), groups similar messages together (clustering), and reveals systemic patterns that span multiple factories. A compliance officer reviewing cases one-by-one would never see this.
+What if 47 separate cases in 12 different factories are actually the *same problem*? WOVO+ converts case messages into mathematical representations (embeddings), groups similar messages together (clustering), and reveals systemic patterns that span multiple factories. A compliance officer reviewing cases one-by-one would never see this.
 
 **Content Outline**:
 - **The Blind Spot**: 2,944 cases reviewed individually. Each looks like a one-off problem. But what if they're connected?
@@ -318,7 +318,7 @@ Upload a safety manual PDF → AI extracts content → generates structured less
 | **Domain** | Detection |
 | **Status** | `not-started` |
 | **Complexity** | Medium |
-| **Why this infographic exists** | This is a counterintuitive concept — detecting the *absence* of data as a risk signal. "No news" from a factory isn't good news. This idea needs selling because it's WOVO's most novel detection approach. |
+| **Why this infographic exists** | This is a counterintuitive concept — detecting the *absence* of data as a risk signal. "No news" from a factory isn't good news. This idea needs selling because it's WOVO+'s most novel detection approach. |
 
 **The Idea to Sell**:
 Traditional compliance watches for problems. WOVO also watches for *silence*. Three signal types detect what ISN'T happening:
@@ -508,7 +508,7 @@ Click one button, get a Human Rights Due Diligence (HRDD) report. The PDF combin
 | **Why this infographic exists** | Brands think in portfolios, not individual factories. This infographic shows how WOVO lets a brand director see "my 30 factories" vs. all 220, with aggregate risk. |
 
 **The Idea to Sell**:
-A brand compliance director doesn't care about all 220 suppliers — they care about their 30. WOVO's brand view filters the entire platform: dashboard metrics, risk scores, cases, surveys, training — everything scoped to just the factories in their portfolio. Parent-child relationships (126 hierarchy mappings) enable aggregate risk: if 3 of your 8 factories are high-risk, your brand risk reflects that.
+A brand compliance director doesn't care about all 220 suppliers — they care about their 30. WOVO+'s brand view filters the entire platform: dashboard metrics, risk scores, cases, surveys, training — everything scoped to just the factories in their portfolio. Parent-child relationships (126 hierarchy mappings) enable aggregate risk: if 3 of your 8 factories are high-risk, your brand risk reflects that.
 
 **Content Outline**:
 - **Portfolio View**: Brand list page → aggregate metrics per brand (avg risk, factory count, case count)
@@ -532,7 +532,7 @@ A brand compliance director doesn't care about all 220 suppliers — they care a
 | **Domain** | Dashboard |
 | **Status** | `not-started` |
 | **Complexity** | Simple |
-| **Why this infographic exists** | The briefing is WOVO's "proactive intelligence" — it tells you what to look at before you ask. This differentiates WOVO from passive dashboards that wait for you to explore. |
+| **Why this infographic exists** | The briefing is WOVO+'s "proactive intelligence" — it tells you what to look at before you ask. This differentiates WOVO from passive dashboards that wait for you to explore. |
 
 **The Idea to Sell**:
 Every morning, WOVO has already analyzed all your data and prepared a briefing: "15 suppliers at high risk (concentrated in Bangladesh), 2 new systemic patterns detected, training coverage improved 5%." Each attention item is categorized (critical / watch / positive) and comes with a pre-built AI chat query — click to investigate immediately.
@@ -629,7 +629,7 @@ When a compliance officer opens a case, they don't just see messages — they se
 
 **Content Outline**:
 - **The Silo Problem**: Traditional tools: one tool for cases, another for surveys, another for training. Cross-referencing is manual and slow.
-- **WOVO's Approach**: Every entity (supplier, case, survey, course) is connected. Supplier detail pages show all modules. Case pages show the supplier's full context.
+- **WOVO+'s Approach**: Every entity (supplier, case, survey, course) is connected. Supplier detail pages show all modules. Case pages show the supplier's full context.
 - **Examples of Cross-Module Data**:
   - Supplier page: risk score + cases + surveys + training + forecasts + anomalies + remediations + monitoring signals + voice trends
   - Case page: case messages + supplier risk breakdown + training status + survey sentiment

@@ -7,7 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { HelpButton } from "@/components/help";
 import { useEffect, useState } from "react";
 
-const LAST_VISIT_KEY = "wovo_last_visit";
+const LAST_VISIT_KEY = "wovo_plus_last_visit";
 
 function getLastVisit(): string | undefined {
   if (typeof window === "undefined") return undefined;

@@ -5,7 +5,7 @@ export const inf19: InfoGraphicData = {
   title: "The ML Pipeline \u2014 8 Jobs That Power Everything",
   domain: "Operations",
   shortDescription:
-    "The 8-job ML pipeline computes all intelligence in WOVO \u2014 from risk scores to forecasts \u2014 with strict ordering, GPU serialization, and flexible scheduling.",
+    "The 8-job ML pipeline computes all intelligence in WOVO+ \u2014 from risk scores to forecasts \u2014 with strict ordering, GPU serialization, and flexible scheduling.",
   sections: [
     {
       type: "hero",

@@ -119,7 +119,7 @@ function waitForInput(msg: string) {
 }
 
 async function waitForHealthy(timeout = 120_000) {
-  const containers = ["wovo_postgres", "wovo_mysql", "wovo_sqlserver"];
+  const containers = ["wovo_plus_postgres", "wovo_plus_mysql", "wovo_plus_sqlserver"];
   const start = Date.now();
 
   for (const name of containers) {
@@ -428,7 +428,7 @@ async function restoreMlData() {
 
 async function main() {
   console.log("╔══════════════════════════════════════╗");
-  console.log("║  WOVO Reseed (ML Data Preserved)     ║");
+  console.log("║  WOVO+ Reseed (ML Data Preserved)    ║");
   console.log("╚══════════════════════════════════════╝");
 
   mkdirSync(BACKUP_DIR, { recursive: true });

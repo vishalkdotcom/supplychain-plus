@@ -83,7 +83,7 @@ async function fetchJson(path: string): Promise<unknown> {
 }
 
 async function main() {
-  console.log("=== WOVO Seed All ===");
+  console.log("=== WOVO+ Seed All ===");
   console.log(`Target: ${BASE_URL}`);
 
   // 0. Verify dev server is reachable

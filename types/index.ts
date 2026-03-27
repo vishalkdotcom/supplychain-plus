@@ -1,4 +1,4 @@
-// Core Types for WOVO AI Control Center
+// Core Types for WOVO+ Control Center
 
 // ===============================
 // Supplier & Risk Types

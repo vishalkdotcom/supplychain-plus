@@ -1,4 +1,4 @@
-# WOVO AI Features Roadmap
+# WOVO+ Features Roadmap
 
 > **Purpose**: User-journey focused roadmap connecting AI capabilities to UI/UX implementation.
 >

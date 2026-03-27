@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from "react";
 
-const STORAGE_KEY = "wovo_help_mode";
-const EVENT_NAME = "wovo-help-mode-changed";
+const STORAGE_KEY = "wovo_plus_help_mode";
+const EVENT_NAME = "wovo-plus-help-mode-changed";
 
 const getHelpMode = (): boolean => {
   if (typeof window === "undefined") return false;

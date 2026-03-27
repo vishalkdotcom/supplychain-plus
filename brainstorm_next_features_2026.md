@@ -1,6 +1,6 @@
-# Brainstorm: Wovo AI Next Features (March 2026)
+# Brainstorm: WOVO+ Next Features (March 2026)
 
-> **Methodology**: Every idea below is grounded in **real 2026 regulatory deadlines, industry research, and technology trends** — not hypotheticals. Each feature is designed to leverage Wovo's existing 3-database architecture and shipped AI capabilities.
+> **Methodology**: Every idea below is grounded in **real 2026 regulatory deadlines, industry research, and technology trends** — not hypotheticals. Each feature is designed to leverage WOVO+'s existing 3-database architecture and shipped AI capabilities.
 
 ---
 
@@ -23,7 +23,7 @@ Wovo already detects problems brilliantly. The next wave must answer: **"What di
 
 **"You have 3 suppliers non-compliant with the EU Forced Labour Regulation, 7 missing DPP data for textiles, and 2 flagged under UFLPA — here's your action plan"**
 
-A live dashboard that maps Wovo's existing data against **every active regulation simultaneously** — EU CSDDD, EU FLR, EUDR, UFLPA, UK Modern Slavery Act, German LkSG — and shows gaps per supplier.
+A live dashboard that maps WOVO+'s existing data against **every active regulation simultaneously** — EU CSDDD, EU FLR, EUDR, UFLPA, UK Modern Slavery Act, German LkSG — and shows gaps per supplier.
 
 | | |
 |---|---|
@@ -47,7 +47,7 @@ Move from "AI suggests" to "AI acts with approval." Create task-specific AI agen
 |---|---|
 | **Why Now?** | Gartner predicts **40% of enterprise apps will have task-specific AI agents by end of 2026** (up from <5% in 2025). [Deloitte calls agentic AI the defining enterprise trend](https://www.deloitte.com/us/en/insights/industry/technology/technology-media-and-telecom-predictions/2026/saas-ai-agents.html). Wovo already has all the building blocks (guidance, draft responses, risk calculation, alerts) — they just aren't chained autonomously. |
 | **Data** | All existing modules — the agent orchestrates across Connect, Engage, Educate |
-| **How** | Vercel AI SDK v6 tool-calling + Wovo's existing API routes as "tools" the agent can invoke. Bounded autonomy: agent proposes multi-step action plan, human approves/rejects. |
+| **How** | Vercel AI SDK v6 tool-calling + WOVO+'s existing API routes as "tools" the agent can invoke. Bounded autonomy: agent proposes multi-step action plan, human approves/rejects. |
 | **End-User Value** | Transforms Wovo from "a platform I check" to "a platform that works for me." Could reduce case-to-resolution time by **50%+**. |
 | **Impact** | ⭐⭐⭐⭐⭐ | **Effort** | ⭐⭐⭐⭐ |
 
@@ -124,7 +124,7 @@ Give suppliers their own dashboard showing their risk score, recommended actions
 
 **"The EU Commission just flagged 'cotton from Region X' as high forced-labour risk — 4 of your suppliers source from there. Here's what you need to do."**
 
-Auto-ingest the EU Commission's Forced Labour Risk Database (launching June 2026) and cross-reference it against Wovo's supplier data to **instantly flag affected suppliers**, products, and regions.
+Auto-ingest the EU Commission's Forced Labour Risk Database (launching June 2026) and cross-reference it against WOVO+'s supplier data to **instantly flag affected suppliers**, products, and regions.
 
 | | |
 |---|---|
@@ -172,7 +172,7 @@ Anonymous, aggregated benchmarking across the entire Wovo platform — letting b
 
 | | |
 |---|---|
-| **Why Now?** | Benchmarking is the **#1 requested feature** in compliance platforms per industry surveys. It turns Wovo's multi-tenant data into a **network effect moat** — the more clients use Wovo, the richer the benchmarks. No competitor can replicate this without equivalent data scale. The [SCRM market approaching $3B](https://www.z2data.com/insights/top-7-supply-chain-risk-management-software-tools-for-2026) means differentiation is critical. |
+| **Why Now?** | Benchmarking is the **#1 requested feature** in compliance platforms per industry surveys. It turns WOVO+'s multi-tenant data into a **network effect moat** — the more clients use Wovo, the richer the benchmarks. No competitor can replicate this without equivalent data scale. The [SCRM market approaching $3B](https://www.z2data.com/insights/top-7-supply-chain-risk-management-software-tools-for-2026) means differentiation is critical. |
 | **Data** | Aggregated (anonymized): case resolution times, risk scores, survey sentiment, training completion rates across all Wovo clients. Segmented by `Company.MailingCountry`, `CaseType`, factory size |
 | **How** | Anonymized aggregation layer across clients. Percentile rankings ("you're in the top 20% for case resolution"). AI-generated "what top performers do differently" insights derived from case playbook patterns. |
 | **End-User Value** | Answers the question every compliance manager asks: **"Is this normal, or is my supplier an outlier?"** Creates the data network effect that makes Wovo irreplaceable. |
