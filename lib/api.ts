@@ -29,6 +29,7 @@ import {
   DemoUser,
   RegionalInsightsResponse,
   FrameworkOverview,
+  FrameworkDetail,
   SupplierComplianceSummary,
 } from "@/types";
 
@@ -578,7 +579,7 @@ export async function fetchFrameworks(): Promise<FrameworkOverview[]> {
   return res.json();
 }
 
-export async function fetchFramework(id: number) {
+export async function fetchFramework(id: number): Promise<FrameworkDetail> {
   const res = await fetch(`${API_BASE}/regulatory/frameworks/${id}`);
   if (!res.ok) throw new Error("Failed to fetch framework detail");
   return res.json();

@@ -5,7 +5,7 @@ import {
   frameworkRequirements,
   supplierFrameworkCompliance,
 } from "@/lib/db/schema";
-import { eq, sql, count } from "drizzle-orm";
+import { eq, count } from "drizzle-orm";
 import { logger } from "@/lib/logger";
 
 export async function GET() {

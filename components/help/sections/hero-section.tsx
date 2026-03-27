@@ -1,12 +1,12 @@
+import { createElement } from "react";
 import { resolveIcon } from "../icon-map";
 import type { HeroSection } from "../types";
 
 export function HeroSectionRenderer({ title, subtitle, icon }: HeroSection) {
-  const Icon = resolveIcon(icon);
   return (
     <div className="flex items-start gap-4">
       <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400">
-        <Icon className="size-6" />
+        {createElement(resolveIcon(icon), { className: "size-6" })}
       </div>
       <div>
         <h3 className="text-base font-semibold text-foreground">{title}</h3>

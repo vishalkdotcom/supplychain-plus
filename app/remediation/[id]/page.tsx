@@ -117,6 +117,8 @@ export default function RemediationDetailPage({ params }: RemediationDetailPageP
     onError: () => toast.error("Failed to update"),
   });
 
+  const [now] = useState(() => new Date());
+
   if (isNaN(numericId)) return notFound();
 
   if (isLoading) {
@@ -136,9 +138,9 @@ export default function RemediationDetailPage({ params }: RemediationDetailPageP
 
   const link = sourceLink(plan.sourceType, plan.sourceId);
   const days = daysOpen(plan.createdAt, plan.closedAt);
-  const isOverdue = !!(plan.targetDate && new Date(plan.targetDate) < new Date() && plan.status !== "closed");
+  const isOverdue = !!(plan.targetDate && new Date(plan.targetDate) < now && plan.status !== "closed");
   const daysOverdue = isOverdue
-    ? Math.floor((Date.now() - new Date(plan.targetDate!).getTime()) / 86400000)
+    ? Math.floor((now.getTime() - new Date(plan.targetDate!).getTime()) / 86400000)
     : 0;
   const formattedTargetDate = plan.targetDate
     ? new Date(plan.targetDate).toLocaleDateString("en-US", {

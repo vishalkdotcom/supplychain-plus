@@ -57,26 +57,6 @@ function makeSelectPromise(isCount: boolean): typeof selectChain {
   return selectChain;
 }
 
-// insertChain must support .values().returning()
-const insertChain = {
-  values: (_vals: unknown) => ({
-    returning: () =>
-      Promise.resolve(nextInsertRows),
-    // For audit log inserts that don't call .returning():
-    then(resolve: (v: unknown) => void, _reject: (e: unknown) => void) {
-      resolve(undefined);
-    },
-  }),
-};
-
-// updateChain supports .set().where().returning()
-const updateChain = {
-  set: (_updates: unknown) => ({
-    where: (_cond: unknown) => ({
-      returning: () => Promise.resolve(nextUpdateRows),
-    }),
-  }),
-};
 
 const mockDb = {
   select: (fields?: unknown) => {

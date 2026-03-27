@@ -11,7 +11,7 @@ import type {
   ContextualSilenceAlert,
   RegionalClusterOverlap,
 } from "@/lib/db/schema";
-import { sql, isNull, eq } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import { logger } from "@/lib/logger";
 import type { JobResult } from "./types";
 

@@ -71,7 +71,7 @@ export default function FrameworkDetailPage({ params }: PageProps) {
   const { framework, requirements, suppliers } = data;
 
   const totalSuppliers = suppliers.length;
-  const compliantCount = suppliers.filter((s: any) => s.status === "compliant").length;
+  const compliantCount = suppliers.filter((s) => s.status === "compliant").length;
   const complianceRate = totalSuppliers > 0 ? Math.round((compliantCount / totalSuppliers) * 100) : 0;
 
   return (
@@ -206,7 +206,7 @@ export default function FrameworkDetailPage({ params }: PageProps) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {suppliers.map((s: any) => {
+                  {suppliers.map((s) => {
                     const badge = STATUS_BADGE[s.status] ?? STATUS_BADGE.not_assessed;
                     return (
                       <TableRow key={s.supplierId}>

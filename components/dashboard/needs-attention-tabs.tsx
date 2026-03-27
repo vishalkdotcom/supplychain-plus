@@ -16,7 +16,6 @@ import {
   IconAlertTriangle,
   IconTrendingUp,
   IconTrendingDown,
-  IconArrowRight,
   IconAlertCircle,
   IconInfoCircle,
   IconCheck,

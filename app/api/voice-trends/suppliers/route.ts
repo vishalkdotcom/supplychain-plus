@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db/drizzle";
 import { workerVoiceTrends } from "@/lib/db/schema";
-import { isNotNull, sql } from "drizzle-orm";
+import { isNotNull } from "drizzle-orm";
 
 export async function GET() {
   const rows = await db

@@ -442,7 +442,6 @@ export class RateLimiter {
   async acquire(estimatedTokens: number): Promise<void> {
     await this.ensureDbInit();
 
-    // eslint-disable-next-line no-constant-condition
     while (true) {
       const retryWait = this.retryAfterUntil - Date.now();
       if (retryWait > 0) {

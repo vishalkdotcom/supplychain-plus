@@ -13,7 +13,6 @@ import {
   supplierFrameworkCompliance,
   supplierRiskScores,
 } from "../lib/db/schema";
-import { sql } from "drizzle-orm";
 
 const FRAMEWORKS = [
   {
@@ -93,8 +92,6 @@ const FRAMEWORKS = [
     ],
   },
 ];
-
-const COMPLIANCE_STATUSES = ["compliant", "partial", "non_compliant", "not_assessed"] as const;
 
 async function main() {
   console.log("Seeding regulatory frameworks...");

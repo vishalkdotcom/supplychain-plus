@@ -42,7 +42,7 @@ export function QueueStatusBar({
   data?: QueueStatusData;
   isLoading: boolean;
 }) {
-  const [now, setNow] = useState(Date.now());
+  const [now, setNow] = useState(() => Date.now());
   const hasRunning = (data?.runningCount ?? 0) > 0;
 
   useEffect(() => {

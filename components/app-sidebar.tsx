@@ -17,7 +17,6 @@ import {
   IconShieldCheck,
   IconScale,
   IconSparkles,
-  IconWorld,
 } from "@tabler/icons-react";
 import {
   Sidebar,

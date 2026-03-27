@@ -594,3 +594,19 @@ export interface FrameworkOverview extends RegulatoryFramework {
   };
   requirementCount: number;
 }
+
+export interface FrameworkDetailSupplier {
+  supplierId: string;
+  supplierName: string;
+  status: string;
+  completedRequirements: number;
+  totalRequirements: number;
+  percentage: number;
+  lastAssessedAt: string | null;
+}
+
+export interface FrameworkDetail {
+  framework: RegulatoryFramework;
+  requirements: FrameworkRequirement[];
+  suppliers: FrameworkDetailSupplier[];
+}

@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { fetchRegionalInsights } from "@/lib/api";
-import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import {
   Card,
@@ -40,7 +39,6 @@ import {
 import {
   IconWorld,
   IconAlertTriangle,
-  IconEye,
   IconUsers,
   IconChartBar,
   IconRefresh,
@@ -53,7 +51,6 @@ import {
   IconSparkles,
 } from "@tabler/icons-react";
 import { DataFreshnessBadge } from "@/components/data-freshness-badge";
-import type { RegionalBenchmark } from "@/types";
 import type {
   RegionalIssuePrevalence,
   PeerComparison,
@@ -409,7 +406,7 @@ function IssueRadarSection({
               </tr>
             </thead>
             <tbody>
-              {issues.map((issue, i) => (
+              {issues.map((issue, _i) => (
                 <tr
                   key={issue.issueType}
                   className="border-b last:border-0 hover:bg-muted/50"
