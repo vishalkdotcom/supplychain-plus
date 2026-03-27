@@ -4,22 +4,10 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { HelpButton } from "@/components/help";
 import { fetchBrands } from "@/lib/api";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import {
-  IconBuildingSkyscraper,
-  IconBuilding,
-  IconArrowRight,
-  IconSearch,
-} from "@tabler/icons-react";
+import { IconSearch } from "@tabler/icons-react";
 import { useState } from "react";
-import { getRiskLevel, getRiskBadgeVariant } from "@/lib/risk-utils";
+import { BrandCard } from "@/components/brands/brand-card";
 
 export default function BrandsPage() {
   const [search, setSearch] = useState("");
@@ -61,36 +49,7 @@ export default function BrandsPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {brands?.map((brand) => (
           <Link key={brand.id} href={`/brands/${brand.id}`}>
-            <Card className="hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer group h-full">
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <IconBuildingSkyscraper className="h-5 w-5 text-indigo-500 shrink-0" />
-                  <span className="truncate group-hover:text-indigo-600 transition-colors">
-                    {brand.name}
-                  </span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {brand.country && (
-                  <p className="text-sm text-muted-foreground">{brand.country}</p>
-                )}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                    <IconBuilding className="h-4 w-4" />
-                    <span>{brand.supplierCount} suppliers</span>
-                  </div>
-                  <Badge
-                    variant={getRiskBadgeVariant(getRiskLevel(brand.avgRiskScore))}
-                    className="text-xs"
-                  >
-                    {getRiskLevel(brand.avgRiskScore).toUpperCase()} {brand.avgRiskScore}
-                  </Badge>
-                </div>
-                <div className="flex justify-end">
-                  <IconArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-indigo-500 transition-colors" />
-                </div>
-              </CardContent>
-            </Card>
+            <BrandCard brand={brand} />
           </Link>
         ))}
       </div>

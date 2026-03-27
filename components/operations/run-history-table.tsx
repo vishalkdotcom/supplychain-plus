@@ -32,6 +32,7 @@ interface JobRun {
   durationMs: number | null;
   resultSummary: Record<string, unknown> | null;
   error: string | null;
+  attempt: number;
   createdAt: string;
 }
 
@@ -93,6 +94,7 @@ export function RunHistoryTable({
                 <tr className="border-b text-left text-muted-foreground">
                   <th className="pb-2 pr-4 font-medium">Job</th>
                   <th className="pb-2 pr-4 font-medium">Status</th>
+                  <th className="pb-2 pr-4 font-medium">#</th>
                   <th className="pb-2 pr-4 font-medium">Trigger</th>
                   <th className="pb-2 pr-4 font-medium">Duration</th>
                   <th className="pb-2 font-medium">When</th>
@@ -116,6 +118,13 @@ export function RunHistoryTable({
                           <span className="capitalize">{run.status}</span>
                         </div>
                       </td>
+                      <td className="py-2.5 pr-4 text-muted-foreground">
+                        {run.attempt > 1 ? (
+                          <span className="text-orange-500">#{run.attempt}</span>
+                        ) : (
+                          "#1"
+                        )}
+                      </td>
                       <td className="py-2.5 pr-4">
                         <Badge variant="outline" className="text-[10px]">
                           {run.triggeredBy}
@@ -134,7 +143,7 @@ export function RunHistoryTable({
                     </tr>
                     {expandedId === run.id && (
                       <tr>
-                        <td colSpan={5} className="p-3 bg-muted/30">
+                        <td colSpan={6} className="p-3 bg-muted/30">
                           <div className="text-xs space-y-1">
                             <p>
                               <span className="text-muted-foreground">

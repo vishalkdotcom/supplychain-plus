@@ -14,9 +14,13 @@ export async function GET() {
       requiresOllama: jobQueue.requiresOllama,
       lockedAt: jobQueue.lockedAt,
       queuedAt: jobQueue.createdAt,
+      retryCount: jobQueue.retryCount,
+      maxRetries: jobQueue.maxRetries,
+      timeoutMs: jobQueue.timeoutMs,
+      retryAfter: jobQueue.retryAfter,
     })
     .from(jobQueue)
-    .where(inArray(jobQueue.status, ["waiting", "processing"]))
+    .where(inArray(jobQueue.status, ["waiting", "processing", "retry_pending"]))
     .orderBy(jobQueue.priority, jobQueue.createdAt);
 
   // Get corresponding run info
@@ -38,11 +42,14 @@ export async function GET() {
 
   const running = queue.filter((i) => i.queueStatus === "processing");
   const waiting = queue.filter((i) => i.queueStatus === "waiting");
+  const retrying = queue.filter((i) => i.queueStatus === "retry_pending");
 
   return NextResponse.json({
     running,
     waiting,
+    retrying,
     runningCount: running.length,
     waitingCount: waiting.length,
+    retryingCount: retrying.length,
   });
 }

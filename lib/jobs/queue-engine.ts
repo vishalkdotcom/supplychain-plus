@@ -7,12 +7,15 @@ import {
   type JobType,
   EMBEDDING_JOBS,
   RUN_ALL_ORDER,
+  JOB_TIMEOUTS,
+  JOB_MAX_RETRIES,
+  BASE_RETRY_DELAY_MS,
 } from "./constants";
 import { JOB_REGISTRY } from "./handlers";
 
 const POLL_INTERVAL_MS = 10_000; // 10 seconds
 const SCHEDULE_CHECK_INTERVAL_MS = 60_000; // 60 seconds
-const STALE_LOCK_THRESHOLD_MS = 30 * 60 * 1000; // 30 minutes
+const STALE_LOCK_THRESHOLD_MS = 20 * 60 * 1000; // 20 min safety net (per-job timeouts catch hangs faster)
 
 let pollerInterval: ReturnType<typeof setInterval> | null = null;
 let scheduleInterval: ReturnType<typeof setInterval> | null = null;
@@ -40,6 +43,9 @@ export async function enqueueJob(
     priority,
     requiresOllama: EMBEDDING_JOBS.has(jobType),
     status: "waiting",
+    retryCount: 0,
+    maxRetries: JOB_MAX_RETRIES[jobType] ?? 2,
+    timeoutMs: JOB_TIMEOUTS[jobType] ?? 10 * 60_000,
   });
 
   logger.info("jobs/queue", `Enqueued ${jobType} (run #${run.id})`);
@@ -70,8 +76,16 @@ export async function cancelJob(jobRunId: number): Promise<boolean> {
     .where(eq(jobRuns.id, jobRunId))
     .limit(1);
 
-  if (!run || (run.status !== "queued" && run.status !== "running")) {
-    return false;
+  if (!run || !["queued", "running"].includes(run.status)) {
+    // Also check if the queue item is retry_pending (cancel prevents further retries)
+    const [queueItem] = await db
+      .select()
+      .from(jobQueue)
+      .where(eq(jobQueue.jobRunId, jobRunId))
+      .limit(1);
+    if (!queueItem || queueItem.status !== "retry_pending") {
+      return false;
+    }
   }
 
   await db
@@ -94,7 +108,18 @@ export async function cancelJob(jobRunId: number): Promise<boolean> {
  */
 async function pollQueue(): Promise<void> {
   try {
-    // Reset stale locks (jobs that crashed)
+    // Promote retry-pending jobs whose backoff has elapsed
+    await db
+      .update(jobQueue)
+      .set({ status: "waiting" })
+      .where(
+        and(
+          eq(jobQueue.status, "retry_pending"),
+          lte(jobQueue.retryAfter, new Date()),
+        ),
+      );
+
+    // Reset stale locks (jobs that crashed — safety net above per-job timeouts)
     await db
       .update(jobQueue)
       .set({ status: "waiting", lockedAt: null })
@@ -110,7 +135,8 @@ async function pollQueue(): Promise<void> {
 
     // Pick the next waiting job using FOR UPDATE SKIP LOCKED
     const result = await client`
-      SELECT jq.id as queue_id, jq.job_run_id, jq.job_type, jq.requires_ollama
+      SELECT jq.id as queue_id, jq.job_run_id, jq.job_type, jq.requires_ollama,
+             jq.timeout_ms, jq.retry_count, jq.max_retries
       FROM job_queue jq
       WHERE jq.status = 'waiting'
       ORDER BY jq.priority ASC, jq.created_at ASC
@@ -140,7 +166,8 @@ async function pollQueue(): Promise<void> {
       .where(eq(jobQueue.id, item.queue_id));
 
     // Execute the job directly via the handler registry (no HTTP fetch)
-    const handler = JOB_REGISTRY[item.job_type as JobType];
+    const jobType = item.job_type as JobType;
+    const handler = JOB_REGISTRY[jobType];
     if (!handler) {
       logger.error("jobs/queue", `No handler registered for job type: ${item.job_type}`);
       await db.update(jobRuns)
@@ -158,25 +185,84 @@ async function pollQueue(): Promise<void> {
       .where(eq(jobRuns.id, item.job_run_id));
 
     const startTime = Date.now();
+    const timeoutMs = item.timeout_ms ?? JOB_TIMEOUTS[jobType] ?? 10 * 60_000;
 
-    // Fire the job in background — don't block the poller
-    handler().then(async (result) => {
-      const durationMs = Date.now() - startTime;
-      const { success: _, ...resultSummary } = result;
-      await db.update(jobRuns)
-        .set({ status: "completed", completedAt: new Date(), durationMs, resultSummary })
-        .where(eq(jobRuns.id, item.job_run_id));
-      await db.update(jobQueue).set({ status: "done" }).where(eq(jobQueue.id, item.queue_id));
-      logger.info("jobs/queue", `Completed ${item.job_type} (run #${item.job_run_id}) in ${(durationMs / 1000).toFixed(1)}s`);
-    }).catch(async (err) => {
-      const durationMs = Date.now() - startTime;
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      logger.error("jobs/queue", `Failed ${item.job_type} (run #${item.job_run_id})`, err);
-      await db.update(jobRuns)
-        .set({ status: "failed", completedAt: new Date(), durationMs, error: errorMessage })
-        .where(eq(jobRuns.id, item.job_run_id));
-      await db.update(jobQueue).set({ status: "done" }).where(eq(jobQueue.id, item.queue_id));
+    // Wrap execution with a timeout via Promise.race
+    let timer: ReturnType<typeof setTimeout>;
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timer = setTimeout(
+        () => reject(new Error(`Job timed out after ${(timeoutMs / 1000).toFixed(0)}s`)),
+        timeoutMs,
+      );
     });
+
+    Promise.race([handler(), timeoutPromise])
+      .then(async (result) => {
+        clearTimeout(timer);
+        const durationMs = Date.now() - startTime;
+        const { success: _, ...resultSummary } = result;
+        await db.update(jobRuns)
+          .set({ status: "completed", completedAt: new Date(), durationMs, resultSummary })
+          .where(eq(jobRuns.id, item.job_run_id));
+        await db.update(jobQueue).set({ status: "done" }).where(eq(jobQueue.id, item.queue_id));
+        logger.info("jobs/queue", `Completed ${item.job_type} (run #${item.job_run_id}) in ${(durationMs / 1000).toFixed(1)}s`);
+      })
+      .catch(async (err) => {
+        clearTimeout(timer);
+        const durationMs = Date.now() - startTime;
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        logger.error("jobs/queue", `Failed ${item.job_type} (run #${item.job_run_id}): ${errorMessage}`);
+
+        // Mark current run as failed
+        await db.update(jobRuns)
+          .set({ status: "failed", completedAt: new Date(), durationMs, error: errorMessage })
+          .where(eq(jobRuns.id, item.job_run_id));
+
+        // Check if retries are available
+        const retryCount = item.retry_count ?? 0;
+        const maxRetries = item.max_retries ?? JOB_MAX_RETRIES[jobType] ?? 2;
+
+        if (retryCount < maxRetries) {
+          const nextRetry = retryCount + 1;
+          const backoffMs = BASE_RETRY_DELAY_MS * Math.pow(2, retryCount);
+          const retryAfter = new Date(Date.now() + backoffMs);
+
+          // Create a new run for the retry attempt
+          const [retryRun] = await db
+            .insert(jobRuns)
+            .values({
+              jobType: item.job_type,
+              status: "queued",
+              triggeredBy: "manual",
+              attempt: nextRetry + 1,
+            })
+            .returning({ id: jobRuns.id });
+
+          // Update queue item for retry
+          await db
+            .update(jobQueue)
+            .set({
+              status: "retry_pending",
+              jobRunId: retryRun.id,
+              retryCount: nextRetry,
+              retryAfter,
+              lockedAt: null,
+            })
+            .where(eq(jobQueue.id, item.queue_id));
+
+          logger.info(
+            "jobs/queue",
+            `Scheduling retry #${nextRetry} for ${item.job_type} in ${(backoffMs / 1000).toFixed(0)}s (run #${retryRun.id})`,
+          );
+        } else {
+          // Retries exhausted — terminal failure
+          await db.update(jobQueue).set({ status: "done" }).where(eq(jobQueue.id, item.queue_id));
+          logger.warn(
+            "jobs/queue",
+            `Job ${item.job_type} exhausted all ${maxRetries} retries (run #${item.job_run_id})`,
+          );
+        }
+      });
   } catch (error) {
     logger.error("jobs/queue", "Queue poll error", error);
   }

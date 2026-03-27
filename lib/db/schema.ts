@@ -580,6 +580,7 @@ export const jobRuns = pgTable(
     durationMs: integer("duration_ms"),
     resultSummary: jsonb("result_summary").$type<Record<string, unknown>>(),
     error: text("error"),
+    attempt: integer("attempt").default(1).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -622,8 +623,12 @@ export const jobQueue = pgTable(
     jobType: varchar("job_type", { length: 50 }).notNull(),
     priority: integer("priority").default(0).notNull(),
     requiresOllama: boolean("requires_ollama").default(false).notNull(),
-    status: varchar("status", { length: 20 }).notNull().default("waiting"), // waiting, processing, done
+    status: varchar("status", { length: 20 }).notNull().default("waiting"), // waiting, processing, done, retry_pending
     lockedAt: timestamp("locked_at", { withTimezone: true }),
+    retryCount: integer("retry_count").default(0).notNull(),
+    maxRetries: integer("max_retries").default(2).notNull(),
+    timeoutMs: integer("timeout_ms"),
+    retryAfter: timestamp("retry_after", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
