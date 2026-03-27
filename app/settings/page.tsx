@@ -84,7 +84,7 @@ export default function SettingsPage() {
             AI Integrations
           </h1>
           <p className="text-muted-foreground text-sm">
-            Configure API keys and preferred models for Wovo&apos;s intelligent
+            Configure API keys and preferred models for WOVO+ intelligent
             features.
           </p>
         </div>
@@ -103,7 +103,7 @@ export default function SettingsPage() {
                 </AlertDialogTitle>
                 <AlertDialogDescription>
                   This will remove all stored API keys and model preferences
-                  from your browser. Wovo&apos;s AI features will not work until
+                  from your browser. WOVO+ AI features will not work until
                   you configure a provider again. This action cannot be undone.
                 </AlertDialogDescription>
               </AlertDialogHeader>
@@ -142,7 +142,7 @@ export default function SettingsPage() {
           </CardTitle>
           <CardDescription>
             Select a provider to expand its configuration. At least one must be
-            active to power Wovo features.
+            active to power WOVO+ features.
           </CardDescription>
         </CardHeader>
         <CardContent className="p-0">

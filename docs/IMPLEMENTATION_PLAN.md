@@ -1,11 +1,11 @@
-# WOVO Implementation Plan
+# WOVO+ Implementation Plan
 
 > **Created**: 2026-03-19
 > **Strategy**: Wave-based execution — fix data foundations first, then verify cascading resolution, then polish UI, then add features.
 
 ## Executive Summary
 
-48 open issues exist across the WOVO platform. Rather than working linearly, this plan exploits the **dependency graph** — approximately 5 root-cause fixes cascade into resolving or dramatically improving ~20 downstream issues. The plan is organized into 5 waves, each with clear entry/exit criteria.
+48 open issues exist across the WOVO+ platform. Rather than working linearly, this plan exploits the **dependency graph** — approximately 5 root-cause fixes cascade into resolving or dramatically improving ~20 downstream issues. The plan is organized into 5 waves, each with clear entry/exit criteria.
 
 ---
 
@@ -215,7 +215,7 @@ Only after the data foundation is solid. Ordered by demo impact.
 
 | Issue | Title | Demo Value | Effort |
 |-------|-------|-----------|--------|
-| #33 | Remediation workflow UI (alert → plan → evidence) | **Highest** — closes the detect→act→evidence loop, WOVO's core differentiator for regulators | Large | **DONE Session 12** |
+| #33 | Remediation workflow UI (alert → plan → evidence) | **Highest** — closes the detect→act→evidence loop, WOVO+'s core differentiator for regulators | Large | **DONE Session 12** |
 | #34 | Intelligence briefing page — full executive summary | **High** — best "wow factor" for exec demos | Medium | **DONE Session 14** |
 | #36 | Wire AI chat to ML output tables | **High** — makes AI assistant actually useful | Medium | **DONE Session 15** |
 | #56 | Data freshness indicators | **Medium** — small effort, big credibility boost | Small | **DONE Session 13** |

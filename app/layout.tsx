@@ -25,7 +25,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "WOVO AI Control Center",
+  title: "WOVO+ Control Center",
   description: "Cross-module intelligence for supply chain management",
 };
 

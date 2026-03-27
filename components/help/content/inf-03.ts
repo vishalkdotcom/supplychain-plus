@@ -85,7 +85,7 @@ export const inf03: InfoGraphicData = {
       type: "example",
       title: "Real Example: Morning Login Workflow",
       steps: [
-        "Open WOVO \u2192 briefing bar says \u201C3 new systemic patterns detected\u201D",
+        "Open WOVO+ \u2192 briefing bar says \u201C3 new systemic patterns detected\u201D",
         "ML Intelligence card shows cluster details: overtime violations in Bangladesh",
         "Click through to cluster view \u2192 see 47 cases across 12 factories",
         "Investigate root cause \u2192 create remediation plan directly from the cluster",

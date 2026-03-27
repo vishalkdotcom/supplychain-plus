@@ -10,6 +10,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useHelpMode } from "@/hooks/use-help-mode";
+import { ModeToggle } from "@/components/mode-toggle";
 
 export function AppHeader() {
   const { helpMode, toggleHelpMode } = useHelpMode();
@@ -18,6 +19,7 @@ export function AppHeader() {
     <header className="flex items-center justify-between border-b px-4 py-2 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex items-center gap-2">
         <SidebarTrigger className="md:hidden" />
+        <ModeToggle />
         <Tooltip>
           <TooltipTrigger asChild>
             <Button

@@ -1,7 +1,4 @@
 {
-  "worktree": {
-    "symlinkDirectories": ["node_modules"]
-  },
   "hooks": {
     "WorktreeCreate": [
       {
@@ -11,6 +8,12 @@
             "command": "jq -r '.worktree_path' | { read -r wt; cp \"C:/vishal/xp/wovo/.env.local\" \"$wt/.env.local\" 2>/dev/null && echo '{\"systemMessage\": \"Copied .env.local to worktree\"}' || echo '{\"systemMessage\": \"Warning: .env.local not found in main repo\"}'; }",
             "timeout": 30,
             "statusMessage": "Setting up worktree environment..."
+          },
+          {
+            "type": "command",
+            "command": "jq -r '.worktree_path' | { read -r wt; cd \"$wt\" && bun install --frozen-lockfile 2>/dev/null && echo '{\"systemMessage\": \"Installed dependencies in worktree\"}' || echo '{\"systemMessage\": \"Warning: bun install failed — run manually\"}'; }",
+            "timeout": 120,
+            "statusMessage": "Installing dependencies in worktree..."
           }
         ]
       }

@@ -210,6 +210,6 @@ Use the existing multi-language infrastructure (`CultureCode`, `translations_mdl
 ## The Unifying Theme
 
 > [!IMPORTANT]
-> Every single idea follows the same pattern that makes WOVO powerful: **take data that exists in siloed tables → connect it across modules with AI → surface insights that no manual process could produce at scale.**
+> Every single idea follows the same pattern that makes WOVO+ powerful: **take data that exists in siloed tables → connect it across modules with AI → surface insights that no manual process could produce at scale.**
 >
 > This is the competitive moat. Clients have their data. They don't have the **cross-database intelligence layer** to make it speak.

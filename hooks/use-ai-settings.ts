@@ -111,7 +111,7 @@ let cachedSettings: AISettingsState = DEFAULT_SETTINGS;
 const getSettings = () => {
   if (typeof window === "undefined") return DEFAULT_SETTINGS;
   
-  const str = localStorage.getItem("wovo_ai_integrations");
+  const str = localStorage.getItem("wovo_plus_integrations");
   if (str === cachedSettingsStr) return cachedSettings;
   
   cachedSettingsStr = str;
@@ -130,12 +130,12 @@ const getSettings = () => {
 const getServerSettings = () => DEFAULT_SETTINGS;
 
 const subscribe = (listener: () => void) => {
-  window.addEventListener("wovo-ai-settings-changed", listener);
+  window.addEventListener("wovo-plus-settings-changed", listener);
   window.addEventListener("storage", (e) => {
-    if (e.key === "wovo_ai_integrations") listener();
+    if (e.key === "wovo_plus_integrations") listener();
   });
   return () => {
-    window.removeEventListener("wovo-ai-settings-changed", listener);
+    window.removeEventListener("wovo-plus-settings-changed", listener);
     window.removeEventListener("storage", listener);
   };
 };
@@ -157,9 +157,9 @@ export function useAISettings() {
   );
 
   const saveSettings = (newSettings: AISettingsState) => {
-    localStorage.setItem("wovo_ai_integrations", JSON.stringify(newSettings));
+    localStorage.setItem("wovo_plus_integrations", JSON.stringify(newSettings));
     // Dispatch custom event to notify other instances of the hook
-    window.dispatchEvent(new Event("wovo-ai-settings-changed"));
+    window.dispatchEvent(new Event("wovo-plus-settings-changed"));
   };
 
   const saveProviderConfig = (

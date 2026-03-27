@@ -29,12 +29,12 @@ export function DemoUserProvider({ children }: { children: ReactNode }) {
       .then((data) => {
         setUsers(data);
         // Restore from localStorage
-        const savedId = localStorage.getItem("wovo-demo-user-id");
+        const savedId = localStorage.getItem("wovo-plus-demo-user-id");
         const saved = data.find((u: DemoUser) => u.id === savedId);
         if (saved) setCurrentUserState(saved);
         else if (data.length > 0) {
           setCurrentUserState(data[0]);
-          localStorage.setItem("wovo-demo-user-id", data[0].id);
+          localStorage.setItem("wovo-plus-demo-user-id", data[0].id);
         }
       })
       .catch(() => {});
@@ -42,7 +42,7 @@ export function DemoUserProvider({ children }: { children: ReactNode }) {
 
   function setCurrentUser(user: DemoUser) {
     setCurrentUserState(user);
-    localStorage.setItem("wovo-demo-user-id", user.id);
+    localStorage.setItem("wovo-plus-demo-user-id", user.id);
   }
 
   return (
