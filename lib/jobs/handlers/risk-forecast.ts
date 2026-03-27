@@ -91,7 +91,7 @@ function predictScore(
   const confidence = Math.round((dataDensityBonus + fitBonus) * 100) / 100;
 
   const trend: "rising" | "falling" | "stable" =
-    slope > 0.15 ? "rising" : slope < -0.15 ? "falling" : "stable";
+    slope > 0.3 ? "rising" : slope < -0.3 ? "falling" : "stable";
 
   return { predicted, confidence, trend };
 }
@@ -113,6 +113,8 @@ export async function riskForecast(): Promise<JobResult> {
   const forecastDateStr = forecastDate.toISOString().split("T")[0];
 
   let processed = 0;
+  let llmCalls = 0;
+  let skippedInsufficient = 0;
 
   for (const supplier of suppliers) {
     const history = await db
@@ -122,7 +124,10 @@ export async function riskForecast(): Promise<JobResult> {
       .orderBy(desc(supplierRiskHistory.snapshotDate))
       .limit(180);
 
-    if (history.length < 3) continue;
+    if (history.length < 14) {
+      skippedInsufficient++;
+      continue;
+    }
 
     // Reverse to chronological order (oldest first) for regression
     const chronological = [...history].reverse();
@@ -158,16 +163,20 @@ export async function riskForecast(): Promise<JobResult> {
 
     const trendDirection = riskPred.trend;
 
-    // Generate narrative reasoning with LLM (text only, no structured output)
+    // Generate narrative reasoning — only call LLM for significant changes
     let aiReasoning = `Risk score predicted to ${trendDirection === "rising" ? "increase" : trendDirection === "falling" ? "decrease" : "remain stable"} from ${supplier.riskScore} to ${riskPred.predicted} over 60 days (confidence: ${Math.round(confidence * 100)}%).`;
 
-    try {
-      const result = await generateTextWithFallback({
-        model,
-        maxRetries: 2,
-        system:
-          "You are an expert supply chain risk analyst. Explain a statistical risk forecast in 2-3 sentences. Be concise and actionable. Do not use markdown. /no_think",
-        prompt: `Explain this forecast for supplier "${supplier.supplierName}":
+    const scoreDelta = Math.abs(riskPred.predicted - supplier.riskScore);
+    const shouldCallLLM = scoreDelta > 5 || confidence > 0.5;
+
+    if (shouldCallLLM) {
+      try {
+        const result = await generateTextWithFallback({
+          model,
+          maxRetries: 2,
+          system:
+            "You are an expert supply chain risk analyst. Explain a statistical risk forecast in 2-3 sentences. Be concise and actionable. Do not use markdown. /no_think",
+          prompt: `Explain this forecast for supplier "${supplier.supplierName}":
 
 Current scores → Predicted (60 days):
 - Overall Risk: ${supplier.riskScore} → ${riskPred.predicted} (${trendDirection})
@@ -177,17 +186,19 @@ Current scores → Predicted (60 days):
 
 Confidence: ${Math.round(confidence * 100)}% based on ${history.length} days of data.
 Why might this trend continue or reverse?`,
-      });
+        });
 
-      if (result.text) {
-        aiReasoning = result.text.trim();
+        if (result.text) {
+          aiReasoning = result.text.trim();
+        }
+        llmCalls++;
+      } catch (e) {
+        logger.warn(
+          "jobs/risk-forecast",
+          `LLM reasoning failed for ${supplier.supplierId}, using fallback`,
+          e,
+        );
       }
-    } catch (e) {
-      logger.warn(
-        "jobs/risk-forecast",
-        `LLM reasoning failed for ${supplier.supplierId}, using fallback`,
-        e,
-      );
     }
 
     try {
@@ -222,6 +233,9 @@ Why might this trend continue or reverse?`,
         });
 
       processed++;
+      if (processed % 20 === 0) {
+        logger.info("jobs/risk-forecast", `Progress: ${processed}/${suppliers.length} suppliers forecasted`);
+      }
     } catch (e) {
       logger.error(
         "jobs/risk-forecast",
@@ -231,9 +245,13 @@ Why might this trend continue or reverse?`,
     }
   }
 
+  logger.info("jobs/risk-forecast", `Done: ${processed} forecasted, ${llmCalls} LLM calls, ${skippedInsufficient} skipped (<14 data points)`);
+
   return {
     success: true,
     suppliersForecasted: processed,
+    llmCalls,
+    skippedInsufficient,
     totalSuppliers: suppliers.length,
     forecastDate: forecastDateStr,
   };

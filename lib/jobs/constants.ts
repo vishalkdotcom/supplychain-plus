@@ -62,7 +62,7 @@ export const JOB_TIMEOUTS: Record<JobType, number> = {
   "analyze-surveys": 10 * 60_000,
   "case-clustering": 15 * 60_000,
   "payslip-anomaly": 10 * 60_000,
-  "risk-forecast": 10 * 60_000,
+  "risk-forecast": 30 * 60_000,
   "worker-voice-analytics": 10 * 60_000,
   "regional-benchmarking": 5 * 60_000,
   "generate-briefing": 10 * 60_000,
