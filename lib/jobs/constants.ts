@@ -55,3 +55,32 @@ export const JOB_DESCRIPTIONS: Record<JobType, string> = {
   "generate-briefing": "Aggregate intelligence from all jobs into a daily briefing digest",
   "remediation-evidence-sweep": "Cross-reference resolved cases, training completions, and case volumes against active remediations",
 };
+
+/** Per-job timeout in milliseconds — job is killed if it exceeds this */
+export const JOB_TIMEOUTS: Record<JobType, number> = {
+  "calculate-risk": 5 * 60_000,
+  "analyze-surveys": 10 * 60_000,
+  "case-clustering": 15 * 60_000,
+  "payslip-anomaly": 10 * 60_000,
+  "risk-forecast": 10 * 60_000,
+  "worker-voice-analytics": 10 * 60_000,
+  "regional-benchmarking": 5 * 60_000,
+  "generate-briefing": 10 * 60_000,
+  "remediation-evidence-sweep": 5 * 60_000,
+};
+
+/** Max automatic retries per job type */
+export const JOB_MAX_RETRIES: Record<JobType, number> = {
+  "calculate-risk": 2,
+  "analyze-surveys": 2,
+  "case-clustering": 1, // Ollama resource contention — keep retries low
+  "payslip-anomaly": 2,
+  "risk-forecast": 2,
+  "worker-voice-analytics": 2,
+  "regional-benchmarking": 2,
+  "generate-briefing": 2,
+  "remediation-evidence-sweep": 2,
+};
+
+/** Base delay for exponential backoff: 30s, 60s, 120s … */
+export const BASE_RETRY_DELAY_MS = 30_000;

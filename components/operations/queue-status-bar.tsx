@@ -3,21 +3,27 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { IconLoader2, IconClock } from "@tabler/icons-react";
+import { IconLoader2, IconClock, IconRefresh } from "@tabler/icons-react";
 import { JOB_LABELS } from "@/lib/jobs/constants";
 import type { JobType } from "@/lib/jobs/constants";
 
 interface QueueItem {
   jobType: string;
   queueStatus: string;
+  timeoutMs?: number | null;
+  retryCount?: number;
+  maxRetries?: number;
+  retryAfter?: string | null;
   run?: { startedAt: string };
 }
 
 interface QueueStatusData {
   running: QueueItem[];
   waiting: QueueItem[];
+  retrying?: QueueItem[];
   runningCount: number;
   waitingCount: number;
+  retryingCount?: number;
 }
 
 function formatElapsed(startedAt: string, now: number): string {
@@ -46,7 +52,8 @@ export function QueueStatusBar({
   }, [hasRunning]);
 
   if (isLoading) return <Skeleton className="h-14 w-full" />;
-  if (!data || (data.runningCount === 0 && data.waitingCount === 0))
+  const retryingCount = data?.retryingCount ?? 0;
+  if (!data || (data.runningCount === 0 && data.waitingCount === 0 && retryingCount === 0))
     return null;
 
   return (
@@ -60,7 +67,8 @@ export function QueueStatusBar({
             </span>
             {item.run?.startedAt && (
               <span className="text-muted-foreground">
-                ({formatElapsed(item.run.startedAt, now)})
+                ({formatElapsed(item.run.startedAt, now)}
+                {item.timeoutMs && ` / ${Math.round(item.timeoutMs / 60_000)}m`})
               </span>
             )}
           </div>
@@ -72,6 +80,20 @@ export function QueueStatusBar({
               {data.waitingCount} queued:{" "}
               {data.waiting
                 .map((w) => JOB_LABELS[w.jobType as JobType] ?? w.jobType)
+                .join(", ")}
+            </span>
+          </div>
+        )}
+        {retryingCount > 0 && data.retrying && (
+          <div className="flex items-center gap-2 text-orange-500">
+            <IconRefresh className="h-4 w-4" />
+            <span>
+              {retryingCount} retrying:{" "}
+              {data.retrying
+                .map((r) => {
+                  const label = JOB_LABELS[r.jobType as JobType] ?? r.jobType;
+                  return `${label} (#${(r.retryCount ?? 0) + 1}/${(r.maxRetries ?? 2) + 1})`;
+                })
                 .join(", ")}
             </span>
           </div>

@@ -16,6 +16,7 @@ import {
   IconAlertTriangle,
   IconLoader2,
   IconClock,
+  IconRefresh,
 } from "@tabler/icons-react";
 import {
   JOB_TYPES,
@@ -34,6 +35,7 @@ interface JobRun {
   durationMs: number | null;
   resultSummary: Record<string, unknown> | null;
   error: string | null;
+  attempt: number;
   createdAt: string;
 }
 
@@ -41,11 +43,15 @@ interface QueueItem {
   jobRunId: number;
   jobType: string;
   queueStatus: string;
+  retryCount?: number;
+  maxRetries?: number;
+  retryAfter?: string | null;
 }
 
 interface QueueStatusData {
   running: QueueItem[];
   waiting: QueueItem[];
+  retrying?: QueueItem[];
 }
 
 function formatDuration(ms: number): string {
@@ -85,8 +91,9 @@ function getJobStatus(
   jobType: string,
   runs: JobRun[],
   queueStatus?: QueueStatusData,
-): "running" | "queued" | "completed" | "failed" | "cancelled" | "idle" {
+): "running" | "queued" | "completed" | "failed" | "cancelled" | "idle" | "retry_pending" {
   if (queueStatus?.running.some((r) => r.jobType === jobType)) return "running";
+  if (queueStatus?.retrying?.some((r) => r.jobType === jobType)) return "retry_pending";
   if (queueStatus?.waiting.some((w) => w.jobType === jobType)) return "queued";
   const latest = getLatestRun(runs, jobType);
   if (!latest) return "idle";
@@ -104,6 +111,7 @@ function getQueueRunId(
 ): number | undefined {
   const item =
     queueStatus?.running.find((r) => r.jobType === jobType) ??
+    queueStatus?.retrying?.find((r) => r.jobType === jobType) ??
     queueStatus?.waiting.find((w) => w.jobType === jobType);
   return item?.jobRunId;
 }
@@ -139,6 +147,12 @@ const statusConfig = {
     badge: "secondary" as const,
     label: "Cancelled",
   },
+  retry_pending: {
+    icon: IconRefresh,
+    iconClass: "h-4 w-4 text-orange-500",
+    badge: "secondary" as const,
+    label: "Retrying…",
+  },
   idle: {
     icon: IconClock,
     iconClass: "h-4 w-4 text-muted-foreground",
@@ -168,7 +182,7 @@ export function JobCards({
         const StatusIcon = config.icon;
         const latest = getLatestRun(runs, jobType);
         const queueRunId = getQueueRunId(jobType, queueStatus);
-        const isActive = status === "running" || status === "queued";
+        const isActive = status === "running" || status === "queued" || status === "retry_pending";
 
         return (
           <Card key={jobType} className="relative">
@@ -207,6 +221,11 @@ export function JobCards({
                   {latest.error && (
                     <p className="text-red-500 truncate" title={latest.error}>
                       {latest.error}
+                    </p>
+                  )}
+                  {latest.attempt > 1 && (
+                    <p className="text-orange-500">
+                      Attempt #{latest.attempt}
                     </p>
                   )}
                 </div>
