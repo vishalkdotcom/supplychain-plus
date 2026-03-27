@@ -133,7 +133,7 @@ export interface Survey {
 
 export interface SurveyTheme {
   name: string;
-  sentiment: "positive" | "negative" | "neutral";
+  sentiment: "positive" | "negative" | "neutral" | "mixed";
   mentionCount: number;
 }
 
@@ -430,7 +430,7 @@ export interface CaseContext {
 export interface VoiceTopic {
   name: string;
   mentions: number;
-  sentiment: "positive" | "negative" | "neutral";
+  sentiment: "positive" | "negative" | "neutral" | "mixed";
   delta: number;
 }
 

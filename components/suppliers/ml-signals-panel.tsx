@@ -336,6 +336,7 @@ export function MLSignalsPanel({ supplierId }: MLSignalsPanelProps) {
                                   ? "default"
                                   : "secondary"
                             }
+                            className={topic.sentiment === "mixed" ? "text-amber-600 border-amber-300" : ""}
                           >
                             {topic.name} ({topic.mentions})
                           </Badge>

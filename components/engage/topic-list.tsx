@@ -49,6 +49,10 @@ export function TopicList({ topics, title }: TopicListProps) {
                   <Badge variant="destructive" className="shrink-0">
                     negative
                   </Badge>
+                ) : topic.sentiment === "mixed" ? (
+                  <Badge variant="outline" className="shrink-0 text-amber-600 border-amber-300">
+                    mixed
+                  </Badge>
                 ) : (
                   <Badge variant="outline" className="shrink-0">
                     neutral
