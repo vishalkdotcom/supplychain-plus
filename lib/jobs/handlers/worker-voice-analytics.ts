@@ -97,7 +97,10 @@ function aggregateTopics(
       const negCount = sentiments.filter((s) => s === "negative").length;
       const posCount = sentiments.filter((s) => s === "positive").length;
       const sentiment: VoiceTopic["sentiment"] =
-        negCount > posCount ? "negative" : posCount > negCount ? "positive" : "neutral";
+        negCount > posCount ? "negative"
+        : posCount > negCount ? "positive"
+        : negCount >= 2 ? "mixed"
+        : "neutral";
       return { name, mentions, sentiment, delta: 0 } satisfies VoiceTopic;
     })
     .sort((a, b) => b.mentions - a.mentions);

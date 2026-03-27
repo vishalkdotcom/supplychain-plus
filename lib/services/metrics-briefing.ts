@@ -2,7 +2,7 @@ import { query as sqlQuery, paramQuery as sqlParamQuery } from "@/lib/db/sql-ser
 import mssql from "mssql";
 import { db } from "@/lib/db/drizzle";
 import { supplierRiskScores } from "@/lib/db/schema";
-import { sql } from "drizzle-orm";
+import { sql, inArray } from "drizzle-orm";
 import type { MetricsBriefing, RiskMovement, UrgentCase } from "@/types";
 import { logger } from "@/lib/logger";
 
@@ -64,14 +64,16 @@ export async function getMetricsBriefing(
     `);
 
     if (Array.isArray(movementRes) && movementRes.length > 0) {
-      const scores = await db
+      const supplierIds = movementRes.map((r) => String(r.supplier_id));
+      const nameResults = await db
         .select({
           supplierId: supplierRiskScores.supplierId,
           supplierName: supplierRiskScores.supplierName,
         })
-        .from(supplierRiskScores);
+        .from(supplierRiskScores)
+        .where(inArray(supplierRiskScores.supplierId, supplierIds));
       const nameMap = new Map(
-        scores.map((r) => [r.supplierId, r.supplierName || ""]),
+        nameResults.map((r) => [r.supplierId, r.supplierName || ""]),
       );
 
       for (const row of movementRes) {

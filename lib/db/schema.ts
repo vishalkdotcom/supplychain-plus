@@ -59,7 +59,7 @@ export interface AIGuidanceData {
 export interface VoiceTopic {
   name: string;
   mentions: number;
-  sentiment: "positive" | "negative" | "neutral";
+  sentiment: "positive" | "negative" | "neutral" | "mixed";
   delta: number; // change from previous month
 }
 export interface PayslipAnomalyDetails {

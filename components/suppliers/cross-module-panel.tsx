@@ -154,7 +154,7 @@ export function CrossModulePanel({
                                   ? "secondary"
                                   : "outline"
                               }
-                              className="text-xs"
+                              className={`text-xs ${theme.sentiment === "mixed" ? "text-amber-600 border-amber-300" : ""}`}
                             >
                               {theme.name}
                             </Badge>
