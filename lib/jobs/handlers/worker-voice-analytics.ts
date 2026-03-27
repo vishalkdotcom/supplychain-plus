@@ -3,7 +3,7 @@ import { getJobModel, generateTextWithFallback } from "@/lib/ai/provider";
 import { query as pgQuery } from "@/lib/db/postgres";
 import { db } from "@/lib/db/drizzle";
 import { workerVoiceTrends } from "@/lib/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, lt } from "drizzle-orm";
 import { z } from "zod";
 import type { VoiceTopic } from "@/lib/db/schema";
 import { logger } from "@/lib/logger";
@@ -129,8 +129,8 @@ export async function workerVoiceAnalytics(params?: JobParams): Promise<JobResul
   const limit = typeof params?.limit === "number" ? params.limit : undefined;
   const model = getJobModel();
 
-  // Idempotent: clear previous results
-  await db.delete(workerVoiceTrends);
+  // Record job start so we can prune stale rows after all upserts complete
+  const jobStart = new Date();
 
   // Query survey responses — partition by (supplier, month) to get 50 per bucket
   const responsesResult = await pgQuery(
@@ -292,6 +292,9 @@ export async function workerVoiceAnalytics(params?: JobParams): Promise<JobResul
         },
       });
   }
+
+  // Prune stale rows from previous runs (suppliers/months no longer in source data)
+  await db.delete(workerVoiceTrends).where(lt(workerVoiceTrends.analyzedAt, jobStart));
 
   // Auto-link evidence: satisfaction improvement (negative sentiment drops >15% month-over-month)
   try {

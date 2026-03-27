@@ -81,9 +81,6 @@ export async function payslipAnomaly(params?: { limit?: number }): Promise<JobRe
     return { success: true, message: "No payslip data to analyze" };
   }
 
-  // Clear previous anomalies — job regenerates everything from source data
-  await db.delete(payslipAnomalies);
-
   const anomalies: Array<{
     supplierId: string;
     supplierName: string;
@@ -172,19 +169,37 @@ export async function payslipAnomaly(params?: { limit?: number }): Promise<JobRe
     }
   }
 
-  // Use AI to interpret flagged anomalies (limit controls how many get LLM interpretation)
+  // Use AI to interpret flagged anomalies (limit controls how many get LLM interpretation).
+  // Collect results in memory first, then atomic-swap the table so a mid-run failure
+  // never leaves consumers with an empty table.
   const toProcess = params?.limit ? anomalies.slice(0, params.limit) : anomalies;
-  let savedCount = 0;
+
+  const anomalyRows: Array<{
+    supplierId: string;
+    supplierName: string;
+    anomalyType: string;
+    severity: string;
+    details: typeof anomalies[number]["details"];
+    aiInterpretation: string | null;
+  }> = [];
+  const alertRows: Array<{
+    supplierId: string;
+    supplierName: string;
+    alertType: string;
+    severity: string;
+    title: string;
+    message: string;
+  }> = [];
 
   for (const anomaly of toProcess) {
-    try {
-      const typeLabel =
-        anomaly.anomalyType === "below_minimum"
-          ? "Net pay is below the country minimum wage"
-          : anomaly.anomalyType === "sudden_drop"
-            ? "Net pay dropped more than 20% from previous period"
-            : "Net pay is suspiciously close to gross pay (no deductions)";
+    const typeLabel =
+      anomaly.anomalyType === "below_minimum"
+        ? "Net pay is below the country minimum wage"
+        : anomaly.anomalyType === "sudden_drop"
+          ? "Net pay dropped more than 20% from previous period"
+          : "Net pay is suspiciously close to gross pay (no deductions)";
 
+    try {
       const aiResult = await generateTextWithFallback({
         model,
         maxRetries: 3,
@@ -201,18 +216,17 @@ Workers affected: ${anomaly.details.employeeCount}`,
       const interpretation = aiResult.output;
       const severity = interpretation?.severity || "warning";
 
-      await db.insert(payslipAnomalies).values({
+      anomalyRows.push({
         supplierId: anomaly.supplierId,
         supplierName: anomaly.supplierName,
         anomalyType: anomaly.anomalyType,
         severity,
         details: anomaly.details,
-        aiInterpretation:
-          interpretation?.interpretation || typeLabel,
+        aiInterpretation: interpretation?.interpretation || typeLabel,
       });
 
       if (severity === "critical") {
-        await db.insert(alerts).values({
+        alertRows.push({
           supplierId: anomaly.supplierId,
           supplierName: anomaly.supplierName,
           alertType: "payslip_anomaly",
@@ -223,11 +237,9 @@ Workers affected: ${anomaly.details.employeeCount}`,
             `${typeLabel} — ${anomaly.details.actual} vs expected ${anomaly.details.expected} ${anomaly.details.currency}`,
         });
       }
-
-      savedCount++;
     } catch (e) {
       logger.error("jobs/payslip-anomaly", `Payslip interpretation failed for ${anomaly.supplierName}`, e);
-      await db.insert(payslipAnomalies).values({
+      anomalyRows.push({
         supplierId: anomaly.supplierId,
         supplierName: anomaly.supplierName,
         anomalyType: anomaly.anomalyType,
@@ -235,9 +247,22 @@ Workers affected: ${anomaly.details.employeeCount}`,
         details: anomaly.details,
         aiInterpretation: null,
       });
-      savedCount++;
     }
   }
+
+  // Atomic swap: delete old rows and insert new ones in a single transaction.
+  // If anything fails, the transaction rolls back and previous data remains intact.
+  let savedCount = 0;
+  await db.transaction(async (tx) => {
+    await tx.delete(payslipAnomalies);
+    for (const row of anomalyRows) {
+      await tx.insert(payslipAnomalies).values(row);
+      savedCount++;
+    }
+    for (const alert of alertRows) {
+      await tx.insert(alerts).values(alert);
+    }
+  });
 
   // Auto-link evidence: resolved anomalies for suppliers with active remediations
   try {
