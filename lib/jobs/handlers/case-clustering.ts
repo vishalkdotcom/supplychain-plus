@@ -2,7 +2,7 @@ import { embed, Output } from "ai";
 import { getJobModel, getOllamaEmbedding, generateTextWithFallback } from "@/lib/ai/provider";
 import { query as mssqlQuery } from "@/lib/db/sql-server";
 import { db } from "@/lib/db/drizzle";
-import { caseEmbeddings, caseClusters } from "@/lib/db/schema";
+import { caseEmbeddings, caseClusters, clusterSnapshots } from "@/lib/db/schema";
 import { eq, inArray, isNotNull, sql } from "drizzle-orm";
 import { z } from "zod";
 import { logger } from "@/lib/logger";
@@ -259,6 +259,57 @@ Respond with ONLY this JSON structure:
       clustersCreated++;
     }
   });
+
+  // Step 6: Record daily snapshot for trend history (survives future re-generations)
+  try {
+    const severityCounts = { critical: 0, warning: 0, info: 0 };
+    let totalCases = 0;
+    const allSupplierIds = new Set<string>();
+    const details: Array<{ label: string; severity: string; caseCount: number; supplierCount: number }> = [];
+
+    for (const c of labeledClusters) {
+      const sev = c.severity as keyof typeof severityCounts;
+      if (sev in severityCounts) severityCounts[sev]++;
+      totalCases += c.members.length;
+      c.supplierIds.forEach((id) => allSupplierIds.add(id));
+      details.push({
+        label: c.label,
+        severity: c.severity,
+        caseCount: c.members.length,
+        supplierCount: c.regions.length,
+      });
+    }
+
+    const today = new Date().toISOString().split("T")[0];
+    await db
+      .insert(clusterSnapshots)
+      .values({
+        snapshotDate: today,
+        totalClusters: clustersCreated,
+        critical: severityCounts.critical,
+        warning: severityCounts.warning,
+        info: severityCounts.info,
+        totalCases,
+        totalSuppliers: allSupplierIds.size,
+        clusterDetails: details,
+      })
+      .onConflictDoUpdate({
+        target: [clusterSnapshots.snapshotDate],
+        set: {
+          totalClusters: clustersCreated,
+          critical: severityCounts.critical,
+          warning: severityCounts.warning,
+          info: severityCounts.info,
+          totalCases,
+          totalSuppliers: allSupplierIds.size,
+          clusterDetails: details,
+        },
+      });
+
+    logger.info("jobs/case-clustering", `Snapshot recorded: ${clustersCreated} clusters (${severityCounts.critical}C/${severityCounts.warning}W/${severityCounts.info}I)`);
+  } catch (e) {
+    logger.warn("jobs/case-clustering", "Snapshot recording failed (non-fatal)", e);
+  }
 
   // Auto-link evidence: cluster case count reduction for remediations linked to clusters
   try {
