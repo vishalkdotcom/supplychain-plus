@@ -3,7 +3,7 @@
 ## The Architecture
 
 ```
-5 Databases → ~60 API Routes → React Query Cache → React Components
+5 Databases → ~72 API Routes → React Query Cache → React Components
 ```
 
 No GraphQL, no tRPC, no WebSockets. Plain REST endpoints returning JSON. This is the simplest architecture that works for the problem.
@@ -82,7 +82,9 @@ WHERE ci.client_key IN (
 
 This join traverses the brand→supplier hierarchy in `wovo_new` to find which suppliers belong to the selected brand.
 
-## The 6 Frontend Modules
+## The Frontend Modules
+
+The app has 11 top-level page groups. The core 6 modules (Control Center, Connect, Engage, Educate, Intelligence, Governance) map to the Detect→Act→Evidence loop. Supporting sections (Suppliers, Remediation, AI, Operations, Brands) handle cross-cutting concerns.
 
 ### Control Center (`/`)
 The executive dashboard. Renders `DashboardView` which fetches from `/api/metrics` (hits all 5 DBs), `/api/ml-insights`, `/api/alerts`, `/api/recommendations`. Shows:
@@ -188,4 +190,4 @@ app/api/
   └── jobs/                  trigger, runs/, cancel/, schedules/, queue/status
 ```
 
-~60 route files total. Most follow the REST pattern. The `/api/ai/*` routes handle streaming (for chat) and structured generation (for everything else).
+~72 route files total. Most follow the REST pattern. The `/api/ai/*` routes handle streaming (for chat) and structured generation (for everything else).
