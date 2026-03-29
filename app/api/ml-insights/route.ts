@@ -46,8 +46,9 @@ export async function GET() {
       .from(supplierRiskForecast);
     const totalForecasts = totalForecastResult[0]?.count ?? 0;
 
-    const thirtyDaysFromNow = new Date();
-    thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+    // Forecasts predict 60 days ahead, so look 90 days out to capture them
+    const forecastHorizon = new Date();
+    forecastHorizon.setDate(forecastHorizon.getDate() + 90);
     const risingForecasts = await db
       .select({
         supplierId: supplierRiskForecast.supplierId,
@@ -64,7 +65,7 @@ export async function GET() {
       .where(
         and(
           eq(supplierRiskForecast.trendDirection, "rising"),
-          lte(supplierRiskForecast.forecastDate, thirtyDaysFromNow.toISOString().split("T")[0]),
+          lte(supplierRiskForecast.forecastDate, forecastHorizon.toISOString().split("T")[0]),
         ),
       )
       .orderBy(desc(supplierRiskForecast.predictedRiskScore))

@@ -41,11 +41,15 @@ function extractMonth(dateStr: string): string {
 }
 
 function computeSentimentScore(themes: VoiceTopic[]): number {
-  const total = themes.length;
-  if (total === 0) return 0;
-  const pos = themes.filter((t) => t.sentiment === "positive").length;
-  const neg = themes.filter((t) => t.sentiment === "negative").length;
-  return ((pos - neg) / total) * 100;
+  const totalMentions = themes.reduce((sum, t) => sum + t.mentions, 0);
+  if (totalMentions === 0) return 0;
+  const posMentions = themes
+    .filter((t) => t.sentiment === "positive")
+    .reduce((sum, t) => sum + t.mentions, 0);
+  const negMentions = themes
+    .filter((t) => t.sentiment === "negative")
+    .reduce((sum, t) => sum + t.mentions, 0);
+  return ((posMentions - negMentions) / totalMentions) * 100;
 }
 
 async function analyzeTexts(
