@@ -66,10 +66,10 @@ The LLM response is parsed and validated against a Zod schema:
 
 ```typescript
 const surveyAnalysisSchema = z.object({
-  sentimentPositive: z.number().min(0).max(100),
-  sentimentNegative: z.number().min(0).max(100),
-  sentimentNeutral: z.number().min(0).max(100),
-  riskScore: z.number().min(0).max(100),
+  sentimentPositive: z.number(),
+  sentimentNegative: z.number(),
+  sentimentNeutral: z.number(),
+  riskScore: z.number().min(0).max(100).transform((v) => Math.round(v)),
   themes: z.array(z.object({
     name: z.string(),
     sentiment: z.enum(["positive", "negative", "neutral"]),
@@ -78,6 +78,8 @@ const surveyAnalysisSchema = z.object({
   insight: z.string()
 });
 ```
+
+Note: only `riskScore` has `.min(0).max(100)` constraints with rounding — the sentiment fields are unconstrained numbers because the LLM prompt already instructs 0-100 range. The prompt-level constraint is sufficient; adding Zod constraints would cause valid-but-slightly-out-of-range responses to fail validation unnecessarily.
 
 If the LLM returns invalid JSON or missing fields, the validation catches it and the survey is skipped (logged as a warning, not a failure). This makes the job robust against LLM quirks.
 

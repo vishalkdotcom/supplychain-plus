@@ -39,13 +39,17 @@ Each document below builds your intuition for **one concept**. They're ordered s
 | [04](04-sentiment-and-voice.md) | **Sentiment & Voice Analytics** | Why LLMs work where traditional NLP fails. How temporal trends reveal what's getting worse. Why the system injects positive topics. |
 | [05](05-anomaly-detection.md) | **Anomaly Detection** | When rules beat models. Why minimum wage checks don't need ML. The 10% tolerance trick. |
 | [06](06-forecasting.md) | **Forecasting** | Why linear regression is the right choice for small noisy data. Mean reversion explained. What confidence scores really mean. |
-| [07](07-model-cascade.md) | **Model Cascade & Rate Limiting** | How 11 LLM models fail gracefully. The 4-dimension token bucket. Why rate limits are persisted to the database. |
+| [07](07-model-cascade.md) | **Model Cascade & Rate Limiting** | How 10 LLM models fail gracefully. The 4-dimension token bucket. Why rate limits are persisted to the database. |
 | [08](08-queue-engine.md) | **Queue Engine** | Why serial beats parallel here. FOR UPDATE SKIP LOCKED explained. Stale lock recovery. Exponential backoff. |
 | [09](09-monitoring-signals.md) | **Monitoring Signals** | Detecting trouble by its absence. Why silence is the scariest signal. Regional contagion. Engagement decay. |
 | [10](10-remediation-and-evidence.md) | **Remediation & Evidence** | The forward-only state machine. Auto-evidence: how the system notices when fixes work. Race-safe deduplication. |
 | [11](11-regulatory-compliance.md) | **Regulatory Compliance** | The framework-requirement-evidence chain. How auto-linked evidence generates HRDD reports. |
 | [12](12-ai-assistant.md) | **AI Assistant** | 15 tools, not magic. Why structured tools beat free-text generation. When expert rules beat LLM recommendations. |
 | [13](13-frontend-and-data-flow.md) | **Frontend & Data Flow** | React Query as the only state manager. View scoping. The API layer pattern. |
+| [14](14-genuine-engagement.md) | **Genuine Engagement** | Checkbox compliance vs. real engagement. The 4-dimension radar. What lopsided shapes reveal. |
+| [15](15-ai-copilot.md) | **AI Copilot & Activity** | The passive intelligence feed. Priority cascade for insights. Cross-database activity stream. |
+| [16](16-alerts-system.md) | **Alerts System** | Automated attention routing. Risk threshold alerts. Overdue remediation alerts. The NeedsAttentionTabs widget. |
+| [17](17-dashboard-architecture.md) | **Dashboard Architecture** | How the Control Center composes all modules into one screen. Lazy loading. Data freshness. |
 
 ## The System at a Glance
 

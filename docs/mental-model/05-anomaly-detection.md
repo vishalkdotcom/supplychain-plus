@@ -35,17 +35,28 @@ Payslip checking is this second case. The law defines what "anomalous" means.
 Trigger: NetPay < countryMinimum * 0.9
 ```
 
-Minimum wage is a legal floor. If a worker's net pay is below it, that's potentially illegal regardless of context. The system checks against hardcoded minimums for 18 countries:
+Minimum wage is a legal floor. If a worker's net pay is below it, that's potentially illegal regardless of context. The system checks against hardcoded minimums for 16 countries:
 
-| Country | Minimum | Currency |
-|---------|---------|----------|
-| Vietnam | 4,680,000 | VND |
+| Country | Monthly Minimum | Currency |
+|---------|----------------|----------|
 | Bangladesh | 12,500 | BDT |
-| India | 176 per day (~5,280/mo) | INR |
-| China | 2,590 | CNY |
-| ... | ... | ... |
+| Vietnam | 4,680,000 | VND |
+| Cambodia | 800,000 | KHR |
+| Myanmar | 144,000 | MMK |
+| Indonesia | 2,700,000 | IDR |
+| Thailand | 9,900 | THB |
+| Philippines | 12,000 | PHP |
+| India | 10,000 | INR |
+| China | 2,200 | CNY |
+| Pakistan | 32,000 | PKR |
+| Nepal | 15,000 | NPR |
+| Sri Lanka | 35,000 | LKR |
+| Ethiopia | 3,600 | ETB |
+| Kenya | 15,000 | KES |
+| Mexico | 5,186 | MXN |
+| Turkey | 11,402 | TRY |
 
-**Why hardcoded?** Minimum wages change rarely (annually at most). There are only 18 relevant countries. And the accuracy bar is absolute — a stale database entry could cause a **false negative** on a legal violation. Hardcoding is more reliable than a database that might not be updated.
+**Why hardcoded?** Minimum wages change rarely (annually at most). There are only 16 relevant countries. And the accuracy bar is absolute — a stale database entry could cause a **false negative** on a legal violation. Hardcoding is more reliable than a database that might not be updated.
 
 **The 10% tolerance (0.9 multiplier):** Payslip data is messy:
 - Different pay periods (weekly vs. monthly) need normalization

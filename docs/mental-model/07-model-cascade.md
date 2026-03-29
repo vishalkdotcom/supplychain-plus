@@ -1,4 +1,4 @@
-# Model Cascade & Rate Limiting — How AI Calls Survive the Real World
+# Model Cascade & Rate Limiting — How 10 LLM Models Fail Gracefully
 
 ## The Problem
 
@@ -8,19 +8,29 @@ If you use one provider and hit its rate limit on call #5, the job fails. You've
 
 If you use one expensive provider (OpenAI GPT-4), costs scale with data volume. For a system that runs daily on hundreds of surveys, this isn't sustainable.
 
-## The Cascade: 11 Models, Quality-First Order
+## The Cascade: 10 Models, Quality-First Order
 
-Instead of one model, configure a prioritized list:
+Instead of one model, configure a prioritized list organized in three quality tiers:
 
 ```
-1. Cerebras qwen-3-235b       ← Best quality, free tier
-2. Groq gpt-oss-120b          ← Very good, free tier
-3. Groq llama-3.3-70b         ← Good, free tier
-4. Groq llama-4-scout-17b     ← Decent, free tier
-5. Groq qwen3-32b             ← Decent, free tier
-...8 more models...
-11. Ollama local               ← Always available, smallest
+Tier 1 — Best quality (70B+ parameters)
+  1. Cerebras qwen-3-235b          ← 235B params, free tier
+  2. Groq gpt-oss-120b             ← 120B params, free tier
+  3. Groq llama-3.3-70b            ← 70B params, free tier
+
+Tier 2 — Good quality (17B–32B parameters)
+  4. Groq llama-4-scout-17b        ← 17B params, free tier
+  5. Groq qwen3-32b                ← 32B params, free tier
+  6. Groq kimi-k2-instruct         ← free tier
+  7. Groq gpt-oss-20b              ← 20B params, free tier
+
+Tier 3 — Fast/small (7B–8B parameters)
+  8. Cerebras llama3.1-8b           ← 8B params, free tier
+  9. Groq llama-3.1-8b-instant      ← 8B params, free tier
+ 10. Groq allam-2-7b                ← 7B params, free tier
 ```
+
+Note: Ollama is **not** in the cascade — it's only used for local BGE-M3 embeddings in the clustering job. The cascade exclusively uses cloud-hosted free-tier models.
 
 The cascade tries the best model first. If that fails, it tries the next. This continues until one succeeds or all are exhausted.
 
@@ -148,7 +158,7 @@ The cascade is for background jobs. Interactive chat uses a different setup:
 
 | Feature | Background Jobs | Interactive Chat |
 |---------|----------------|-----------------|
-| Provider selection | Cascade (11 models, auto-fallthrough) | Single provider via `AI_PROVIDER` env var |
+| Provider selection | Cascade (10 models, auto-fallthrough) | Single provider via `AI_PROVIDER` env var |
 | Model quality | Best available at the moment | `model` (fast) or `strongModel` (powerful) |
 | Rate limit handling | Automatic fallthrough | Request-level override via headers |
 | Streaming | No (batch processing) | Yes (token-by-token via Vercel AI SDK) |
