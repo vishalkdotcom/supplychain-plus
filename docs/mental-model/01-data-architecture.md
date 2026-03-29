@@ -63,7 +63,7 @@ The training completion rate for a factory = `completed / enrolled`. This feeds 
 
 Connection: `lib/db/drizzle.ts` using Drizzle ORM + `postgres.js`.
 
-**This is the only database WOVO+ owns.** Every table is defined in `lib/db/schema.ts` (827 lines), managed by Drizzle migrations.
+**This is the only database WOVO+ owns.** Every table is defined in `lib/db/schema.ts` (~826 lines), managed by Drizzle migrations.
 
 What lives here:
 - **Cache layer:** `supplierRiskScores`, `supplierRiskHistory`, `surveyAnalysis`, `caseSummaryCache`

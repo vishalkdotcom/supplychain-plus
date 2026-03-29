@@ -21,7 +21,7 @@ WOVO+ has **no Redux, no Zustand, no MobX, no Context-based stores.** React Quer
 
 ## The API Layer (`lib/api.ts`)
 
-A centralized fetch wrapper with ~40 typed functions:
+A centralized fetch wrapper with ~46 typed functions:
 
 ```typescript
 export async function fetchSuppliers(params: SupplierParams): Promise<PaginatedResponse<Supplier>> {
