@@ -124,7 +124,7 @@ export async function getMetricsBriefing(
         (Date.now() - createdDate.getTime()) / (1000 * 60 * 60 * 24),
       );
       urgentCases.push({
-        id: `CASE-${row.Id}`,
+        id: String(row.Id),
         supplierId: String(row.CompanyId),
         supplierName: row.SupplierName || "Unknown",
         topic: row.Topic || "General",

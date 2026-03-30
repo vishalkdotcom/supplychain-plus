@@ -88,7 +88,7 @@ export async function GET(
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const similarOpenCases = similarRes.recordset.map((r: any) => ({
-      id: `CASE-${r.Id}`,
+      id: String(r.Id),
       topic: r.Topic || "General",
       severity: r.severity,
       status: r.status,

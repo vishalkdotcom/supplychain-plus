@@ -237,7 +237,7 @@ export default function ClusterDetailPage({ params }: ClusterDetailPageProps) {
                         href={`/connect/${c.caseId}`}
                         className="text-primary hover:underline font-medium"
                       >
-                        CASE-{c.caseId}
+                        {c.caseId}
                       </Link>
                     </TableCell>
                     <TableCell>

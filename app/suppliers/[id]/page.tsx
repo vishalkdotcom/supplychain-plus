@@ -171,7 +171,7 @@ export default function SupplierDetailPage({
         for (const c of cases.slice(0, 10)) {
           evidence.push({
             module: "connect",
-            referenceId: `CASE-${c.id}`,
+            referenceId: c.id,
             title: c.topic || "Worker Grievance",
             date: c.createdAt,
             relevance: `${c.severity} severity — ${c.status}`,
