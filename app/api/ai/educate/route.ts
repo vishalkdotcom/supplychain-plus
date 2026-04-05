@@ -5,8 +5,6 @@ import { z } from "zod";
 import { PDFParse } from "pdf-parse";
 import { logger } from "@/lib/logger";
 
-// Force node runtime to support pdf-parse
-export const runtime = "nodejs";
 export const maxDuration = 60; // Allow enough time for parsing and AI generation
 
 const courseSchema = z.object({

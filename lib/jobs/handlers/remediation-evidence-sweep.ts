@@ -1,3 +1,4 @@
+import { invalidateAfterEvidenceSweep } from "@/lib/cache/invalidate";
 import { paramQuery as mssqlParamQuery } from "@/lib/db/sql-server";
 import mssql from "mssql";
 import { query as mysqlQuery } from "@/lib/db/mysql";
@@ -116,6 +117,8 @@ export async function remediationEvidenceSweep(): Promise<JobResult> {
   } catch (e) {
     logger.warn("jobs/remediation-evidence-sweep", "Case volume check failed (non-fatal)", e);
   }
+
+  invalidateAfterEvidenceSweep();
 
   return {
     success: true,

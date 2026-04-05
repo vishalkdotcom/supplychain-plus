@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { invalidateAfterCaseStatusChange } from "@/lib/cache/invalidate";
 import { getPool } from "@/lib/db/sql-server";
 import { logger } from "@/lib/logger";
 
@@ -54,6 +55,7 @@ export async function PATCH(
       `);
 
     logger.info("api/cases/[id]/status", `Case ${id} advanced to ${nextStatus.key}`);
+    invalidateAfterCaseStatusChange();
 
     return NextResponse.json({
       newStatus: nextStatus.key,

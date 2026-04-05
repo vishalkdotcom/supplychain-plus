@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { invalidateAfterRemediationUpdate } from "@/lib/cache/invalidate";
 import { db } from "@/lib/db/drizzle";
 import { remediationPlans, remediationEvidence, remediationAuditLog } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
@@ -187,6 +188,8 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 
       return rows;
     });
+
+    invalidateAfterRemediationUpdate(remediationId, current.supplierId);
 
     return NextResponse.json(result);
   } catch (error) {

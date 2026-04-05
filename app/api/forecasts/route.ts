@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db/drizzle";
-import { supplierRiskForecast } from "@/lib/db/schema";
-import { asc, eq } from "drizzle-orm";
+import { getCachedForecasts } from "@/lib/cache/queries";
 import { logger } from "@/lib/logger";
 
 export async function GET(request: Request) {
@@ -17,13 +15,7 @@ export async function GET(request: Request) {
       );
     }
 
-    const results = await db
-      .select()
-      .from(supplierRiskForecast)
-      .where(eq(supplierRiskForecast.supplierId, supplierId))
-      .orderBy(asc(supplierRiskForecast.forecastDate))
-      .limit(limit);
-
+    const results = await getCachedForecasts(supplierId, limit);
     return NextResponse.json(results);
   } catch (error) {
     logger.error("api/forecasts", "Failed to fetch forecasts", error);

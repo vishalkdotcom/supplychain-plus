@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { invalidateAfterAlertUpdate } from "@/lib/cache/invalidate";
 import { db } from "@/lib/db/drizzle";
 import { alerts, remediationPlans } from "@/lib/db/schema";
 import { desc, eq, and } from "drizzle-orm";
@@ -71,6 +72,8 @@ export async function PATCH(request: Request) {
       .update(alerts)
       .set(updates)
       .where(eq(alerts.id, alertId));
+
+    invalidateAfterAlertUpdate();
 
     return NextResponse.json({ success: true });
   } catch (error) {

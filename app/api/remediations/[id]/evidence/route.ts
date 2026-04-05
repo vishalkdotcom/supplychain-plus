@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
+import { invalidateAfterRemediationUpdate } from "@/lib/cache/invalidate";
 import { db } from "@/lib/db/drizzle";
-import { remediationEvidence, remediationAuditLog } from "@/lib/db/schema";
+import { remediationEvidence, remediationPlans, remediationAuditLog } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { logger } from "@/lib/logger";
 
@@ -45,7 +46,7 @@ export async function POST(request: Request, { params }: RouteParams) {
 
     const actorId = request.headers.get("x-demo-user-id") || "system";
 
-    const [result] = await db.transaction(async (tx) => {
+    const { result, supplierId } = await db.transaction(async (tx) => {
       const rows = await tx
         .insert(remediationEvidence)
         .values({
@@ -68,8 +69,16 @@ export async function POST(request: Request, { params }: RouteParams) {
         actorType: actorId === "system" ? "system" : "user",
       });
 
-      return rows;
+      const [plan] = await tx
+        .select({ supplierId: remediationPlans.supplierId })
+        .from(remediationPlans)
+        .where(eq(remediationPlans.id, remediationId))
+        .limit(1);
+
+      return { result: rows[0], supplierId: plan?.supplierId ?? "" };
     });
+
+    invalidateAfterRemediationUpdate(remediationId, supplierId);
 
     return NextResponse.json(result, { status: 201 });
   } catch (error) {

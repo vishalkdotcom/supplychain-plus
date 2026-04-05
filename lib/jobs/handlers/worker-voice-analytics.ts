@@ -1,5 +1,6 @@
 import { Output } from "ai";
 import { getJobModel, generateTextWithFallback } from "@/lib/ai/provider";
+import { invalidateAfterWorkerVoice } from "@/lib/cache/invalidate";
 import { query as pgQuery } from "@/lib/db/postgres";
 import { db } from "@/lib/db/drizzle";
 import { workerVoiceTrends } from "@/lib/db/schema";
@@ -334,6 +335,8 @@ export async function workerVoiceAnalytics(params?: JobParams): Promise<JobResul
   } catch (e) {
     logger.warn("jobs/worker-voice-analytics", "Auto-evidence linking failed (non-fatal)", e);
   }
+
+  invalidateAfterWorkerVoice();
 
   return {
     success: true,

@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
@@ -50,7 +51,9 @@ export default function RootLayout({
               <DemoUserProvider>
               <ViewProvider>
                 <SidebarProvider>
-                  <AppSidebar />
+                  <Suspense>
+                    <AppSidebar />
+                  </Suspense>
                   <div className="flex flex-1 flex-col overflow-hidden">
                     <AppHeader />
                     <main className="flex-1 overflow-y-auto p-6 md:p-8">

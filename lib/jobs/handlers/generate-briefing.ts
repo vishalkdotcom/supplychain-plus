@@ -1,3 +1,4 @@
+import { invalidateAfterBriefing } from "@/lib/cache/invalidate";
 import { db } from "@/lib/db/drizzle";
 import {
   supplierRiskScores,
@@ -292,6 +293,8 @@ export async function generateBriefing(): Promise<JobResult> {
     briefingId: briefing.id,
     itemCount: attentionItems.length,
   });
+
+  invalidateAfterBriefing();
 
   return {
     success: true,

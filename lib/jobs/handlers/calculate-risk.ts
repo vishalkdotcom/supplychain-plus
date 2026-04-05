@@ -12,6 +12,7 @@ import { query as mysqlQuery } from "@/lib/db/mysql";
 import { eq, and, lt, ne, desc } from "drizzle-orm";
 import { logger } from "@/lib/logger";
 import { computeMonitoringSignals } from "@/lib/jobs/monitoring-signals";
+import { invalidateAfterRiskCalculation } from "@/lib/cache/invalidate";
 import type { JobResult, JobParams } from "./types";
 
 interface SupplierRow {
@@ -470,6 +471,8 @@ export async function calculateRisk(params?: JobParams): Promise<JobResult> {
   } catch (e) {
     logger.warn("jobs/calculate-risk", "Overdue alert check failed (non-fatal)", e);
   }
+
+  invalidateAfterRiskCalculation();
 
   return {
     success: true,

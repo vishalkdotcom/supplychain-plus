@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getPool } from "@/lib/db/sql-server";
+import { mapCaseStatus } from "@/lib/case-utils";
 import { Case } from "@/types";
 import { db } from "@/lib/db/drizzle";
 import { caseSummaryCache } from "@/lib/db/schema";
@@ -65,7 +66,7 @@ export async function GET(
       caseTypeId: row.CaseTypeId ? String(row.CaseTypeId) : undefined,
       severity:
         row.Priority === 1 ? "high" : row.Priority === 2 ? "medium" : "low",
-      status: mapStatus(row.StatusName),
+      status: mapCaseStatus(row.StatusName),
       aiSummary:
         cachedSummary ||
         (row.FirstMessage
@@ -94,15 +95,3 @@ export async function GET(
   }
 }
 
-function mapStatus(status: string): Case["status"] {
-  switch (status?.toLowerCase()) {
-    case "open":
-      return "new";
-    case "in progress":
-      return "in_progress";
-    case "resolved":
-      return "resolved";
-    default:
-      return "new";
-  }
-}

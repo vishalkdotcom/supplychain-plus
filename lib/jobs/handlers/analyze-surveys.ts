@@ -1,5 +1,6 @@
 import { getJobModel, generateTextWithFallback } from "@/lib/ai/provider";
 import { stripThinkingTags } from "@/lib/ai/utils";
+import { invalidateAfterSurveyAnalysis } from "@/lib/cache/invalidate";
 import { db } from "@/lib/db/drizzle";
 import { surveyAnalysis, surveyTemporalPatterns, type SurveyTheme } from "@/lib/db/schema";
 import { query as pgQuery } from "@/lib/db/postgres";
@@ -301,6 +302,8 @@ ${responseText}`,
   } catch (e) {
     logger.warn("jobs/analyze-surveys", "Auto-evidence linking failed (non-fatal)", e);
   }
+
+  invalidateAfterSurveyAnalysis();
 
   return {
     success: true,

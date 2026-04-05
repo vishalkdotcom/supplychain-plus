@@ -1,5 +1,6 @@
 import { Output } from "ai";
 import { getJobModel, generateTextWithFallback } from "@/lib/ai/provider";
+import { invalidateAfterPayslipAnomaly } from "@/lib/cache/invalidate";
 import { query as mssqlQuery } from "@/lib/db/sql-server";
 import { db } from "@/lib/db/drizzle";
 import { payslipAnomalies, alerts } from "@/lib/db/schema";
@@ -298,6 +299,8 @@ Workers affected: ${anomaly.details.employeeCount}`,
   } catch (e) {
     logger.warn("jobs/payslip-anomaly", "Auto-evidence linking failed (non-fatal)", e);
   }
+
+  invalidateAfterPayslipAnomaly();
 
   return {
     success: true,

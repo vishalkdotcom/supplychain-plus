@@ -1,3 +1,4 @@
+import { invalidateAfterBenchmarking } from "@/lib/cache/invalidate";
 import { db } from "@/lib/db/drizzle";
 import {
   supplierRiskScores,
@@ -252,6 +253,8 @@ export async function regionalBenchmarking(): Promise<JobResult> {
 
   const regionsComputed = byRegion.size;
   logger.info(TAG, `Regional benchmarking complete: ${regionsComputed} regions, ${totalSilenceAlerts} contextual silence alerts`);
+
+  invalidateAfterBenchmarking();
 
   return {
     success: true,

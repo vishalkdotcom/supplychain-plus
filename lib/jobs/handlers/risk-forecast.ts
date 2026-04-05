@@ -1,4 +1,5 @@
 import { getJobModel, generateTextWithFallback } from "@/lib/ai/provider";
+import { invalidateAfterForecast } from "@/lib/cache/invalidate";
 import { db } from "@/lib/db/drizzle";
 import {
   supplierRiskScores,
@@ -246,6 +247,9 @@ Why might this trend continue or reverse?`,
   }
 
   logger.info("jobs/risk-forecast", `Done: ${processed} forecasted, ${llmCalls} LLM calls, ${skippedInsufficient} skipped (<14 data points)`);
+
+  const processedSupplierIds = suppliers.map((s) => s.supplierId);
+  invalidateAfterForecast(processedSupplierIds);
 
   return {
     success: true,

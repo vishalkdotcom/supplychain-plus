@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { invalidateAfterRemediationUpdate } from "@/lib/cache/invalidate";
 import { db } from "@/lib/db/drizzle";
 import { remediationPlans, remediationAuditLog } from "@/lib/db/schema";
 import { desc, eq, and, count } from "drizzle-orm";
@@ -105,6 +106,8 @@ export async function POST(request: Request) {
 
       return rows;
     });
+
+    invalidateAfterRemediationUpdate(result.id, supplierId);
 
     return NextResponse.json(result, { status: 201 });
   } catch (error) {

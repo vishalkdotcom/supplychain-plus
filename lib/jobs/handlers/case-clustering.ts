@@ -1,5 +1,6 @@
 import { embed, Output } from "ai";
 import { getJobModel, getOllamaEmbedding, generateTextWithFallback } from "@/lib/ai/provider";
+import { invalidateAfterCaseClustering } from "@/lib/cache/invalidate";
 import { query as mssqlQuery } from "@/lib/db/sql-server";
 import { db } from "@/lib/db/drizzle";
 import { caseEmbeddings, caseClusters, clusterSnapshots } from "@/lib/db/schema";
@@ -340,6 +341,8 @@ Respond with ONLY this JSON structure:
   } catch (e) {
     logger.warn("jobs/case-clustering", "Auto-evidence linking failed (non-fatal)", e);
   }
+
+  invalidateAfterCaseClustering();
 
   return {
     success: true,

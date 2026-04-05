@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { mapCaseStatus } from "@/lib/case-utils";
 import { db } from "@/lib/db/drizzle";
 import { caseClusters, caseEmbeddings } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
@@ -121,7 +122,7 @@ export async function GET(
           companyId,
           companyName,
           caseTypeName: extractEnglishFromMlang(row.CaseTypeName || "General"),
-          status: mapStatus(row.StatusName || ""),
+          status: mapCaseStatus(row.StatusName || ""),
           severity: (row.Priority === 1
             ? "high"
             : row.Priority === 2
@@ -154,15 +155,3 @@ export async function GET(
   }
 }
 
-function mapStatus(status: string): string {
-  switch (status?.toLowerCase()) {
-    case "open":
-      return "new";
-    case "in progress":
-      return "in_progress";
-    case "resolved":
-      return "resolved";
-    default:
-      return "new";
-  }
-}
