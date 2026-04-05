@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["pdf-parse", "mssql"],
+  output: "standalone",
+  serverExternalPackages: ["pdf-parse", "mssql", "mysql2"],
   async headers() {
     return [
       {

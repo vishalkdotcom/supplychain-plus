@@ -1,0 +1,84 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: wovo_mysql
+    restart: unless-stopped
+    platform: linux/amd64
+    mem_limit: 1g
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: iomadprod
+      MYSQL_USER: moodle
+      MYSQL_PASSWORD: moodlepass
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init/mysql:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      retries: 5
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: wovo_postgres
+    restart: unless-stopped
+    mem_limit: 2g
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: pguser
+      POSTGRES_PASSWORD: pgpass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init/postgres:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pguser -d postgres"]
+      interval: 10s
+      retries: 5
+
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: wovo_sqlserver
+    restart: unless-stopped
+    platform: linux/amd64
+    mem_limit: 2500m
+    environment:
+      ACCEPT_EULA: Y
+      SA_PASSWORD: "SqlServer@123!"
+      MSSQL_PID: Developer
+      MSSQL_DATABASE: WOVO
+      MSSQL_MEMORYLIMIT_MB: 1024
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+      - ./init/sqlserver/entrypoint.sh:/entrypoint.sh
+      - ./init/sqlserver/01_schema.sql:/init/01_schema.sql
+      - ./init/sqlserver/02_seed_data.sql:/init/02_seed_data.sql
+    entrypoint: ["/bin/bash", "/entrypoint.sh"]
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'SqlServer@123!' -C -Q 'SELECT 1' -b"]
+      interval: 15s
+      retries: 10
+      start_period: 60s
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: wovo_app
+    restart: unless-stopped
+    mem_limit: 1500m
+    ports:
+      - "3030:3030"
+    env_file:
+      - .env.production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      sqlserver:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+
+volumes:
+  mysql_data:
+  postgres_data:
+  sqlserver_data:

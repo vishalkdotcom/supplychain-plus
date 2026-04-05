@@ -1,0 +1,16 @@
+node_modules
+.next
+.git
+.claude
+.agent
+.agents
+.superpowers
+*.md
+!README.md
+docs
+dumps
+backups
+__tests__
+.env.local
+.env
+logs

@@ -55,3 +55,7 @@ next-env.d.ts
 
 # claude code (machine-local settings)
 .claude/settings.local.json
+
+# deployment artifacts
+dumps/
+.vercel

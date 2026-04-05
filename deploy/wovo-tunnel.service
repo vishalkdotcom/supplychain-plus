@@ -1,0 +1,14 @@
+[Unit]
+Description=Cloudflare Tunnel for WOVO Demo
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+ExecStart=/usr/bin/cloudflared tunnel run wovo-demo
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
