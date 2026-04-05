@@ -7,17 +7,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  IconPlayerPlay,
-  IconX,
   IconCheck,
   IconAlertTriangle,
   IconLoader2,
   IconClock,
   IconRefresh,
+  IconX,
 } from "@tabler/icons-react";
+import { ScheduledOnlyButton } from "@/components/operations/scheduled-only-button";
 import {
   JOB_TYPES,
   JOB_LABELS,
@@ -105,17 +104,6 @@ function getJobStatus(
   return "idle";
 }
 
-function getQueueRunId(
-  jobType: string,
-  queueStatus?: QueueStatusData,
-): number | undefined {
-  const item =
-    queueStatus?.running.find((r) => r.jobType === jobType) ??
-    queueStatus?.retrying?.find((r) => r.jobType === jobType) ??
-    queueStatus?.waiting.find((w) => w.jobType === jobType);
-  return item?.jobRunId;
-}
-
 const statusConfig = {
   running: {
     icon: IconLoader2,
@@ -164,15 +152,9 @@ const statusConfig = {
 export function JobCards({
   runs,
   queueStatus,
-  onTrigger,
-  onCancel,
-  isTriggering,
 }: {
   runs: JobRun[];
   queueStatus?: QueueStatusData;
-  onTrigger: (jobType: string) => void;
-  onCancel: (runId: number) => void;
-  isTriggering: boolean;
 }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -181,8 +163,6 @@ export function JobCards({
         const config = statusConfig[status];
         const StatusIcon = config.icon;
         const latest = getLatestRun(runs, jobType);
-        const queueRunId = getQueueRunId(jobType, queueStatus);
-        const isActive = status === "running" || status === "queued" || status === "retry_pending";
 
         return (
           <Card key={jobType} className="relative">
@@ -238,26 +218,7 @@ export function JobCards({
                   </Badge>
                 )}
                 <div className="flex-1" />
-                {isActive && queueRunId ? (
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => onCancel(queueRunId)}
-                  >
-                    <IconX className="h-3 w-3 mr-1" />
-                    Cancel
-                  </Button>
-                ) : (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onTrigger(jobType)}
-                    disabled={isTriggering || isActive}
-                  >
-                    <IconPlayerPlay className="h-3 w-3 mr-1" />
-                    Run Now
-                  </Button>
-                )}
+                <ScheduledOnlyButton />
               </div>
             </CardContent>
           </Card>
