@@ -160,6 +160,7 @@ export async function calculateRisk(params?: JobParams): Promise<JobResult> {
     const reasons: RiskReason[] = [];
 
     // --- Case Score (from batched SQL Server data) ---
+    // Blends ratio-based severity with volume-based urgency
     let caseScore = 0;
     const caseRow = caseStatsMap.get(supplier.client_key);
     if (caseRow) {
@@ -168,10 +169,10 @@ export async function calculateRisk(params?: JobParams): Promise<JobResult> {
       const openCases = caseRow.open_cases || 0;
 
       if (total > 0) {
-        caseScore = Math.min(
-          100,
-          Math.round((highPriority / total) * 60 + (openCases / total) * 40),
-        );
+        const ratioScore = (highPriority / total) * 60 + (openCases / total) * 40;
+        // Volume boost: more high-priority cases = more urgent, capped at 30 extra
+        const volumeBoost = Math.min(30, highPriority * 5);
+        caseScore = Math.min(100, Math.round(ratioScore + volumeBoost));
       }
       if (highPriority > 2) {
         reasons.push({
@@ -192,13 +193,14 @@ export async function calculateRisk(params?: JobParams): Promise<JobResult> {
     }
 
     // --- Survey Score (from batched PostgreSQL data) ---
+    // Higher score = higher risk. No surveys = blind spot = high risk.
     let surveyScore = 0;
     const surveyRow = surveyStatsMap.get(supplier.client_key);
     if (!surveyRow) {
-      surveyScore = 60; // No engagement = moderate risk
+      surveyScore = 80; // No engagement data = high risk blind spot
       reasons.push({
         factor: "No surveys conducted",
-        impact: "medium",
+        impact: "high",
         description: "No worker sentiment data available for this supplier",
         module: "engage",
       });
@@ -206,15 +208,16 @@ export async function calculateRisk(params?: JobParams): Promise<JobResult> {
       const totalSurveys = parseInt(surveyRow.total) || 0;
       const activeSurveys = parseInt(surveyRow.active) || 0;
       if (totalSurveys === 0) {
-        surveyScore = 60;
+        surveyScore = 80;
         reasons.push({
           factor: "No surveys conducted",
-          impact: "medium",
+          impact: "high",
           description: "No worker sentiment data available for this supplier",
           module: "engage",
         });
       } else {
-        surveyScore = Math.max(0, 50 - activeSurveys * 10);
+        // More active surveys = lower risk; scale 0-80 range
+        surveyScore = Math.max(0, 80 - activeSurveys * 15);
       }
     }
 
@@ -242,11 +245,13 @@ export async function calculateRisk(params?: JobParams): Promise<JobResult> {
     }
 
     // --- Engagement Score ---
+    // Composite measure of how engaged the supplier is across modules
     const engagementScore = Math.round(
-      (caseScore * 0.3 + surveyScore * 0.3 + trainingScore * 0.4) * 0.5,
+      caseScore * 0.3 + surveyScore * 0.3 + trainingScore * 0.4,
     );
 
     // --- Overall Risk Score ---
+    // Weighted blend: cases (35%), surveys (25%), training (25%), engagement (15%)
     const riskScore = Math.min(
       100,
       Math.round(
