@@ -4,10 +4,14 @@ import { model } from "@/lib/ai/provider";
 import { surveyQuestionSchema } from "@/lib/ai/schemas";
 import { SURVEY_GENERATION_PROMPT } from "@/lib/ai/prompts";
 import { logger } from "@/lib/logger";
+import { rejectIfDemoAiOutsideChat } from "@/lib/demo-mode/guards";
 
 export const maxDuration = 60;
 
 export async function POST(request: Request) {
+  const blocked = rejectIfDemoAiOutsideChat("/api/ai/survey");
+  if (blocked) return blocked;
+
   try {
     const { prompt } = await request.json();
 

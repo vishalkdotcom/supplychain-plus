@@ -5,6 +5,7 @@ import { query } from "@/lib/db/postgres";
 import { Brand } from "@/types";
 import { eq, sql } from "drizzle-orm";
 import { logger } from "@/lib/logger";
+import { isDemoMode } from "@/lib/demo-mode/profile";
 
 export async function GET(
   request: Request,
@@ -12,6 +13,40 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+
+    if (isDemoMode()) {
+      const brandRows = await db.execute(sql`
+        SELECT
+          supplier_id as id,
+          supplier_name as name,
+          country
+        FROM supplier_risk_scores
+        WHERE supplier_id = ${id}
+        LIMIT 1
+      `);
+
+      const row = (Array.isArray(brandRows) ? brandRows[0] : null) as
+        | Record<string, unknown>
+        | undefined;
+
+      const [aggregate] = await db
+        .select({
+          supplierCount: sql<number>`count(*)::int`,
+          avgRiskScore: sql<number>`round(avg(${supplierRiskScores.riskScore}))::int`,
+        })
+        .from(supplierRiskScores)
+        .where(eq(supplierRiskScores.parentCompanyId, id));
+
+      const brand: Brand = {
+        id,
+        name: row?.name ? String(row.name) : `Brand ${id}`,
+        country: row?.country ? String(row.country) : undefined,
+        supplierCount: aggregate?.supplierCount ?? 0,
+        avgRiskScore: aggregate?.avgRiskScore ?? 0,
+      };
+
+      return NextResponse.json(brand);
+    }
 
     // Fetch brand info from clients_clientinfo
     const brandInfoResult = await query(

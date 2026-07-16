@@ -2,7 +2,7 @@
 
 ## Why This Exists
 
-Regulations don't just say "find problems." They say **"prove you found problems, prove you fixed them, and show the evidence."** The compliance system turns WOVO+'s intelligence into audit-ready documentation.
+Regulations don't just say "find problems." They say **"prove you found problems, prove you fixed them, and show the evidence."** The compliance system turns SupplyChain+'s intelligence into audit-ready documentation.
 
 ## The Four Frameworks
 

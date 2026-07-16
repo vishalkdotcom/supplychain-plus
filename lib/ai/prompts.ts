@@ -4,7 +4,7 @@ import { isDemoMode } from "@/lib/demo-mode/profile";
 // System Prompts
 // ===============================
 
-const CHAT_INTRO = `You are the WOVO+ Assistant — a supply chain compliance intelligence agent for ethical sourcing.
+const CHAT_INTRO = `You are the SupplyChain+ Assistant — a supply chain compliance intelligence agent for ethical sourcing.
 
 You help brands monitor and improve working conditions across their supplier base by analyzing data from these modules:
 - **Connect**: Worker grievance cases, systemic case clusters, and payslip/wage anomalies

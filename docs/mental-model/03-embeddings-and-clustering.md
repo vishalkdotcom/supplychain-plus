@@ -31,7 +31,7 @@ Now imagine this with **1024 dimensions** instead of 2. You can't visualize it, 
 
 ### BGE-M3: Why This Specific Model?
 
-WOVO+ uses **BGE-M3** via Ollama. BGE-M3 is specifically designed for:
+SupplyChain+ uses **BGE-M3** via Ollama. BGE-M3 is specifically designed for:
 - **Multi-lingual** text (handles Vietnamese, Bengali, etc. natively)
 - **Multi-granularity** (works well on both short and long text)
 - **1024-dimensional** output (rich enough to capture nuance, not so large as to be wasteful)
@@ -47,7 +47,7 @@ Three reasons in order of importance:
 
 ## Concept 2: Cosine Similarity — Measuring Meaning Distance
 
-Once you have vectors, you need to measure "how similar are these two complaints?" There are many distance/similarity metrics. WOVO+ uses **cosine similarity**.
+Once you have vectors, you need to measure "how similar are these two complaints?" There are many distance/similarity metrics. SupplyChain+ uses **cosine similarity**.
 
 ### Why Cosine, Not Euclidean Distance?
 
@@ -67,7 +67,7 @@ The key advantage: **magnitude-invariant**. A short complaint ("no pay") and a l
 
 ### The 0.75 Threshold
 
-WOVO+ considers two complaints "similar" if their cosine similarity exceeds 0.75. This was chosen empirically:
+SupplyChain+ considers two complaints "similar" if their cosine similarity exceeds 0.75. This was chosen empirically:
 - **Too low (e.g., 0.5):** Everything clusters together. "Overtime" and "wages" merge because they're both "labor issues."
 - **Too high (e.g., 0.95):** Only near-identical complaints cluster. You miss the pattern-level grouping.
 - **0.75:** Captures "same topic" while allowing vocabulary and language variation.

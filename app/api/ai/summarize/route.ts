@@ -7,8 +7,12 @@ import { caseSummaryCache } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { stripThinkingTags } from "@/lib/ai/utils";
 import { logger } from "@/lib/logger";
+import { rejectIfDemoAiOutsideChat } from "@/lib/demo-mode/guards";
 
 export async function POST(request: Request) {
+  const blocked = rejectIfDemoAiOutsideChat("/api/ai/summarize");
+  if (blocked) return blocked;
+
   try {
     const { caseId, caseText } = await request.json();
 

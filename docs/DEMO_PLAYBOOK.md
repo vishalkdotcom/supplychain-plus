@@ -1,4 +1,4 @@
-# WOVO+ Demo Playbook
+# SupplyChain+ Demo Playbook
 
 > Live walkthrough guide (20-35 min) with exact data points, URLs, and click paths.
 > Last verified: 2026-03-29
@@ -119,7 +119,7 @@ curl -s http://localhost:3030/api/regulatory/frameworks | python -m json.tool
 4. Click an **ML Insight card** (look for the cluster or anomaly card)
 5. Check the **Needs Attention tabs** — alerts, anomalies, and clusters
 
-**Say:** "It's 9am. Sarah opens WOVO. She didn't search for problems — the system found them overnight. 9 AI batch jobs ran against 4 databases, computed risk scores for all 220 suppliers, embedded 2,000 case messages into vectors, detected wage anomalies across 16 countries, and generated this briefing. All before Sarah's morning coffee."
+**Say:** "It's 9am. Sarah opens SupplyChain+. She didn't search for problems — the system found them overnight. 9 AI batch jobs ran against 4 databases, computed risk scores for all 220 suppliers, embedded 2,000 case messages into vectors, detected wage anomalies across 16 countries, and generated this briefing. All before Sarah's morning coffee."
 
 **Transition:** Click on a supplier from the map or ML Insight card → navigate to supplier detail.
 
@@ -288,7 +288,7 @@ Demo queries (in order):
 
 **Step 3: The Export**
 - Point to the **Export** button on Remediation Plan #1
-- "This generates a PDF evidence package. The complete detect→act→evidence chain for one remediation. When UFLPA asks about forced labor, brands generate this in seconds. Without WOVO? Weeks of manual document assembly."
+- "This generates a PDF evidence package. The complete detect→act→evidence chain for one remediation. When UFLPA asks about forced labor, brands generate this in seconds. Without SupplyChain+? Weeks of manual document assembly."
 
 ---
 
@@ -312,7 +312,7 @@ Demo queries (in order):
 
 - "9 jobs. 4 databases. 220 suppliers. All automatic. The compliance officer reviews the output — the system does the work."
 
-**Close:** "Everything you saw — the risk scores, clusters, anomalies, forecasts, briefings, action recommendations, evidence collection — computed by this pipeline. Sarah's morning took 10 minutes. Without WOVO, that's 10 people and 10 weeks."
+**Close:** "Everything you saw — the risk scores, clusters, anomalies, forecasts, briefings, action recommendations, evidence collection — computed by this pipeline. Sarah's morning took 10 minutes. Without SupplyChain+, that's 10 people and 10 weeks."
 
 ---
 
@@ -366,4 +366,4 @@ Demo queries (in order):
 
 ## The One-Liner
 
-> **"WOVO turns weeks of manual audit preparation into seconds of automated evidence assembly — detecting labor risks across 300+ factories daily and building the regulatory proof trail automatically."**
+> **"SupplyChain+ turns weeks of manual audit preparation into seconds of automated evidence assembly — detecting labor risks across 300+ factories daily and building the regulatory proof trail automatically."**

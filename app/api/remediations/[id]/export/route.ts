@@ -64,7 +64,7 @@ export async function GET(_request: Request, { params }: RouteParams) {
       `${"=".repeat(60)}`,
       ``,
       `Export Date:    ${new Date(exportDate).toLocaleString("en-US")}`,
-      `Platform:       WOVO+ Ethical Supply Chain Intelligence`,
+      `Platform:       SupplyChain+ Ethical Supply Chain Intelligence`,
       ``,
       `REMEDIATION SUMMARY`,
       `${"─".repeat(40)}`,
@@ -94,7 +94,7 @@ export async function GET(_request: Request, { params }: RouteParams) {
       _summary: summaryLines,
       metadata: {
         exportDate,
-        platform: "WOVO+ Ethical Supply Chain Intelligence",
+        platform: "SupplyChain+ Ethical Supply Chain Intelligence",
         version: "1.0",
         remediationId,
       },

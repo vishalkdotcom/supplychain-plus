@@ -41,7 +41,7 @@ export function EvidenceExportHeader({
               Evidence Package
             </h1>
             <p className="text-sm text-slate-500 mt-1">
-              WOVO+ Ethical Supply Chain Intelligence
+              SupplyChain+ Ethical Supply Chain Intelligence
             </p>
           </div>
           <div className="text-right text-sm text-slate-500">

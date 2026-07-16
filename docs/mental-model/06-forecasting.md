@@ -52,7 +52,7 @@ This is the most important step. Without it, forecasts would be absurd.
 
 **The problem:** A supplier with risk increasing at 0.5/day over 180 days would forecast: `current + 0.5*60 = current + 30`. If current is 60, that's 90. But real risk scores don't increase linearly forever — when a factory hits 70+, it gets attention, interventions happen, and risk drops.
 
-**Mean reversion** is the statistical observation that extreme values tend to return toward the average over time. WOVO+ applies it as a weighted blend:
+**Mean reversion** is the statistical observation that extreme values tend to return toward the average over time. SupplyChain+ applies it as a weighted blend:
 
 ```
 prediction = rawPrediction * 0.7 + historicalAverage * 0.3

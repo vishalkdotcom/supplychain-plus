@@ -242,7 +242,7 @@ export function AIProviderRow({
                         </AlertDialogTitle>
                         <AlertDialogDescription>
                           Are you sure you want to delete the configuration for{" "}
-                          {provider.name}? WOVO+ features using this provider
+                          {provider.name}? SupplyChain+ features using this provider
                           will stop working.
                         </AlertDialogDescription>
                       </AlertDialogHeader>

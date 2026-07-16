@@ -1,4 +1,4 @@
-# Contributing to WOVO+
+# Contributing to SupplyChain+
 
 ## Development Environment
 

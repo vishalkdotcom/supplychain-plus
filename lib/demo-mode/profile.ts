@@ -54,6 +54,78 @@ const DEMO_ALLOWED_PREFIXES = [
   "/connect/payslip-anomalies/",
 ];
 
+/** Intelligence-first API surface — mirrors page allowlist; deny unlisted paths in Demo Mode. */
+const DEMO_ALLOWED_API_EXACT = new Set([
+  "/api/demo-auth/session",
+  "/api/demo-auth/logout",
+  "/api/metrics",
+  "/api/metrics/briefing",
+  "/api/activities",
+  "/api/recommendations",
+  "/api/ml-insights",
+  "/api/freshness",
+  "/api/alerts",
+  "/api/intelligence",
+  "/api/regional-insights",
+  "/api/monitoring-signals",
+  "/api/brands",
+  "/api/suppliers",
+  "/api/demo-users",
+  "/api/clusters",
+  "/api/clusters/trends",
+  "/api/payslip-anomalies",
+  "/api/payslip-anomalies/trends",
+  "/api/voice-trends",
+  "/api/voice-trends/suppliers",
+  "/api/remediations",
+  "/api/remediations/overdue",
+  "/api/jobs/runs",
+  "/api/jobs/queue/status",
+  "/api/jobs/schedules",
+  "/api/ai/briefing",
+  "/api/ai/playbook",
+  "/api/ai/chat",
+  "/api/ai/chat/history",
+  "/api/ai/chat/sessions",
+  "/api/forecasts",
+  "/api/regulatory/compliance",
+  "/api/regulatory/frameworks",
+]);
+
+const DEMO_ALLOWED_API_PREFIXES = [
+  "/api/brands/",
+  "/api/clusters/",
+  "/api/remediations/",
+  "/api/jobs/runs/",
+  "/api/regulatory/compliance/",
+  "/api/regulatory/frameworks/",
+];
+
+const DEMO_BLOCKED_API_PREFIXES = [
+  "/api/cases",
+  "/api/surveys",
+  "/api/courses",
+  "/api/timeline",
+  "/api/ai/educate",
+  "/api/ai/translate",
+  "/api/ai/draft-response",
+  "/api/ai/guidance",
+  "/api/ai/summarize",
+  "/api/ai/survey",
+  "/api/ai/reports",
+  "/api/ai/remediation-root-cause",
+  "/api/jobs/trigger",
+  "/api/jobs/cancel",
+  "/api/jobs/calculate-risk",
+  "/api/jobs/case-clustering",
+  "/api/jobs/worker-voice-analytics",
+  "/api/jobs/regional-benchmarking",
+  "/api/jobs/risk-forecast",
+  "/api/jobs/generate-briefing",
+  "/api/jobs/payslip-anomaly",
+  "/api/jobs/analyze-surveys",
+];
+
 function isTruthyEnv(value: string | undefined): boolean {
   return value === "true" || value === "1";
 }
@@ -149,6 +221,37 @@ export function isRouteAllowed(pathname: string): boolean {
   return evaluateDemoRoutePolicy(pathname);
 }
 
+function isSupplierApiAllowed(path: string): boolean {
+  if (!path.startsWith("/api/suppliers/")) return false;
+  if (path.endsWith("/training") || path.includes("/training/")) return false;
+  return true;
+}
+
+export function evaluateDemoApiPolicy(pathname: string): boolean {
+  const path = normalizePathname(pathname);
+
+  if (DEMO_BLOCKED_API_PREFIXES.some((prefix) => path.startsWith(prefix))) {
+    return false;
+  }
+
+  if (DEMO_ALLOWED_API_EXACT.has(path)) return true;
+
+  if (isSupplierApiAllowed(path)) return true;
+
+  return DEMO_ALLOWED_API_PREFIXES.some((prefix) => path.startsWith(prefix));
+}
+
+export function isApiAllowed(pathname: string): boolean {
+  if (!isDemoMode()) return true;
+  return evaluateDemoApiPolicy(pathname);
+}
+
+/** AI POST routes outside the main chat story — blocked to protect LLM quota in Demo Mode. */
+export function isAiChatRoute(pathname: string): boolean {
+  const path = normalizePathname(pathname);
+  return path === "/api/ai/chat" || path.startsWith("/api/ai/chat/");
+}
+
 export function isToolAllowed(toolName: string): boolean {
   if (!isDemoMode()) return true;
   if (DEMO_BLOCKED_TOOLS.has(toolName)) return false;
@@ -179,5 +282,8 @@ export const demoModeProfile = {
   normalizePathname,
   evaluateDemoRoutePolicy,
   isRouteAllowed,
+  evaluateDemoApiPolicy,
+  isApiAllowed,
+  isAiChatRoute,
   isToolAllowed,
 };

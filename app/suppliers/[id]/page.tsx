@@ -52,6 +52,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useQuery } from "@tanstack/react-query";
 import { fetchSupplier, fetchSupplierHistory, fetchCases, fetchSurveys, fetchRecommendations, fetchTimeline, fetchTraining, fetchBrands } from "@/lib/api";
+import { isDemoMode } from "@/lib/demo-mode/profile";
 import { Case, Survey, AIRecommendation, EvidenceLink } from "@/types";
 import { SupplierHero } from "@/components/suppliers/supplier-hero";
 import { toast } from "sonner";
@@ -64,6 +65,7 @@ export default function SupplierDetailPage({
   params,
 }: SupplierDetailPageProps) {
   const { id } = use(params);
+  const demoMode = isDemoMode();
   
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const [regulatoryFramework, setRegulatoryFramework] = useState("csddd");
@@ -79,11 +81,13 @@ export default function SupplierDetailPage({
   const { data: allCasesRes } = useQuery({
     queryKey: ["cases", id],
     queryFn: () => fetchCases({ supplierId: id }),
+    enabled: !demoMode,
   });
 
   const { data: allSurveysRes } = useQuery({
     queryKey: ["surveys", id],
     queryFn: () => fetchSurveys({ supplierId: id }),
+    enabled: !demoMode,
   });
 
   const { data: recommendations } = useQuery<AIRecommendation[]>({
@@ -94,11 +98,13 @@ export default function SupplierDetailPage({
   const { data: timeline } = useQuery({
     queryKey: ["timeline", id],
     queryFn: () => fetchTimeline(id),
+    enabled: !demoMode,
   });
 
   const { data: training } = useQuery({
     queryKey: ["training", id],
     queryFn: () => fetchTraining(id),
+    enabled: !demoMode,
   });
 
   const { data: riskHistory } = useQuery({

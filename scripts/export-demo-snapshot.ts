@@ -73,7 +73,7 @@ async function main() {
   console.log("Exporting demo snapshot from wovo_ai...\n");
 
   const parts: string[] = [
-    "-- WOVO Demo Snapshot",
+    "-- SupplyChain+ Demo Snapshot",
     `-- Exported: ${new Date().toISOString()}`,
     "-- Load this on the VM after Drizzle schema push (bun run db:push)",
     "",

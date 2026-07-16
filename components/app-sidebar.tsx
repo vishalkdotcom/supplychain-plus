@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/collapsible";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { DemoLogoutButton } from "@/components/demo-logout-button";
 import { DemoUserSelector } from "@/components/demo-user-selector";
 
 const DEMO_BLOCKED_URLS = new Set(["/connect", "/engage", "/educate"]);
@@ -141,12 +142,12 @@ export function AppSidebar({
               <Link href="/">
                 <Image
                   src="/logo-mark.svg"
-                  alt="WOVO+"
+                  alt="SupplyChain+"
                   width={32}
                   height={32}
                   className="rounded-lg"
                 />
-                <span className="font-semibold text-indigo-900 dark:text-indigo-100">WOVO<span className="text-indigo-500 dark:text-indigo-400">+</span></span>
+                <span className="font-semibold text-indigo-900 dark:text-indigo-100">SupplyChain<span className="text-indigo-500 dark:text-indigo-400">+</span></span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -334,6 +335,11 @@ export function AppSidebar({
           <SidebarMenuItem>
             <DemoUserSelector />
           </SidebarMenuItem>
+          {demoMode ? (
+            <SidebarMenuItem>
+              <DemoLogoutButton />
+            </SidebarMenuItem>
+          ) : null}
         </SidebarMenu>
       </SidebarFooter>
       <SidebarRail />

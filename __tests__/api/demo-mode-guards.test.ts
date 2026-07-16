@@ -86,11 +86,14 @@ mock.module("@/lib/db/sql-server", () => ({
 // ---------------------------------------------------------------------------
 
 import {
+  rejectIfDemoAiOutsideChat,
+  rejectIfDemoApiNotAllowed,
   rejectIfDemoJobExecution,
   rejectIfDemoMutation,
 } from "@/lib/demo-mode/guards";
 import { POST as remediationsPost } from "@/app/api/remediations/route";
 import { PATCH as remediationsPatch } from "@/app/api/remediations/[id]/route";
+import { POST as draftResponsePost } from "@/app/api/ai/draft-response/route";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -184,6 +187,41 @@ describe("demo mode guard helpers", () => {
     delete process.env.DEMO_MODE;
     expect(rejectIfDemoJobExecution()).toBeNull();
   });
+
+  test("rejectIfDemoApiNotAllowed returns 403 for source-backed APIs in demo mode", async () => {
+    process.env.DEMO_MODE = "true";
+
+    const blocked = rejectIfDemoApiNotAllowed("/api/cases");
+    expect(blocked).not.toBeNull();
+    expect(blocked!.status).toBe(403);
+    const json = await blocked!.json();
+    expect(json.error).toBe("Not available in Demo Mode");
+  });
+
+  test("rejectIfDemoApiNotAllowed returns null for allowed APIs in demo mode", () => {
+    process.env.DEMO_MODE = "true";
+    expect(rejectIfDemoApiNotAllowed("/api/clusters")).toBeNull();
+  });
+
+  test("rejectIfDemoApiNotAllowed returns null when demo mode is off", () => {
+    delete process.env.DEMO_MODE;
+    expect(rejectIfDemoApiNotAllowed("/api/cases")).toBeNull();
+  });
+
+  test("rejectIfDemoAiOutsideChat returns 403 for non-chat AI routes in demo mode", async () => {
+    process.env.DEMO_MODE = "true";
+
+    const blocked = rejectIfDemoAiOutsideChat("/api/ai/draft-response");
+    expect(blocked).not.toBeNull();
+    expect(blocked!.status).toBe(403);
+    const json = await blocked!.json();
+    expect(json.error).toBe("AI feature not available in Demo Mode");
+  });
+
+  test("rejectIfDemoAiOutsideChat allows main chat route in demo mode", () => {
+    process.env.DEMO_MODE = "true";
+    expect(rejectIfDemoAiOutsideChat("/api/ai/chat")).toBeNull();
+  });
 });
 
 // ===========================================================================
@@ -236,5 +274,18 @@ describe("demo mode mutation guards", () => {
     const json = await res.json();
     expect(json.error).toBe("Demo Mode is read-only");
     expect(updateCalls).toHaveLength(0);
+  });
+
+  test("POST /api/ai/draft-response returns 403 in demo mode", async () => {
+    process.env.DEMO_MODE = "true";
+
+    const req = makeRequest("POST", "http://localhost/api/ai/draft-response", {
+      caseText: "Worker complaint about wages",
+    });
+    const res = await draftResponsePost(req);
+
+    expect(res.status).toBe(403);
+    const json = await res.json();
+    expect(json.error).toBe("AI feature not available in Demo Mode");
   });
 });

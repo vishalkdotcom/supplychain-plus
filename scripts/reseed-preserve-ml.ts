@@ -428,7 +428,7 @@ async function restoreMlData() {
 
 async function main() {
   console.log("╔══════════════════════════════════════╗");
-  console.log("║  WOVO+ Reseed (ML Data Preserved)    ║");
+  console.log("║  SupplyChain+ Reseed (ML Data Preserved)    ║");
   console.log("╚══════════════════════════════════════╝");
 
   mkdirSync(BACKUP_DIR, { recursive: true });

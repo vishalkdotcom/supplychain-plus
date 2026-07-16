@@ -17,7 +17,8 @@ export async function POST(req: Request) {
   // Validate sessionId format to prevent injection and session hijacking
   const sessionId = rawSessionId && SESSION_ID_PATTERN.test(rawSessionId) ? rawSessionId : undefined;
 
-  // Save the latest user message
+  // Demo Mode: chat history writes are intentionally allowed for shared demo UX.
+  // Session rename/pin remains blocked via PATCH on /api/ai/chat/sessions.
   const latestUserMessage = messages[messages.length - 1];
   if (sessionId && latestUserMessage?.role === "user") {
     const textContent = latestUserMessage.parts

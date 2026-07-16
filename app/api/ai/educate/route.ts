@@ -4,6 +4,7 @@ import { model } from "@/lib/ai/provider";
 import { z } from "zod";
 import { PDFParse } from "pdf-parse";
 import { logger } from "@/lib/logger";
+import { rejectIfDemoAiOutsideChat } from "@/lib/demo-mode/guards";
 
 export const maxDuration = 60; // Allow enough time for parsing and AI generation
 
@@ -22,6 +23,9 @@ const courseSchema = z.object({
 });
 
 export async function POST(request: Request) {
+  const blocked = rejectIfDemoAiOutsideChat("/api/ai/educate");
+  if (blocked) return blocked;
+
   try {
     const formData = await request.formData();
     const file = formData.get("file") as File | null;

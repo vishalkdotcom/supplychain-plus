@@ -1,12 +1,12 @@
-# WOVO+ Mental Model — Start Here
+# SupplyChain+ Mental Model — Start Here
 
-## What Is WOVO+?
+## What Is SupplyChain+?
 
 You're responsible for 300 factories across 15 countries. Each has 500-5000 workers. Workers submit complaints, answer surveys, take training. Every day, new data pours in from all three channels.
 
 Your job: **"Which factories need my attention right now, and why?"**
 
-That's it. Every component in WOVO+ exists to answer some version of this question.
+That's it. Every component in SupplyChain+ exists to answer some version of this question.
 
 The catch: you can't just look at raw data. 300 factories x 3 channels x daily updates = information overload. You need **computed intelligence** — the system does the looking and tells you what it found.
 

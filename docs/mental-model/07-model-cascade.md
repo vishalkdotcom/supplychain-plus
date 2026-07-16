@@ -2,7 +2,7 @@
 
 ## The Problem
 
-WOVO+ background jobs need LLM calls — for sentiment analysis, cluster labeling, anomaly interpretation, forecast reasoning. Each job might need 10-50 LLM calls.
+SupplyChain+ background jobs need LLM calls — for sentiment analysis, cluster labeling, anomaly interpretation, forecast reasoning. Each job might need 10-50 LLM calls.
 
 If you use one provider and hit its rate limit on call #5, the job fails. You've wasted the work from calls 1-4.
 
@@ -101,7 +101,7 @@ Configured limits use 0.8-0.9x of actual limits:
 
 ```
 Groq actual limit: 30,000 TPM
-WOVO+ configured: 30,000 * 0.8 = 24,000 TPM
+SupplyChain+ configured: 30,000 * 0.8 = 24,000 TPM
 ```
 
 Why not use the full limit? Because:
@@ -141,7 +141,7 @@ The rate limiter parses this message to extract the exact wait time (`286229ms`)
 
 ## Token Estimation
 
-Before checking rate limits, you need to estimate how many tokens a request will use. WOVO+ uses:
+Before checking rate limits, you need to estimate how many tokens a request will use. SupplyChain+ uses:
 
 ```typescript
 const inputTokens = Math.ceil(text.length / 3.5);
@@ -150,7 +150,7 @@ const outputTokens = 300; // conservative estimate for structured outputs
 
 **Why 3.5?** Average English text tokenizes to roughly 1 token per 3.5-4 characters. This varies by language and vocabulary, but 3.5 is a reasonable middle ground.
 
-**Why 300 output tokens?** Most WOVO+ LLM calls request structured JSON (sentiment scores, cluster labels, anomaly interpretations). These outputs are typically 100-250 tokens. 300 is a conservative overestimate that leaves headroom.
+**Why 300 output tokens?** Most SupplyChain+ LLM calls request structured JSON (sentiment scores, cluster labels, anomaly interpretations). These outputs are typically 100-250 tokens. 300 is a conservative overestimate that leaves headroom.
 
 ## Interactive Chat vs. Background Jobs
 

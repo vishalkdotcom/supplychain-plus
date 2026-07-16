@@ -1,10 +1,14 @@
 import { streamText } from "ai";
 import { getModelFromRequest } from "@/lib/ai/provider";
 import { logger } from "@/lib/logger";
+import { rejectIfDemoAiOutsideChat } from "@/lib/demo-mode/guards";
 
 export const maxDuration = 30;
 
 export async function POST(request: Request) {
+  const blocked = rejectIfDemoAiOutsideChat("/api/ai/remediation-root-cause");
+  if (blocked) return blocked;
+
   try {
     const { sourceType, sourceContext, supplierInfo, mode } = await request.json();
 

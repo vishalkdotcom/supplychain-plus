@@ -3,10 +3,14 @@ import { generateText } from "ai";
 import { model } from "@/lib/ai/provider";
 import type { RiskReason } from "@/lib/db/schema";
 import { logger } from "@/lib/logger";
+import { rejectIfDemoAiOutsideChat } from "@/lib/demo-mode/guards";
 
 export const maxDuration = 30;
 
 export async function POST(request: Request) {
+  const blocked = rejectIfDemoAiOutsideChat("/api/ai/reports");
+  if (blocked) return blocked;
+
   try {
     const { supplier, regulatoryFramework } = await request.json();
 

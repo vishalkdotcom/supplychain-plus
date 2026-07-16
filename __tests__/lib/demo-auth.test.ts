@@ -5,12 +5,16 @@ import {
   DEMO_SESSION_MAX_AGE_SECONDS,
   getDemoCredentials,
   getSessionSecret,
+  isDemoSessionOperational,
+  isWeakSessionSecret,
+  resolveSessionSecret,
   signSession,
   verifyDemoCredentials,
   verifySession,
 } from "@/lib/demo-mode/session";
 
 const ORIGINAL_ENV = { ...process.env };
+const STRONG_SECRET = "01234567890123456789012345678901";
 
 beforeEach(() => {
   process.env = { ...ORIGINAL_ENV };
@@ -21,14 +25,56 @@ afterEach(() => {
 });
 
 describe("demo auth session", () => {
-  test("uses DEMO_SESSION_SECRET when set", () => {
-    process.env.DEMO_SESSION_SECRET = "test-secret";
-    expect(getSessionSecret()).toBe("test-secret");
+  test("uses DEMO_SESSION_SECRET when set to a strong value", () => {
+    process.env.DEMO_SESSION_SECRET = STRONG_SECRET;
+    expect(getSessionSecret()).toBe(STRONG_SECRET);
   });
 
-  test("falls back to dev session secret", () => {
+  test("falls back to dev session secret outside production demo", () => {
     delete process.env.DEMO_SESSION_SECRET;
+    delete process.env.DEMO_MODE;
+    process.env.NODE_ENV = "test";
+
+    expect(resolveSessionSecret()).toBe("dev-demo-session-secret-change-me");
     expect(getSessionSecret()).toBe("dev-demo-session-secret-change-me");
+  });
+
+  test("treats missing, short, and committed dev secrets as weak", () => {
+    expect(isWeakSessionSecret(undefined)).toBe(true);
+    expect(isWeakSessionSecret("")).toBe(true);
+    expect(isWeakSessionSecret("short-secret")).toBe(true);
+    expect(isWeakSessionSecret("dev-demo-session-secret-change-me")).toBe(true);
+    expect(isWeakSessionSecret(STRONG_SECRET)).toBe(false);
+  });
+
+  test("fails closed in production demo mode without a strong secret", () => {
+    process.env.DEMO_MODE = "true";
+    process.env.NODE_ENV = "production";
+    delete process.env.DEMO_SESSION_SECRET;
+
+    expect(resolveSessionSecret()).toBeNull();
+    expect(isDemoSessionOperational()).toBe(false);
+    expect(() => getSessionSecret()).toThrow(
+      "Demo session secret is missing or too weak for production Demo Mode",
+    );
+  });
+
+  test("fails closed in production demo mode with the committed dev secret", () => {
+    process.env.DEMO_MODE = "true";
+    process.env.NODE_ENV = "production";
+    process.env.DEMO_SESSION_SECRET = "dev-demo-session-secret-change-me";
+
+    expect(resolveSessionSecret()).toBeNull();
+    expect(isDemoSessionOperational()).toBe(false);
+  });
+
+  test("allows strong secrets in production demo mode", () => {
+    process.env.DEMO_MODE = "true";
+    process.env.NODE_ENV = "production";
+    process.env.DEMO_SESSION_SECRET = STRONG_SECRET;
+
+    expect(resolveSessionSecret()).toBe(STRONG_SECRET);
+    expect(isDemoSessionOperational()).toBe(true);
   });
 
   test("reads demo credentials from env", () => {
@@ -58,18 +104,29 @@ describe("demo auth session", () => {
   });
 
   test("signs and verifies a demo session token", async () => {
-    process.env.DEMO_SESSION_SECRET = "roundtrip-secret";
+    process.env.DEMO_SESSION_SECRET = STRONG_SECRET;
 
     const token = await signSession("demo");
-    const session = await verifySession(token);
+    expect(token).not.toBeNull();
+
+    const session = await verifySession(token!);
 
     expect(session).not.toBeNull();
     expect(session?.sub).toBe("demo");
     expect(session?.exp).toBeGreaterThan(session?.iat ?? 0);
   });
 
+  test("does not mint sessions when production demo secret is unavailable", async () => {
+    process.env.DEMO_MODE = "true";
+    process.env.NODE_ENV = "production";
+    delete process.env.DEMO_SESSION_SECRET;
+
+    expect(await signSession("demo")).toBeNull();
+    expect(await verifySession("payload.sig")).toBeNull();
+  });
+
   test("rejects tampered session tokens", async () => {
-    process.env.DEMO_SESSION_SECRET = "roundtrip-secret";
+    process.env.DEMO_SESSION_SECRET = STRONG_SECRET;
 
     const token = await signSession("demo");
     const tampered = `${token}x`;
@@ -78,7 +135,7 @@ describe("demo auth session", () => {
   });
 
   test("rejects expired session tokens", async () => {
-    process.env.DEMO_SESSION_SECRET = "expired-secret";
+    process.env.DEMO_SESSION_SECRET = STRONG_SECRET;
 
     const realNow = Date.now;
     const expiredAt =
@@ -88,7 +145,7 @@ describe("demo auth session", () => {
     try {
       const token = await signSession("demo");
       Date.now = realNow;
-      expect(await verifySession(token)).toBeNull();
+      expect(await verifySession(token!)).toBeNull();
     } finally {
       Date.now = realNow;
     }
@@ -107,5 +164,13 @@ describe("demo auth gate profile integration", () => {
 
     process.env.DEMO_MODE = "true";
     expect(isAuthRequired()).toBe(true);
+  });
+
+  test("does not require demo login when demo mode is off", () => {
+    delete process.env.DEMO_MODE;
+    delete process.env.NEXT_PUBLIC_DEMO_MODE;
+
+    expect(isAuthRequired()).toBe(false);
+    expect(isDemoSessionOperational()).toBe(true);
   });
 });
