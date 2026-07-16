@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { withJobTracking } from "@/lib/jobs/with-job-tracking";
 import { workerVoiceAnalytics } from "@/lib/jobs/handlers/worker-voice-analytics";
 
-export const maxDuration = 600;
+export const maxDuration = 300; // Hobby plan max (jobs blocked in Demo Mode)
 
 async function _postHandler(request: Request) {
   const url = new URL(request.url);
