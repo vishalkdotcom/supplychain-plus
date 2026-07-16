@@ -15,9 +15,66 @@ import { createGroq } from "@ai-sdk/groq";
 import { createCerebras } from "@ai-sdk/cerebras";
 
 // Strip trailing /api from OLLAMA_BASE_URL since the SDK appends it internally
-const ollamaBaseURL = (process.env.OLLAMA_BASE_URL ?? "http://127.0.0.1:11434/api")
-  .replace(/\/api\/?$/, "");
+const ollamaBaseURL = (
+  process.env.OLLAMA_BASE_URL ?? "http://127.0.0.1:11434/api"
+).replace(/\/api\/?$/, "");
 const ollamaProvider = createOllama({ baseURL: ollamaBaseURL });
+
+/**
+ * Cerebras rejects OpenAI-compat `reasoning_content` on assistant history.
+ * Their chat API expects `reasoning` instead (needed for tool loops + multi-turn).
+ * @see https://github.com/vercel/ai/issues/15042
+ */
+function cerebrasFetch(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+): Promise<Response> {
+  if (!init?.body || typeof init.body !== "string") {
+    return fetch(input, init);
+  }
+
+  try {
+    const parsed = JSON.parse(init.body) as {
+      messages?: Array<Record<string, unknown>>;
+    };
+    if (!Array.isArray(parsed.messages)) {
+      return fetch(input, init);
+    }
+
+    parsed.messages = parsed.messages.map((message) => {
+      if (
+        message == null ||
+        typeof message !== "object" ||
+        message.role !== "assistant" ||
+        !("reasoning_content" in message)
+      ) {
+        return message;
+      }
+
+      const { reasoning_content, ...rest } = message;
+      return {
+        ...rest,
+        ...(!("reasoning" in rest) && reasoning_content !== undefined
+          ? { reasoning: reasoning_content }
+          : {}),
+      };
+    });
+
+    return fetch(input, {
+      ...init,
+      body: JSON.stringify(parsed),
+    });
+  } catch {
+    return fetch(input, init);
+  }
+}
+
+function createCerebrasProvider(apiKey?: string) {
+  return createCerebras({
+    apiKey: apiKey ?? process.env.CEREBRAS_API_KEY ?? "",
+    fetch: cerebrasFetch,
+  });
+}
 
 // Middleware to extract <think>...</think> reasoning from NIM models
 // into a separate `reasoning` field, keeping `text` clean.
@@ -27,7 +84,7 @@ const thinkingMiddleware = extractReasoningMiddleware({
 });
 
 // ─── Switch providers by changing AI_PROVIDER in .env.local ───
-// Valid values: "openai" | "nim" | "perplexity" | "lmstudio"
+// Valid values: "openai" | "nim" | "perplexity" | "lmstudio" | "ollama" | "groq" | "cerebras"
 const activeProvider = process.env.AI_PROVIDER ?? "openai";
 
 // ─── Provider factories ───────────────────────────────────
@@ -72,20 +129,47 @@ function buildModels() {
     }
 
     case "ollama": {
-      const ollamaModelName =
-        process.env.OLLAMA_MODEL ?? "qwen3.5:4b";
+      const ollamaModelName = process.env.OLLAMA_MODEL ?? "qwen3.5:4b";
       return {
         model: ollamaProvider(ollamaModelName, { think: false }),
         strongModel: ollamaProvider(ollamaModelName, { think: false }),
       };
     }
 
+    case "groq": {
+      const groq = createGroq({ apiKey: process.env.GROQ_API_KEY ?? "" });
+      return {
+        model: groq("llama-3.3-70b-versatile"),
+        strongModel: groq("openai/gpt-oss-120b"),
+      };
+    }
+
+    case "cerebras": {
+      const cerebras = createCerebrasProvider();
+      // Free-tier catalog changes; prefer models returned by /v1/models for this key.
+      const chatModel = process.env.CEREBRAS_MODEL ?? "gpt-oss-120b";
+      const strongChatModel = process.env.CEREBRAS_STRONG_MODEL ?? chatModel;
+      return {
+        model: cerebras(chatModel),
+        strongModel: cerebras(strongChatModel),
+      };
+    }
+
     case "openai":
-    default:
       return {
         model: openai("gpt-4o-mini"),
         strongModel: openai("gpt-4o"),
       };
+
+    default: {
+      console.warn(
+        `[ai/provider] Unknown AI_PROVIDER="${activeProvider}", falling back to openai`,
+      );
+      return {
+        model: openai("gpt-4o-mini"),
+        strongModel: openai("gpt-4o"),
+      };
+    }
   }
 }
 
@@ -160,6 +244,18 @@ export function getModelFromRequest(
     if (customProvider === "ollama") {
       return ollamaProvider(customModel, { think: false });
     }
+    if (customProvider === "groq") {
+      const groq = createGroq({
+        apiKey: customKey || process.env.GROQ_API_KEY || "",
+      });
+      return groq(customModel);
+    }
+    if (customProvider === "cerebras") {
+      const cerebras = createCerebrasProvider(
+        customKey || process.env.CEREBRAS_API_KEY || "",
+      );
+      return cerebras(customModel);
+    }
   }
 
   // Fallback to defaults
@@ -192,8 +288,7 @@ function buildCascadeModel(provider: string, modelId: string): LanguageModelV3 {
       return groq(modelId);
     }
     case "cerebras": {
-      const cerebras = createCerebras({ apiKey: process.env.CEREBRAS_API_KEY ?? "" });
-      return cerebras(modelId);
+      return createCerebrasProvider()(modelId);
     }
     case "nim": {
       const nim = createOpenAICompatible({
@@ -278,7 +373,7 @@ const cascade = buildCascade();
 
 console.log(
   `[ai/cascade] ${cascade.length} models configured: ` +
-  cascade.map((e, i) => `${i + 1}. ${e.provider}:${e.modelId}`).join(", "),
+    cascade.map((e, i) => `${i + 1}. ${e.provider}:${e.modelId}`).join(", "),
 );
 
 /**
@@ -318,7 +413,9 @@ function isRetryableError(err: unknown): boolean {
   // Check nested lastError (AI SDK RetryError wraps the original)
   const lastError = e.lastError as Record<string, unknown> | undefined;
   if (lastError) {
-    const nestedStatus = (lastError.statusCode ?? lastError.status) as number | undefined;
+    const nestedStatus = (lastError.statusCode ?? lastError.status) as
+      | number
+      | undefined;
     if (nestedStatus && RETRYABLE_STATUS_CODES.has(nestedStatus)) return true;
   }
 
@@ -334,7 +431,8 @@ function isPermanentFailure(err: unknown): boolean {
 }
 
 /** Max time (ms) to wait for a higher-quality model before trying a faster one. */
-const THROTTLE_THRESHOLD_MS = Number(process.env.JOB_CASCADE_THROTTLE_MS) || 5_000;
+const THROTTLE_THRESHOLD_MS =
+  Number(process.env.JOB_CASCADE_THROTTLE_MS) || 5_000;
 
 /** Track which models have been logged as daily-exhausted (log once, not per request). */
 const dailyExhaustedLogged = new Set<string>();
@@ -348,7 +446,9 @@ const dailyExhaustedLogged = new Set<string>();
 export const generateTextWithFallback: typeof aiGenerateText = async (
   params,
 ) => {
-  const estimatedTokens = estimateParamTokens(params as Record<string, unknown>);
+  const estimatedTokens = estimateParamTokens(
+    params as Record<string, unknown>,
+  );
   let lastError: unknown;
 
   // ── Phase 1: Find best model with acceptable wait ──
@@ -408,7 +508,10 @@ export const generateTextWithFallback: typeof aiGenerateText = async (
     const limiter = getRateLimiter(entry.provider, entry.modelId);
 
     if (deadModels.has(key)) continue;
-    if (i !== selectedIdx && await limiter.isDailyExhausted(estimatedTokens)) {
+    if (
+      i !== selectedIdx &&
+      (await limiter.isDailyExhausted(estimatedTokens))
+    ) {
       continue;
     }
 
@@ -418,7 +521,11 @@ export const generateTextWithFallback: typeof aiGenerateText = async (
       console.log(
         `[ai/cascade] using ${entry.provider}:${entry.modelId} (${i + 1}/${cascade.length})`,
       );
-      const result = await aiGenerateText({ ...params, model: entry.model, maxRetries: 0 });
+      const result = await aiGenerateText({
+        ...params,
+        model: entry.model,
+        maxRetries: 0,
+      });
       const actual = (result.usage?.totalTokens ?? 0) || estimatedTokens;
       limiter.reportActualUsage(actual, estimatedTokens);
       return result;
