@@ -60,14 +60,33 @@ function AppShell({
   );
 }
 
-export default async function RootLayout({
+/**
+ * Reads request headers to choose login vs app chrome.
+ * Must stay inside Suspense when cacheComponents is enabled.
+ */
+async function PathAwareShell({
+  children,
+  demoMode,
+}: {
+  children: React.ReactNode;
+  demoMode: boolean;
+}) {
+  const headersList = await headers();
+  const isLoginPage = headersList.get("x-pathname") === "/login";
+
+  if (isLoginPage) {
+    return <ErrorBoundary>{children}</ErrorBoundary>;
+  }
+
+  return <AppShell demoMode={demoMode}>{children}</AppShell>;
+}
+
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   const demoMode = isDemoMode();
-  const headersList = await headers();
-  const isLoginPage = headersList.get("x-pathname") === "/login";
 
   return (
     <html lang="en" className={inter.variable} suppressHydrationWarning>
@@ -82,11 +101,9 @@ export default async function RootLayout({
         >
           <NuqsAdapter>
             <QueryProvider>
-              {isLoginPage ? (
-                <ErrorBoundary>{children}</ErrorBoundary>
-              ) : (
-                <AppShell demoMode={demoMode}>{children}</AppShell>
-              )}
+              <Suspense fallback={null}>
+                <PathAwareShell demoMode={demoMode}>{children}</PathAwareShell>
+              </Suspense>
             </QueryProvider>
           </NuqsAdapter>
           <Toaster />
