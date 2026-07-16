@@ -23,6 +23,7 @@ if (global.drizzle) {
     max: 10,
     idle_timeout: 20,
     connect_timeout: 10,
+    ssl: process.env.POSTGRES_SSL === "true" ? "require" : undefined,
   });
   dbInstance = drizzle(clientInstance, { schema });
 
