@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { rejectIfDemoMutation } from "@/lib/demo-mode/guards";
 import { db } from "@/lib/db/drizzle";
 import { jobSchedules } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
@@ -8,6 +9,9 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const blocked = rejectIfDemoMutation();
+  if (blocked) return blocked;
+
   const { id } = await params;
   const body = await request.json();
   const { enabled, cronExpression } = body as {
@@ -43,6 +47,9 @@ export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const blocked = rejectIfDemoMutation();
+  if (blocked) return blocked;
+
   const { id } = await params;
   const [deleted] = await db
     .delete(jobSchedules)

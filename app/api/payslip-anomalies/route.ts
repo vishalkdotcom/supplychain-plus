@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { rejectIfDemoMutation } from "@/lib/demo-mode/guards";
 import { db } from "@/lib/db/drizzle";
 import { payslipAnomalies, type PayslipAnomalyDetails } from "@/lib/db/schema";
 import { desc, eq, and, count, ilike } from "drizzle-orm";
@@ -80,6 +81,9 @@ export async function GET(request: Request) {
 }
 
 export async function PATCH(request: Request) {
+  const blocked = rejectIfDemoMutation();
+  if (blocked) return blocked;
+
   try {
     const { id, isResolved } = await request.json();
 

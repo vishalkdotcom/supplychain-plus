@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { rejectIfDemoJobExecution } from "@/lib/demo-mode/guards";
 import { db } from "@/lib/db/drizzle";
 import { jobRuns, jobQueue } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
@@ -15,6 +16,9 @@ export function withJobTracking(
   handler: (request: Request) => Promise<NextResponse>,
 ) {
   return async (request: Request): Promise<NextResponse> => {
+    const blocked = rejectIfDemoJobExecution();
+    if (blocked) return blocked;
+
     // Check if this was triggered by the queue (jobRunId in body or header)
     const clonedRequest = request.clone();
     let jobRunId: number | null = null;

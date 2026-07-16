@@ -18,7 +18,13 @@ import {
 } from "@tabler/icons-react";
 import { getModuleColors } from "@/lib/risk-utils";
 
-function getDynamicInsight(insights: MLInsightsSummary | undefined): { text: string; href: string } {
+import { DemoSafeLink } from "@/components/demo-safe-link";
+import { evaluateDemoRoutePolicy } from "@/lib/demo-mode/profile";
+
+function getDynamicInsight(
+  insights: MLInsightsSummary | undefined,
+  demoMode: boolean,
+): { text: string; href: string } {
   if (!insights) {
     return {
       text: "Suppliers with high case volume also show declining survey sentiment — consider deploying targeted training to address root causes.",
@@ -60,10 +66,17 @@ function getDynamicInsight(insights: MLInsightsSummary | undefined): { text: str
   };
 }
 
-export function AICopilotFeed() {
+function resolveInsightHref(href: string, demoMode: boolean): string {
+  if (!href) return "";
+  if (!demoMode) return href;
+  return evaluateDemoRoutePolicy(href) ? href : "";
+}
+
+export function AICopilotFeed({ demoMode = false }: { demoMode?: boolean }) {
   const { data: activities, isLoading } = useQuery({
-    queryKey: ["activities"],
+    queryKey: ["activities", demoMode],
     queryFn: fetchActivities,
+    enabled: !demoMode,
   });
 
   const { data: mlInsights } = useQuery<MLInsightsSummary>({
@@ -83,7 +96,7 @@ export function AICopilotFeed() {
       </CardHeader>
       <CardContent className="p-0 flex-1">
         <ScrollArea className="h-[400px]">
-          {isLoading ? (
+          {isLoading && !demoMode ? (
             <div className="p-4 space-y-4">
               <Skeleton className="h-12 w-full" />
               <Skeleton className="h-12 w-full" />
@@ -93,7 +106,8 @@ export function AICopilotFeed() {
             <div className="px-4 pb-4">
               {/* Cross-Module Insight Highlight */}
               {(() => {
-                const insight = getDynamicInsight(mlInsights);
+                const insight = getDynamicInsight(mlInsights, demoMode);
+                const insightHref = resolveInsightHref(insight.href, demoMode);
                 return (
                   <div className="mb-4 p-3 rounded-lg border border-primary/20 bg-primary/5">
                     <div className="flex items-center gap-2 mb-1.5">
@@ -103,11 +117,11 @@ export function AICopilotFeed() {
                       </span>
                     </div>
                     <p className="text-sm text-foreground">{insight.text}</p>
-                    {insight.href && (
-                      <Link href={insight.href} className="text-xs text-primary hover:underline mt-1 inline-block">
+                    {insightHref ? (
+                      <Link href={insightHref} className="text-xs text-primary hover:underline mt-1 inline-block">
                         View details →
                       </Link>
-                    )}
+                    ) : null}
                   </div>
                 );
               })()}
@@ -116,13 +130,22 @@ export function AICopilotFeed() {
 
               {/* Activity Items */}
               <div className="space-y-3">
-                {activities?.map((activity) => {
+                {demoMode && (!activities || activities.length === 0) ? (
+                  <p className="text-xs text-muted-foreground text-center py-6">
+                    Live case and survey activity feeds are not available in Demo Mode.
+                  </p>
+                ) : null}
+                {(demoMode ? [] : activities)?.map((activity) => {
                   const href =
                     activity.linkedType === "supplier" && activity.supplierId
                       ? `/suppliers/${activity.supplierId}`
                       : activity.linkedType === "case" && activity.linkedId
                         ? `/connect/${activity.linkedId}`
                         : null;
+                  const safeHref =
+                    href && (!demoMode || evaluateDemoRoutePolicy(href))
+                      ? href
+                      : null;
 
                   const ModuleIcon =
                     activity.module === "connect"
@@ -156,14 +179,14 @@ export function AICopilotFeed() {
                               {activity.time}
                             </span>
                           </div>
-                          {href && (
-                            <Link href={href}>
+                          {safeHref ? (
+                            <Link href={safeHref}>
                               <Button variant="ghost" size="sm" className="h-6 text-xs px-2">
                                 Review
                                 <IconArrowRight className="h-3 w-3 ml-1" />
                               </Button>
                             </Link>
-                          )}
+                          ) : null}
                         </div>
                       </div>
                     </div>

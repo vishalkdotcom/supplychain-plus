@@ -3,6 +3,8 @@
  * Extracted from duplicated implementations across Connect pages.
  */
 
+import { now } from "@/lib/demo-mode/profile";
+
 /**
  * Format a date string as a relative age label.
  * @param dateStr - ISO date or datetime string
@@ -10,7 +12,7 @@
  */
 export function formatAge(dateStr: string, short = false): string {
   const days = Math.floor(
-    (Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24),
+    (now().getTime() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24),
   );
   if (days === 0) return "today";
   if (days === 1) return short ? "1d ago" : "1 day ago";
@@ -32,7 +34,7 @@ export function formatFreshnessAge(
 ): { text: string; level: FreshnessLevel } {
   if (!isoTimestamp) return { text: "Never", level: "never" };
 
-  const ms = Date.now() - new Date(isoTimestamp).getTime();
+  const ms = now().getTime() - new Date(isoTimestamp).getTime();
   const hours = Math.floor(ms / (1000 * 60 * 60));
   const days = Math.floor(ms / (1000 * 60 * 60 * 24));
 

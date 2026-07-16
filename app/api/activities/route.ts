@@ -3,12 +3,17 @@ import { query as pgQuery } from "@/lib/db/postgres";
 import { query as sqlQuery } from "@/lib/db/sql-server";
 import { ActivityItem } from "@/types";
 import { logger } from "@/lib/logger";
+import { isDemoMode } from "@/lib/demo-mode/profile";
 
 interface InternalActivity extends ActivityItem {
   _rawDate: Date;
 }
 
 export async function GET() {
+  if (isDemoMode()) {
+    return NextResponse.json([]);
+  }
+
   try {
     const activities: InternalActivity[] = [];
 

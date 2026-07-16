@@ -5,13 +5,15 @@ import { supplierRiskScores } from "@/lib/db/schema";
 import { sql, inArray } from "drizzle-orm";
 import type { MetricsBriefing, RiskMovement, UrgentCase } from "@/types";
 import { logger } from "@/lib/logger";
+import { now } from "@/lib/demo-mode/profile";
 
 const TAG = "services/metrics-briefing";
 
 export async function getMetricsBriefing(
   since?: Date,
 ): Promise<MetricsBriefing> {
-  const sinceDate = since ?? new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const sinceDate =
+    since ?? new Date(now().getTime() - 24 * 60 * 60 * 1000);
 
   // 1. Count new alerts since timestamp
   let newAlerts = 0;
@@ -121,7 +123,7 @@ export async function getMetricsBriefing(
     for (const row of caseRes.recordset) {
       const createdDate = new Date(row.Created);
       const ageDays = Math.floor(
-        (Date.now() - createdDate.getTime()) / (1000 * 60 * 60 * 24),
+        (now().getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24),
       );
       urgentCases.push({
         id: String(row.Id),

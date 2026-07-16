@@ -21,6 +21,7 @@ import { deriveRegion } from "@/lib/risk-utils";
 import { extractEnglishFromMlang } from "@/lib/mlang";
 import { mapCaseStatus } from "@/lib/case-utils";
 import { logger } from "@/lib/logger";
+import { isDemoMode } from "@/lib/demo-mode/profile";
 import { TAGS, forecastTag } from "./tags";
 import type {
   DashboardMetrics,
@@ -35,12 +36,69 @@ import type {
 // Metrics
 // ---------------------------------------------------------------------------
 
+async function getDerivedOnlyMetrics(
+  parentCompanyId: string,
+): Promise<DashboardMetrics> {
+  const parentFilter = parentCompanyId
+    ? sql`AND parent_company_id = ${parentCompanyId}`
+    : sql``;
+
+  const brandExclusion = sql`supplier_id NOT IN (
+    SELECT DISTINCT parent_company_id
+    FROM supplier_risk_scores
+    WHERE parent_company_id IS NOT NULL
+  )`;
+
+  const [totalRes, highRiskRes, trendRes] = await Promise.all([
+    db.execute(
+      sql`SELECT COUNT(*) as count FROM supplier_risk_scores
+          WHERE ${brandExclusion} ${parentFilter}`,
+    ),
+    db.execute(
+      sql`SELECT COUNT(*) as count FROM supplier_risk_scores
+          WHERE risk_score > 70 AND ${brandExclusion} ${parentFilter}`,
+    ),
+    db.execute(sql`
+      WITH latest AS (
+        SELECT DISTINCT ON (supplier_id) supplier_id, risk_score, snapshot_date
+        FROM supplier_risk_history
+        ORDER BY supplier_id, snapshot_date DESC
+      ),
+      previous AS (
+        SELECT DISTINCT ON (supplier_id) supplier_id, risk_score, snapshot_date
+        FROM supplier_risk_history
+        WHERE snapshot_date < (SELECT MAX(snapshot_date) FROM supplier_risk_history)
+        ORDER BY supplier_id, snapshot_date DESC
+      )
+      SELECT
+        SUM(CASE WHEN l.risk_score < p.risk_score THEN 1 ELSE 0 END) as improving,
+        SUM(CASE WHEN l.risk_score > p.risk_score THEN 1 ELSE 0 END) as worsening
+      FROM latest l
+      JOIN previous p ON l.supplier_id = p.supplier_id
+    `).catch(() => [{ improving: 0, worsening: 0 }]),
+  ]);
+
+  return {
+    totalSuppliers: parseInt(String(totalRes[0]?.count ?? 0)),
+    highRiskSuppliers: parseInt(String(highRiskRes[0]?.count ?? 0)),
+    activeCases: 0,
+    pendingSurveys: 0,
+    trainingCompletion: 0,
+    trendsImproving: parseInt(String(trendRes[0]?.improving ?? 0)),
+    trendsWorsening: parseInt(String(trendRes[0]?.worsening ?? 0)),
+  };
+}
+
 export async function getCachedMetrics(
   parentCompanyId: string,
 ): Promise<DashboardMetrics> {
   "use cache";
   cacheTag(TAGS.metrics);
   cacheLife({ stale: 300, revalidate: 600, expire: 3600 });
+
+  if (isDemoMode()) {
+    return getDerivedOnlyMetrics(parentCompanyId);
+  }
 
   // If filtering by brand, get the list of supplier IDs first
   let brandSupplierIds: string[] | null = null;
@@ -231,6 +289,129 @@ interface MergedRow extends ClientRow {
   parent_company_id: string | null;
 }
 
+async function getDerivedOnlySuppliers(
+  page: number,
+  perPage: number,
+  search: string,
+  riskLevel: string,
+  region: string,
+  parentCompanyId: string,
+): Promise<PaginatedResponse<Supplier>> {
+  const offset = (page - 1) * perPage;
+
+  const result = await db.execute(sql`
+    SELECT
+      supplier_id,
+      supplier_name,
+      risk_score,
+      case_score,
+      survey_score,
+      training_score,
+      engagement_score,
+      reasons,
+      country,
+      region,
+      latitude,
+      longitude,
+      parent_company_id
+    FROM supplier_risk_scores
+    WHERE supplier_id NOT IN (
+      SELECT DISTINCT parent_company_id
+      FROM supplier_risk_scores
+      WHERE parent_company_id IS NOT NULL
+    )
+  `);
+
+  type DerivedSupplierRow = {
+    supplier_id: string;
+    supplier_name: string | null;
+    risk_score: number;
+    case_score: number | null;
+    survey_score: number | null;
+    training_score: number | null;
+    engagement_score: number | null;
+    reasons: RiskReason[] | null;
+    country: string | null;
+    region: string | null;
+    latitude: number | null;
+    longitude: number | null;
+    parent_company_id: string | null;
+  };
+
+  let filtered = (Array.isArray(result) ? result : []) as DerivedSupplierRow[];
+
+  if (parentCompanyId) {
+    filtered = filtered.filter((r) => r.parent_company_id === parentCompanyId);
+  }
+
+  if (search) {
+    const searchLower = search.toLowerCase();
+    filtered = filtered.filter((r) =>
+      (r.supplier_name || "").toLowerCase().includes(searchLower),
+    );
+  }
+
+  if (riskLevel !== "all") {
+    filtered = filtered.filter((r) => {
+      const score = Number(r.risk_score);
+      if (riskLevel === "high") return score > 70;
+      if (riskLevel === "medium") return score > 30 && score <= 70;
+      if (riskLevel === "low") return score <= 30;
+      return true;
+    });
+  }
+
+  if (region !== "all") {
+    filtered = filtered.filter((r) => {
+      const supplierRegion = r.region || deriveRegion(r.country || "");
+      return supplierRegion === region;
+    });
+  }
+
+  filtered.sort((a, b) => Number(b.risk_score) - Number(a.risk_score));
+
+  const total = filtered.length;
+  const paginatedRows = filtered.slice(offset, offset + perPage);
+
+  const suppliers: Supplier[] = paginatedRows.map((row) => ({
+    id: String(row.supplier_id),
+    name: row.supplier_name || `Supplier ${row.supplier_id}`,
+    region: row.region || deriveRegion(row.country || ""),
+    country: row.country || "Unknown",
+    location: row.country || "Unknown",
+    workerCount: 0,
+    contactName: "N/A",
+    contactEmail: "N/A",
+    riskScore: Number(row.risk_score),
+    riskLevel:
+      Number(row.risk_score) > 70
+        ? "high"
+        : Number(row.risk_score) > 30
+          ? "medium"
+          : "low",
+    status: "active",
+    lastActivityDate: new Date().toISOString().split("T")[0],
+    riskBreakdown: {
+      caseScore: row.case_score ?? 0,
+      surveyScore: row.survey_score ?? 0,
+      trainingScore: row.training_score ?? 0,
+      engagementScore: row.engagement_score ?? 0,
+      reasons: row.reasons ?? [],
+    },
+    ...(row.latitude != null && { latitude: row.latitude }),
+    ...(row.longitude != null && { longitude: row.longitude }),
+    ...(row.parent_company_id && { parentCompanyId: row.parent_company_id }),
+  }));
+
+  return {
+    data: suppliers,
+    total,
+    page,
+    perPage,
+    totalPages: Math.ceil(total / perPage),
+  };
+}
+
 export async function getCachedSuppliers(
   page: number,
   perPage: number,
@@ -242,6 +423,17 @@ export async function getCachedSuppliers(
   "use cache";
   cacheTag(TAGS.suppliers);
   cacheLife({ stale: 300, revalidate: 600, expire: 3600 });
+
+  if (isDemoMode()) {
+    return getDerivedOnlySuppliers(
+      page,
+      perPage,
+      search,
+      riskLevel,
+      region,
+      parentCompanyId,
+    );
+  }
 
   const offset = (page - 1) * perPage;
 
