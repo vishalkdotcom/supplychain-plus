@@ -6,7 +6,7 @@
 
 ## The Decision: One Job at a Time
 
-WOVO+ runs jobs **serially** — one at a time, in a defined order. No parallel workers. This is unusual for a job system, and it's deliberate.
+SupplyChain+ runs jobs **serially** — one at a time, in a defined order. No parallel workers. This is unusual for a job system, and it's deliberate.
 
 ### Why Not Parallel?
 
@@ -20,7 +20,7 @@ WOVO+ runs jobs **serially** — one at a time, in a defined order. No parallel 
 
 ### When Would Parallel Make Sense?
 
-If WOVO+ scaled to thousands of suppliers with hourly job runs, serial wouldn't keep up. The right move then: a proper DAG executor (like Temporal or Apache Airflow) with explicit dependencies. But for 300 suppliers with daily runs and 9 jobs totaling ~30 minutes, serial is simpler, reliable, and fast enough.
+If SupplyChain+ scaled to thousands of suppliers with hourly job runs, serial wouldn't keep up. The right move then: a proper DAG executor (like Temporal or Apache Airflow) with explicit dependencies. But for 300 suppliers with daily runs and 9 jobs totaling ~30 minutes, serial is simpler, reliable, and fast enough.
 
 ## The Queue Implementation
 
@@ -73,7 +73,7 @@ LIMIT 1;
 
 **Why this matters:** If two poll cycles happen simultaneously (e.g., during a server restart), they don't deadlock. One gets the job, the other gets nothing (or the next job). No coordination needed beyond the database.
 
-**Why not Redis?** Redis-based queues (BullMQ, Celery) are designed for high-throughput scenarios (thousands of jobs/second). WOVO+ processes 9 jobs/day. PostgreSQL `FOR UPDATE SKIP LOCKED` is simpler (no extra service to run), reliable, and transactional (atomic with job status updates).
+**Why not Redis?** Redis-based queues (BullMQ, Celery) are designed for high-throughput scenarios (thousands of jobs/second). SupplyChain+ processes 9 jobs/day. PostgreSQL `FOR UPDATE SKIP LOCKED` is simpler (no extra service to run), reliable, and transactional (atomic with job status updates).
 
 ### Ollama Serialization
 

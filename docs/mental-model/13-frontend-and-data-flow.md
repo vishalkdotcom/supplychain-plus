@@ -10,7 +10,7 @@ No GraphQL, no tRPC, no WebSockets. Plain REST endpoints returning JSON. This is
 
 ## Why React Query Is the Only State Manager
 
-WOVO+ has **no Redux, no Zustand, no MobX, no Context-based stores.** React Query (TanStack Query) handles all data:
+SupplyChain+ has **no Redux, no Zustand, no MobX, no Context-based stores.** React Query (TanStack Query) handles all data:
 
 **Why this works here:**
 - All state is **server-derived**. There's no complex client-side state to manage. No shopping cart, no multi-step form wizard, no real-time collaboration. Every piece of data comes from an API call.

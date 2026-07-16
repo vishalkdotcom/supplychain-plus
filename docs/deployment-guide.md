@@ -1,12 +1,12 @@
-# WOVO MVP — Hetzner Cloud Deployment Guide
+# SupplyChain+ — Hetzner Cloud Deployment Guide
 
-Deploy the full WOVO stack on a Hetzner Cloud VPS with Cloudflare Tunnel for public HTTPS.
+Deploy the full SupplyChain+ stack on a Hetzner Cloud VPS with Cloudflare Tunnel for public HTTPS.
 
 ---
 
 ## What You Get
 
-- Full WOVO app running at `https://demo.vishalk.com` (or any subdomain)
+- Full SupplyChain+ app running at `https://demo.vishalk.com` (or any subdomain)
 - All 5 modules: Dashboard, Connect, Engage, Educate, Operations
 - Live AI chat (Groq/Cerebras free tiers)
 - Pre-computed ML analytics (risk scores, clusters, forecasts, etc.)

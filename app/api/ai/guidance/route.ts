@@ -7,8 +7,12 @@ import { db } from "@/lib/db/drizzle";
 import { caseSummaryCache } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { logger } from "@/lib/logger";
+import { rejectIfDemoAiOutsideChat } from "@/lib/demo-mode/guards";
 
 export async function POST(request: Request) {
+  const blocked = rejectIfDemoAiOutsideChat("/api/ai/guidance");
+  if (blocked) return blocked;
+
   try {
     const { caseId, caseText, caseType, severity } = await request.json();
 

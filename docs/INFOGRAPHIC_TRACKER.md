@@ -1,4 +1,4 @@
-# WOVO+ Infographic Tracker
+# SupplyChain+ Infographic Tracker
 
 > **Created**: 2026-03-25
 > **Purpose**: One infographic per feature — sell the idea, explain the value, show how it works. For business AND technical audiences alike.
@@ -53,10 +53,10 @@
 | **Domain** | Core Philosophy |
 | **Status** | `not-started` |
 | **Complexity** | Medium |
-| **Why this infographic exists** | This is the "elevator pitch" visual — the one you show first. It explains WOVO+'s core differentiator: not just detecting problems, but tracking the full lifecycle from detection through corrective action to documented evidence. |
+| **Why this infographic exists** | This is the "elevator pitch" visual — the one you show first. It explains SupplyChain+'s core differentiator: not just detecting problems, but tracking the full lifecycle from detection through corrective action to documented evidence. |
 
 **The Idea to Sell**:
-Most compliance platforms stop at detection — they show you a dashboard of problems. WOVO+ closes the loop. Every detected issue (cluster, anomaly, alert) can become a remediation plan. Every remediation plan automatically collects evidence as actions are taken. Every piece of evidence maps back to the original detection. This is the loop that EU CSDDD, OECD Guidelines, and UK Modern Slavery Act demand.
+Most compliance platforms stop at detection — they show you a dashboard of problems. SupplyChain+ closes the loop. Every detected issue (cluster, anomaly, alert) can become a remediation plan. Every remediation plan automatically collects evidence as actions are taken. Every piece of evidence maps back to the original detection. This is the loop that EU CSDDD, OECD Guidelines, and UK Modern Slavery Act demand.
 
 **Content Outline**:
 - **The Problem**: Compliance teams detect issues but struggle to prove they acted on them. Regulators ask "what did you do about it?" and teams scramble to compile evidence.
@@ -114,7 +114,7 @@ One composite score (0-100) that blends four independent dimensions: case severi
 | **Domain** | Dashboard |
 | **Status** | `not-started` |
 | **Complexity** | Complex |
-| **Why this infographic exists** | The dashboard is the first thing users see. This infographic shows the information hierarchy — how WOVO prioritizes what to show a busy compliance director at 9 AM. |
+| **Why this infographic exists** | The dashboard is the first thing users see. This infographic shows the information hierarchy — how SupplyChain+ prioritizes what to show a busy compliance director at 9 AM. |
 
 **The Idea to Sell**:
 One screen answers "what needs my attention right now?" Six layers of information, from most urgent to most contextual:
@@ -146,10 +146,10 @@ One screen answers "what needs my attention right now?" Six layers of informatio
 | **Domain** | Connect Module |
 | **Status** | `not-started` |
 | **Complexity** | Medium |
-| **Why this infographic exists** | Case management is WOVO+'s "detect" workhorse. The AI assistance layer (summarize, guide, draft response) is the key differentiator against manual case-by-case review. |
+| **Why this infographic exists** | Case management is SupplyChain+'s "detect" workhorse. The AI assistance layer (summarize, guide, draft response) is the key differentiator against manual case-by-case review. |
 
 **The Idea to Sell**:
-2,944 worker grievance cases with 8,277 messages — no human can read them all. WOVO+'s AI reads every case and provides: (1) a 1-2 sentence summary, (2) recommended investigation steps based on case type and region, (3) a draft response in the worker's language. The human makes the judgment call; the AI handles the paperwork.
+2,944 worker grievance cases with 8,277 messages — no human can read them all. SupplyChain+'s AI reads every case and provides: (1) a 1-2 sentence summary, (2) recommended investigation steps based on case type and region, (3) a draft response in the worker's language. The human makes the judgment call; the AI handles the paperwork.
 
 **Content Outline**:
 - **Scale of the Problem**: Hundreds of cases in multiple languages. Case officers spend 70% of time reading/summarizing, 30% actually helping.
@@ -174,10 +174,10 @@ One screen answers "what needs my attention right now?" Six layers of informatio
 | **Domain** | Connect Intelligence |
 | **Status** | `not-started` |
 | **Complexity** | Complex |
-| **Why this infographic exists** | This is WOVO+'s most unique ML feature. Individual cases look isolated — clustering reveals that 47 "overtime" cases across 12 factories are actually one regional systemic issue. This is the insight that manual review can never produce. |
+| **Why this infographic exists** | This is SupplyChain+'s most unique ML feature. Individual cases look isolated — clustering reveals that 47 "overtime" cases across 12 factories are actually one regional systemic issue. This is the insight that manual review can never produce. |
 
 **The Idea to Sell**:
-What if 47 separate cases in 12 different factories are actually the *same problem*? WOVO+ converts case messages into mathematical representations (embeddings), groups similar messages together (clustering), and reveals systemic patterns that span multiple factories. A compliance officer reviewing cases one-by-one would never see this.
+What if 47 separate cases in 12 different factories are actually the *same problem*? SupplyChain+ converts case messages into mathematical representations (embeddings), groups similar messages together (clustering), and reveals systemic patterns that span multiple factories. A compliance officer reviewing cases one-by-one would never see this.
 
 **Content Outline**:
 - **The Blind Spot**: 2,944 cases reviewed individually. Each looks like a one-off problem. But what if they're connected?
@@ -186,7 +186,7 @@ What if 47 separate cases in 12 different factories are actually the *same probl
   2. Messages with similar fingerprints are grouped together
   3. AI labels each group: "Systematic Overtime Violations — Bangladesh Garment Sector" (critical)
   4. Groups shown on `/connect/clusters` with severity, affected factories, representative cases
-- **Why It's Different**: Traditional compliance = read each case. WOVO = see the forest, not just the trees.
+- **Why It's Different**: Traditional compliance = read each case. SupplyChain+ = see the forest, not just the trees.
 - **Technical Detail** (for tech audience): Ollama bge-m3 embeddings → pgvector HNSW kNN search → Union-Find connected components clustering → LLM labeling with Zod schema validation
 - **Real Example**: 47 messages about overtime from 12 Bangladesh factories → clustered → labeled "critical systemic pattern" → compliance team investigates regionally instead of case-by-case.
 
@@ -205,7 +205,7 @@ What if 47 separate cases in 12 different factories are actually the *same probl
 | **Domain** | Connect Intelligence |
 | **Status** | `not-started` |
 | **Complexity** | Medium |
-| **Why this infographic exists** | Wage theft is the most common labor violation globally. WOVO automates detection across 16 countries with local currency matching — something manual audits routinely miss. |
+| **Why this infographic exists** | Wage theft is the most common labor violation globally. SupplyChain+ automates detection across 16 countries with local currency matching — something manual audits routinely miss. |
 
 **The Idea to Sell**:
 1,174 payslips across 200 factories in 16 countries. Three types of violations detected automatically: (1) pay below legal minimum wage (in local currency — BDT, VND, INR, not USD), (2) sudden pay drops of >30% between periods, (3) suspicious gross-to-net ratios. Each anomaly gets an AI interpretation with severity and recommended action.
@@ -272,7 +272,7 @@ Thousands of survey responses distilled into a monthly "pulse": what topics are 
 - **The Insight**: Raw survey responses are noisy. Voice trends extract signal: "Payment Delays" is emerging (+34% this month), "Safety Equipment" is declining (-22% after PPE distribution).
 - **Monthly Extraction**: Group responses by month → LLM topic extraction in batches of 50 → returns topics with mentions + sentiment
 - **Delta Tracking**: Compare current month vs. previous → classify as emerging (↑) or declining (↓)
-- **Negativity Bias Correction**: LLMs focus on problems. WOVO injects 5 implicit positive/neutral topics: Employment Stability, Peer & Community Support, Skills Development, Factory Operations, Worker Engagement — because workers having employment IS a positive signal.
+- **Negativity Bias Correction**: LLMs focus on problems. SupplyChain+ injects 5 implicit positive/neutral topics: Employment Stability, Peer & Community Support, Skills Development, Factory Operations, Worker Engagement — because workers having employment IS a positive signal.
 - **Sentiment Score**: `(positive_count - negative_count) / total * 100` — tracks overall worker well-being trajectory
 - **Real Example**: March: "Payment Delays" +34%, "Safety Equipment" -22%. Overall sentiment: -12 (improving from -28 in January). Intervention on payment delays recommended.
 
@@ -318,10 +318,10 @@ Upload a safety manual PDF → AI extracts content → generates structured less
 | **Domain** | Detection |
 | **Status** | `not-started` |
 | **Complexity** | Medium |
-| **Why this infographic exists** | This is a counterintuitive concept — detecting the *absence* of data as a risk signal. "No news" from a factory isn't good news. This idea needs selling because it's WOVO+'s most novel detection approach. |
+| **Why this infographic exists** | This is a counterintuitive concept — detecting the *absence* of data as a risk signal. "No news" from a factory isn't good news. This idea needs selling because it's SupplyChain+'s most novel detection approach. |
 
 **The Idea to Sell**:
-Traditional compliance watches for problems. WOVO also watches for *silence*. Three signal types detect what ISN'T happening:
+Traditional compliance watches for problems. SupplyChain+ also watches for *silence*. Three signal types detect what ISN'T happening:
 1. **Supplier Silence**: Zero cases/surveys for 60+ days. No activity from a factory could mean everything is fine — or workers are afraid to speak.
 2. **Engagement Decay**: Declining survey participation or training completion. Workers disengaging is an early warning sign.
 3. **Regional Contagion**: Same issue pattern across 3+ factories in one region. If neighboring factories share a problem, yours might too.
@@ -354,7 +354,7 @@ Traditional compliance watches for problems. WOVO also watches for *silence*. Th
 | **Why this infographic exists** | Shifts compliance from reactive to predictive. "This factory will be high-risk in 6 weeks" is a fundamentally different conversation than "this factory is high-risk today." |
 
 **The Idea to Sell**:
-Using historical risk score data, WOVO predicts each supplier's risk score 30 and 60 days ahead. The prediction comes with a confidence score (how reliable is this forecast?) and an AI-generated explanation (why is this factory trending this way?). This lets compliance teams intervene *before* problems become crises.
+Using historical risk score data, SupplyChain+ predicts each supplier's risk score 30 and 60 days ahead. The prediction comes with a confidence score (how reliable is this forecast?) and an AI-generated explanation (why is this factory trending this way?). This lets compliance teams intervene *before* problems become crises.
 
 **Content Outline**:
 - **Reactive vs. Predictive**: Today's dashboard shows today's problems. Forecasting shows next month's problems — giving time to prevent them.
@@ -382,7 +382,7 @@ Using historical risk score data, WOVO predicts each supplier's risk score 30 an
 | **Domain** | AI |
 | **Status** | `not-started` |
 | **Complexity** | Complex |
-| **Why this infographic exists** | The AI assistant turns WOVO from a dashboard-you-read into a system-you-ask. 16 tools mean it can answer questions that span every module. This needs to show both the simplicity of asking and the sophistication of what happens behind the scenes. |
+| **Why this infographic exists** | The AI assistant turns SupplyChain+ from a dashboard-you-read into a system-you-ask. 16 tools mean it can answer questions that span every module. This needs to show both the simplicity of asking and the sophistication of what happens behind the scenes. |
 
 **The Idea to Sell**:
 Instead of navigating 10 different pages and cross-referencing data manually, ask: "Which Bangladesh suppliers have rising risk, unresolved wage anomalies, AND declining survey sentiment?" The AI queries multiple data sources simultaneously and synthesizes a single, visual answer — with charts and tables, not just text.
@@ -412,7 +412,7 @@ Instead of navigating 10 different pages and cross-referencing data manually, as
 | **Domain** | Remediation |
 | **Status** | `not-started` |
 | **Complexity** | Complex |
-| **Why this infographic exists** | This is the "act" in detect→act→evidence. It's the feature that makes WOVO a compliance platform rather than just a monitoring dashboard. Auditors specifically look for this workflow. |
+| **Why this infographic exists** | This is the "act" in detect→act→evidence. It's the feature that makes SupplyChain+ a compliance platform rather than just a monitoring dashboard. Auditors specifically look for this workflow. |
 
 **The Idea to Sell**:
 Every detected issue can become a tracked remediation plan with 6 stages: Detected → Root Cause → Action Plan → Implementing → Verifying → Closed. Each stage has clear entry/exit criteria. AI suggests root causes and next steps. An immutable audit log records every change — who, when, what field, old value, new value. This is the evidence trail that EU CSDDD requires.
@@ -447,10 +447,10 @@ Every detected issue can become a tracked remediation plan with 6 stages: Detect
 | **Domain** | Remediation |
 | **Status** | `not-started` |
 | **Complexity** | Medium |
-| **Why this infographic exists** | The most tedious part of compliance is gathering evidence that you fixed the problem. WOVO automates this by cross-referencing data from 3 databases against active plans. This is the "evidence" in detect→act→evidence. |
+| **Why this infographic exists** | The most tedious part of compliance is gathering evidence that you fixed the problem. SupplyChain+ automates this by cross-referencing data from 3 databases against active plans. This is the "evidence" in detect→act→evidence. |
 
 **The Idea to Sell**:
-When a remediation plan is active, WOVO automatically looks for proof that things are improving — without anyone manually uploading documents. It cross-references:
+When a remediation plan is active, SupplyChain+ automatically looks for proof that things are improving — without anyone manually uploading documents. It cross-references:
 - Resolved cases from SQL Server → "3 grievances resolved this month"
 - Training completions from MySQL/Moodle → "45 workers completed wage compliance training"
 - Risk score improvements from PostgreSQL → "Risk dropped from 78 to 62"
@@ -479,7 +479,7 @@ Each piece of evidence is deduplicated (won't attach the same proof twice) and t
 | **Domain** | Suppliers |
 | **Status** | `not-started` |
 | **Complexity** | Simple |
-| **Why this infographic exists** | The tangible deliverable — a downloadable PDF that compliance teams hand to auditors. Shows WOVO isn't just a dashboard; it produces the actual documents regulators require. |
+| **Why this infographic exists** | The tangible deliverable — a downloadable PDF that compliance teams hand to auditors. Shows SupplyChain+ isn't just a dashboard; it produces the actual documents regulators require. |
 
 **The Idea to Sell**:
 Click one button, get a Human Rights Due Diligence (HRDD) report. The PDF combines risk scores, case history, survey sentiment, training compliance, and an AI-narrated executive summary — formatted for EU CSDDD and UK Modern Slavery Act compliance. What used to take days of manual compilation happens in seconds.
@@ -505,10 +505,10 @@ Click one button, get a Human Rights Due Diligence (HRDD) report. The PDF combin
 | **Domain** | Brands |
 | **Status** | `not-started` |
 | **Complexity** | Simple |
-| **Why this infographic exists** | Brands think in portfolios, not individual factories. This infographic shows how WOVO lets a brand director see "my 30 factories" vs. all 220, with aggregate risk. |
+| **Why this infographic exists** | Brands think in portfolios, not individual factories. This infographic shows how SupplyChain+ lets a brand director see "my 30 factories" vs. all 220, with aggregate risk. |
 
 **The Idea to Sell**:
-A brand compliance director doesn't care about all 220 suppliers — they care about their 30. WOVO+'s brand view filters the entire platform: dashboard metrics, risk scores, cases, surveys, training — everything scoped to just the factories in their portfolio. Parent-child relationships (126 hierarchy mappings) enable aggregate risk: if 3 of your 8 factories are high-risk, your brand risk reflects that.
+A brand compliance director doesn't care about all 220 suppliers — they care about their 30. SupplyChain+'s brand view filters the entire platform: dashboard metrics, risk scores, cases, surveys, training — everything scoped to just the factories in their portfolio. Parent-child relationships (126 hierarchy mappings) enable aggregate risk: if 3 of your 8 factories are high-risk, your brand risk reflects that.
 
 **Content Outline**:
 - **Portfolio View**: Brand list page → aggregate metrics per brand (avg risk, factory count, case count)
@@ -532,13 +532,13 @@ A brand compliance director doesn't care about all 220 suppliers — they care a
 | **Domain** | Dashboard |
 | **Status** | `not-started` |
 | **Complexity** | Simple |
-| **Why this infographic exists** | The briefing is WOVO+'s "proactive intelligence" — it tells you what to look at before you ask. This differentiates WOVO from passive dashboards that wait for you to explore. |
+| **Why this infographic exists** | The briefing is SupplyChain+'s "proactive intelligence" — it tells you what to look at before you ask. This differentiates SupplyChain+ from passive dashboards that wait for you to explore. |
 
 **The Idea to Sell**:
-Every morning, WOVO has already analyzed all your data and prepared a briefing: "15 suppliers at high risk (concentrated in Bangladesh), 2 new systemic patterns detected, training coverage improved 5%." Each attention item is categorized (critical / watch / positive) and comes with a pre-built AI chat query — click to investigate immediately.
+Every morning, SupplyChain+ has already analyzed all your data and prepared a briefing: "15 suppliers at high risk (concentrated in Bangladesh), 2 new systemic patterns detected, training coverage improved 5%." Each attention item is categorized (critical / watch / positive) and comes with a pre-built AI chat query — click to investigate immediately.
 
 **Content Outline**:
-- **Proactive vs. Reactive**: Most dashboards show numbers and wait. WOVO says "look HERE."
+- **Proactive vs. Reactive**: Most dashboards show numbers and wait. SupplyChain+ says "look HERE."
 - **Attention Items**: Generated by aggregating across all ML tables — high-risk suppliers by region, active clusters, unresolved anomalies, rising forecasts, monitoring signals
 - **Three Severities**: Critical (action required), Watch (monitor closely), Positive (good news worth noting)
 - **Ask AI Button**: Each item includes a pre-built query — click to open AI chat with the question pre-filled
@@ -622,14 +622,14 @@ Behind every insight on the dashboard, 8 ML batch jobs run in a specific order. 
 | **Domain** | Platform |
 | **Status** | `not-started` |
 | **Complexity** | Simple |
-| **Why this infographic exists** | This is a subtle but powerful feature — when you look at any supplier, you see their cases AND surveys AND training AND risk AND anomalies in one place. Most platforms silo this data. WOVO connects it. |
+| **Why this infographic exists** | This is a subtle but powerful feature — when you look at any supplier, you see their cases AND surveys AND training AND risk AND anomalies in one place. Most platforms silo this data. SupplyChain+ connects it. |
 
 **The Idea to Sell**:
-When a compliance officer opens a case, they don't just see messages — they see the supplier's risk score, recent survey sentiment, training completion rate, active remediations, and monitoring signals. Every page in WOVO shows cross-module context, so you never investigate in isolation.
+When a compliance officer opens a case, they don't just see messages — they see the supplier's risk score, recent survey sentiment, training completion rate, active remediations, and monitoring signals. Every page in SupplyChain+ shows cross-module context, so you never investigate in isolation.
 
 **Content Outline**:
 - **The Silo Problem**: Traditional tools: one tool for cases, another for surveys, another for training. Cross-referencing is manual and slow.
-- **WOVO+'s Approach**: Every entity (supplier, case, survey, course) is connected. Supplier detail pages show all modules. Case pages show the supplier's full context.
+- **SupplyChain+'s Approach**: Every entity (supplier, case, survey, course) is connected. Supplier detail pages show all modules. Case pages show the supplier's full context.
 - **Examples of Cross-Module Data**:
   - Supplier page: risk score + cases + surveys + training + forecasts + anomalies + remediations + monitoring signals + voice trends
   - Case page: case messages + supplier risk breakdown + training status + survey sentiment

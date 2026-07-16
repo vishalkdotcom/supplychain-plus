@@ -1,7 +1,10 @@
+import { isDemoMode } from "@/lib/demo-mode/profile";
+
 export const DEMO_SESSION_COOKIE_NAME = "demo_session";
 export const DEMO_SESSION_MAX_AGE_SECONDS = 60 * 60 * 24;
 
 const DEV_SESSION_SECRET = "dev-demo-session-secret-change-me";
+const MIN_SESSION_SECRET_LENGTH = 32;
 
 interface DemoSessionPayload {
   sub: string;
@@ -9,8 +12,40 @@ interface DemoSessionPayload {
   exp: number;
 }
 
+export function isWeakSessionSecret(secret: string | undefined): boolean {
+  if (!secret || !secret.trim()) return true;
+  if (secret === DEV_SESSION_SECRET) return true;
+  if (secret.length < MIN_SESSION_SECRET_LENGTH) return true;
+  return false;
+}
+
+function isProductionDemoDeploy(): boolean {
+  return isDemoMode() && process.env.NODE_ENV === "production";
+}
+
+export function resolveSessionSecret(): string | null {
+  const configured = process.env.DEMO_SESSION_SECRET;
+  if (!isWeakSessionSecret(configured)) {
+    return configured!;
+  }
+
+  if (isProductionDemoDeploy()) {
+    return null;
+  }
+
+  return DEV_SESSION_SECRET;
+}
+
+export function isDemoSessionOperational(): boolean {
+  return resolveSessionSecret() !== null;
+}
+
 export function getSessionSecret(): string {
-  return process.env.DEMO_SESSION_SECRET ?? DEV_SESSION_SECRET;
+  const secret = resolveSessionSecret();
+  if (!secret) {
+    throw new Error("Demo session secret is missing or too weak for production Demo Mode");
+  }
+  return secret;
 }
 
 export function getDemoCredentials(): { username: string; password: string } | null {
@@ -42,7 +77,10 @@ export function getSessionCookieOptions() {
   };
 }
 
-export async function signSession(username: string): Promise<string> {
+export async function signSession(username: string): Promise<string | null> {
+  const secret = resolveSessionSecret();
+  if (!secret) return null;
+
   const now = Math.floor(Date.now() / 1000);
   const payload: DemoSessionPayload = {
     sub: username,
@@ -50,13 +88,16 @@ export async function signSession(username: string): Promise<string> {
     exp: now + DEMO_SESSION_MAX_AGE_SECONDS,
   };
   const payloadPart = base64UrlEncode(JSON.stringify(payload));
-  const signature = await hmacSign(payloadPart);
+  const signature = await hmacSign(payloadPart, secret);
   return `${payloadPart}.${signature}`;
 }
 
 export async function verifySession(
   token: string,
 ): Promise<DemoSessionPayload | null> {
+  const secret = resolveSessionSecret();
+  if (!secret) return null;
+
   const separatorIndex = token.lastIndexOf(".");
   if (separatorIndex <= 0) return null;
 
@@ -64,7 +105,7 @@ export async function verifySession(
   const signature = token.slice(separatorIndex + 1);
   if (!payloadPart || !signature) return null;
 
-  const expectedSignature = await hmacSign(payloadPart);
+  const expectedSignature = await hmacSign(payloadPart, secret);
   if (!timingSafeEqual(signature, expectedSignature)) return null;
 
   try {
@@ -109,10 +150,10 @@ function base64UrlDecode(value: string): string {
   return new TextDecoder().decode(bytes);
 }
 
-async function hmacSign(payloadPart: string): Promise<string> {
+async function hmacSign(payloadPart: string, secret: string): Promise<string> {
   const key = await crypto.subtle.importKey(
     "raw",
-    new TextEncoder().encode(getSessionSecret()),
+    new TextEncoder().encode(secret),
     { name: "HMAC", hash: "SHA-256" },
     false,
     ["sign"],

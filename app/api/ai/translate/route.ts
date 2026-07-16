@@ -4,6 +4,7 @@ import { getModelFromRequest } from "@/lib/ai/provider";
 import { SUPPORTED_LANGUAGES } from "@/lib/ai/languages";
 import { z } from "zod";
 import { logger } from "@/lib/logger";
+import { rejectIfDemoAiOutsideChat } from "@/lib/demo-mode/guards";
 
 export const maxDuration = 60;
 
@@ -22,6 +23,9 @@ const translationsSchema = z.object({
  * Response: { translations: string[], targetLanguage: string, languageName: string }
  */
 export async function POST(request: Request) {
+  const blocked = rejectIfDemoAiOutsideChat("/api/ai/translate");
+  if (blocked) return blocked;
+
   try {
     const { texts, targetLanguage } = await request.json();
 

@@ -5,6 +5,7 @@ import { isAuthRequired } from "@/lib/demo-mode/profile";
 import {
   DEMO_SESSION_COOKIE_NAME,
   getSessionCookieOptions,
+  isDemoSessionOperational,
   signSession,
   verifyDemoCredentials,
 } from "@/lib/demo-mode/session";
@@ -17,6 +18,13 @@ const loginSchema = z.object({
 export async function POST(request: Request) {
   if (!isAuthRequired()) {
     return NextResponse.json({ error: "Demo auth is disabled" }, { status: 404 });
+  }
+
+  if (!isDemoSessionOperational()) {
+    return NextResponse.json(
+      { error: "Demo sessions are not configured for this deploy" },
+      { status: 503 },
+    );
   }
 
   let body: unknown;
@@ -38,6 +46,13 @@ export async function POST(request: Request) {
   }
 
   const token = await signSession(username);
+  if (!token) {
+    return NextResponse.json(
+      { error: "Demo sessions are not configured for this deploy" },
+      { status: 503 },
+    );
+  }
+
   const cookieStore = await cookies();
   cookieStore.set(DEMO_SESSION_COOKIE_NAME, token, getSessionCookieOptions());
 

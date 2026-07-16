@@ -12,11 +12,12 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { sanitizeLoginRedirect } from "@/lib/demo-mode/redirect";
 
 export function DemoLoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get("redirect") || "/";
+  const redirectTo = sanitizeLoginRedirect(searchParams.get("redirect"));
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -57,7 +58,7 @@ export function DemoLoginForm() {
       <CardHeader>
         <CardTitle>Demo sign in</CardTitle>
         <CardDescription>
-          Enter the demo credentials to explore the intelligence-first WOVO+
+          Enter the demo credentials to explore the intelligence-first SupplyChain+
           surface.
         </CardDescription>
       </CardHeader>

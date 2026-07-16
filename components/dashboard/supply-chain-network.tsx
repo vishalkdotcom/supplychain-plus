@@ -54,11 +54,11 @@ export function SupplyChainNetwork({ suppliers, brands }: SupplyChainNetworkProp
       }
     }
 
-    // WOVO+ Portfolio root node
+    // SupplyChain+ Portfolio root node
     initialNodes.push({
       id: "root",
       type: "default",
-      data: { label: "WOVO+ Portfolio" },
+      data: { label: "SupplyChain+ Portfolio" },
       position: { x: 400, y: 30 },
       style: {
         background: "#4f46e5",

@@ -1,4 +1,4 @@
-# WOVO+ Architecture Documentation
+# SupplyChain+ Architecture Documentation
 
 For a deep understanding of how the system works, read the **Mental Model** series:
 

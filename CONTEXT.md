@@ -1,4 +1,4 @@
-# WOVO+
+# SupplyChain+
 
 Compliance intelligence product: turn worker voice, surveys, training, and wage signals across many factories into attention, action, and evidence.
 

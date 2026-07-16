@@ -4,7 +4,7 @@ Local working spec (not for commit). Grounded in `CONTEXT.md` and ADR `0001-verc
 
 ## Problem Statement
 
-I want to host WOVO+ on Vercel for interviews and portfolio demos, but the full product depends on multiple **source databases** plus a **derived database**. I do not want to pay for, operate, or keep healthy SQL Server, MySQL, and extra Postgres instances just for a demo. Relative windows (“last N days”) and live jobs would also make a frozen dataset look broken or empty over time. I need a reliable, honest demo of the intelligence product experience without pretending the whole multi-DB stack is online.
+I want to host SupplyChain+ on Vercel for interviews and portfolio demos, but the full product depends on multiple **source databases** plus a **derived database**. I do not want to pay for, operate, or keep healthy SQL Server, MySQL, and extra Postgres instances just for a demo. Relative windows (“last N days”) and live jobs would also make a frozen dataset look broken or empty over time. I need a reliable, honest demo of the intelligence product experience without pretending the whole multi-DB stack is online.
 
 ## Solution
 
@@ -12,7 +12,7 @@ Ship a **Demo Mode** runtime profile: one Neon Postgres holding a frozen **deriv
 
 ## User Stories
 
-1. As an interviewer, I want a single public URL for WOVO+, so that I can open the product without installing Docker.
+1. As an interviewer, I want a single public URL for SupplyChain+, so that I can open the product without installing Docker.
 2. As a presenter, I want Demo Mode to require only one managed Postgres (Neon) for the **derived database**, so that I am not hosting source databases for the demo.
 3. As a presenter, I want a frozen snapshot of computed intelligence loaded once, so that risk, clusters, anomalies, trends, remediations, and briefings appear populated without running batch jobs.
 4. As a presenter, I want a **demo as-of** date that acts as “now”, so that “last N days” and freshness language still show data months after the snapshot was taken.

@@ -2,7 +2,7 @@
 
 ## The Situation
 
-WOVO+ wasn't built from scratch. It was built **on top of** four existing systems that were already running in production. Each has its own database, its own schema, its own history.
+SupplyChain+ wasn't built from scratch. It was built **on top of** four existing systems that were already running in production. Each has its own database, its own schema, its own history.
 
 ## The 4 Source Databases
 
@@ -42,7 +42,7 @@ This is the Connect module — where workers submit complaints. Key tables:
 - **`Company`** — Factory master data with `MailingCountry`, `ParentCompanyId`, and geographic coordinates (via `CompanyPost` for lat/lng).
 - **`Payslip` / `stgPayslipReportData`** — Worker wage records. Net pay, gross pay, currency, by factory.
 
-**Why SQL Server?** The Connect module was built on .NET, which historically uses SQL Server. This isn't a choice WOVO+ made — it's a constraint WOVO+ inherited.
+**Why SQL Server?** The Connect module was built on .NET, which historically uses SQL Server. This isn't a choice SupplyChain+ made — it's a constraint SupplyChain+ inherited.
 
 ### `iomadprod` (MySQL) — Training/Moodle
 
@@ -63,7 +63,7 @@ The training completion rate for a factory = `completed / enrolled`. This feeds 
 
 Connection: `lib/db/drizzle.ts` using Drizzle ORM + `postgres.js`.
 
-**This is the only database WOVO+ owns.** Every table is defined in `lib/db/schema.ts` (~826 lines), managed by Drizzle migrations.
+**This is the only database SupplyChain+ owns.** Every table is defined in `lib/db/schema.ts` (~826 lines), managed by Drizzle migrations.
 
 What lives here:
 - **Cache layer:** `supplierRiskScores`, `supplierRiskHistory`, `surveyAnalysis`, `caseSummaryCache`

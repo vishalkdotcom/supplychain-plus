@@ -5,13 +5,13 @@ export const inf01: InfoGraphicData = {
   title: "The Detect \u2192 Act \u2192 Evidence Loop",
   domain: "Core Philosophy",
   shortDescription:
-    "How WOVO+ closes the compliance loop from detection through action to documented proof",
+    "How SupplyChain+ closes the compliance loop from detection through action to documented proof",
   sections: [
     {
       type: "hero",
       title: "The Detect \u2192 Act \u2192 Evidence Loop",
       subtitle:
-        "The WOVO+ core differentiator: not just finding problems, but tracking the full lifecycle from detection through corrective action to documented evidence.",
+        "The SupplyChain+ core differentiator: not just finding problems, but tracking the full lifecycle from detection through corrective action to documented evidence.",
       icon: "refresh",
     },
     {
@@ -54,7 +54,7 @@ export const inf01: InfoGraphicData = {
         {
           icon: "gavel",
           title: "Regulation-Ready",
-          text: "EU CSDDD, OECD Guidelines, and UK Modern Slavery Act all demand this loop. WOVO+ makes it automatic.",
+          text: "EU CSDDD, OECD Guidelines, and UK Modern Slavery Act all demand this loop. SupplyChain+ makes it automatic.",
           color: "blue",
         },
         {

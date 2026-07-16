@@ -7,6 +7,7 @@ import { courseTranslations } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { logger } from "@/lib/logger";
+import { rejectIfDemoAiOutsideChat } from "@/lib/demo-mode/guards";
 
 export const maxDuration = 60;
 
@@ -29,6 +30,9 @@ const translatedCourseSchema = z.object({
 });
 
 export async function POST(request: Request) {
+  const blocked = rejectIfDemoAiOutsideChat("/api/ai/translate/course");
+  if (blocked) return blocked;
+
   try {
     const { courseId, course, language } = await request.json();
 

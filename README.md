@@ -1,6 +1,6 @@
-# WOVO+
+# SupplyChain+
 
-AI-powered supply chain due diligence platform. WOVO+ helps brands **detect** labor risks through worker grievances, surveys, and wage analysis — **act** with AI-guided case resolution and targeted training — and **evidence** compliance actions for regulatory audits.
+AI-powered supply chain due diligence platform. SupplyChain+ helps brands **detect** labor risks through worker grievances, surveys, and wage analysis — **act** with AI-guided case resolution and targeted training — and **evidence** compliance actions for regulatory audits.
 
 ## Architecture at a Glance
 
@@ -68,8 +68,8 @@ graph TB
 ### 1. Clone and install
 
 ```bash
-git clone https://github.com/vishalkdotcom/wovo.git
-cd wovo
+git clone https://github.com/vishalkdotcom/supplychain-plus.git
+cd supplychain-plus
 bun install
 ```
 
@@ -116,7 +116,7 @@ Open [http://localhost:3030](http://localhost:3030).
 ## Project Structure
 
 ```
-wovo/
+supplychain-plus/
 ├── app/                    # Next.js App Router
 │   ├── api/                # 72+ API route handlers (see docs/API_REFERENCE.md)
 │   ├── connect/            # Case management pages

@@ -2,7 +2,7 @@
 
 ## The Problem
 
-WOVO+ runs 9 background jobs that produce clusters, forecasts, anomalies, sentiment shifts, and monitoring signals. These outputs live in separate modules: clusters in Connect, forecasts in Suppliers, anomalies in Connect, sentiment in Engage.
+SupplyChain+ runs 9 background jobs that produce clusters, forecasts, anomalies, sentiment shifts, and monitoring signals. These outputs live in separate modules: clusters in Connect, forecasts in Suppliers, anomalies in Connect, sentiment in Engage.
 
 A compliance officer managing 300 factories shouldn't have to visit 6 different pages to discover what the system found overnight. They need a **single feed** that surfaces the most important findings at a glance.
 

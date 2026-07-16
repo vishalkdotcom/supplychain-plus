@@ -2,7 +2,7 @@
 
 ## The Problem
 
-WOVO+ has 6 modules (Connect, Engage, Educate, Intelligence, Governance, Remediation), 5 databases, 9 background jobs, and 15 AI tools. A compliance officer opening the app for the first time needs to see **one screen** that answers: "What needs my attention right now?"
+SupplyChain+ has 6 modules (Connect, Engage, Educate, Intelligence, Governance, Remediation), 5 databases, 9 background jobs, and 15 AI tools. A compliance officer opening the app for the first time needs to see **one screen** that answers: "What needs my attention right now?"
 
 The Control Center dashboard is that screen. It composes data from every module into a scannable layout without requiring navigation.
 

@@ -287,7 +287,7 @@ function AIAssistantContent() {
                 <div className="flex-1">
                   <div className="rounded-2xl p-6 bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-500/20">
                     <p className="text-sm font-semibold text-foreground mb-2">
-                      Welcome to WOVO+
+                      Welcome to SupplyChain+
                     </p>
                     <p className="text-sm text-muted-foreground mb-4">
                       I can help you investigate cases, analyze risk trends, generate reports,

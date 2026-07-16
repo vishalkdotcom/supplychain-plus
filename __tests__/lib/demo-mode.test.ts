@@ -3,8 +3,10 @@ import {
   areJobsExecutable,
   areMutationsAllowed,
   daysAgo,
+  evaluateDemoApiPolicy,
   getDemoAsOf,
   getDemoAsOfLabel,
+  isApiAllowed,
   isAuthRequired,
   isDemoMode,
   isRouteAllowed,
@@ -42,6 +44,8 @@ describe("demo mode profile", () => {
 
       expect(isRouteAllowed("/connect")).toBe(true);
       expect(isRouteAllowed("/educate")).toBe(true);
+      expect(isApiAllowed("/api/cases")).toBe(true);
+      expect(isApiAllowed("/api/ai/draft-response")).toBe(true);
       expect(areMutationsAllowed()).toBe(true);
       expect(areJobsExecutable()).toBe(true);
       expect(isAuthRequired()).toBe(false);
@@ -86,6 +90,35 @@ describe("demo mode profile", () => {
       expect(isRouteAllowed("/educate")).toBe(false);
       expect(isRouteAllowed("/connect/inbox")).toBe(false);
       expect(isRouteAllowed("/engage/surveys/1")).toBe(false);
+    });
+
+    test("allows intelligence-first APIs and denies source-backed APIs", () => {
+      expect(isApiAllowed("/api/metrics")).toBe(true);
+      expect(isApiAllowed("/api/clusters")).toBe(true);
+      expect(isApiAllowed("/api/brands")).toBe(true);
+      expect(isApiAllowed("/api/suppliers")).toBe(true);
+      expect(isApiAllowed("/api/suppliers/SUP001")).toBe(true);
+      expect(isApiAllowed("/api/suppliers/SUP001/history")).toBe(true);
+      expect(isApiAllowed("/api/ai/chat")).toBe(true);
+      expect(isApiAllowed("/api/ai/chat/history")).toBe(true);
+      expect(isApiAllowed("/api/remediations")).toBe(true);
+      expect(isApiAllowed("/api/jobs/runs")).toBe(true);
+
+      expect(isApiAllowed("/api/cases")).toBe(false);
+      expect(isApiAllowed("/api/cases/1")).toBe(false);
+      expect(isApiAllowed("/api/surveys")).toBe(false);
+      expect(isApiAllowed("/api/courses")).toBe(false);
+      expect(isApiAllowed("/api/timeline")).toBe(false);
+      expect(isApiAllowed("/api/suppliers/SUP001/training")).toBe(false);
+      expect(isApiAllowed("/api/ai/draft-response")).toBe(false);
+      expect(isApiAllowed("/api/jobs/trigger")).toBe(false);
+    });
+
+    test("evaluateDemoApiPolicy mirrors page intent for representative paths", () => {
+      expect(evaluateDemoApiPolicy("/api/voice-trends")).toBe(true);
+      expect(evaluateDemoApiPolicy("/api/payslip-anomalies/trends")).toBe(true);
+      expect(evaluateDemoApiPolicy("/api/regulatory/frameworks/1")).toBe(true);
+      expect(evaluateDemoApiPolicy("/api/ai/summarize")).toBe(false);
     });
 
     test("normalizes trailing slashes and query strings", () => {

@@ -1,4 +1,4 @@
-// Core Types for WOVO+ Control Center
+// Core Types for SupplyChain+ Control Center
 
 // ===============================
 // Supplier & Risk Types

@@ -7,6 +7,7 @@ import {
   isPublicAppPath,
 } from "@/lib/demo-mode/auth";
 import {
+  isApiAllowed,
   isAuthRequired,
   isDemoMode,
   isRouteAllowed,
@@ -50,6 +51,13 @@ export async function middleware(request: NextRequest) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
     }
     return redirectToLogin(request, pathname);
+  }
+
+  if (isDemoMode() && isApiPath(path) && !isApiAllowed(path)) {
+    return NextResponse.json(
+      { error: "Not available in Demo Mode" },
+      { status: 403 },
+    );
   }
 
   if (isDemoMode() && !isApiPath(path) && !isRouteAllowed(path)) {

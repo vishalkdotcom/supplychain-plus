@@ -5,7 +5,7 @@ export const inf17: InfoGraphicData = {
   title: "The Intelligence Briefing \u2014 What Changed Overnight",
   domain: "Dashboard",
   shortDescription:
-    "A proactive daily intelligence digest with severity-ranked items so you know exactly what needs attention the moment you open WOVO+.",
+    "A proactive daily intelligence digest with severity-ranked items so you know exactly what needs attention the moment you open SupplyChain+.",
   sections: [
     {
       type: "hero",
@@ -73,7 +73,7 @@ export const inf17: InfoGraphicData = {
           number: 5,
           label: "Briefing Displayed at Login",
           detail:
-            "The finished briefing appears as a bar at the top of the dashboard the moment you open WOVO+.",
+            "The finished briefing appears as a bar at the top of the dashboard the moment you open SupplyChain+.",
         },
       ],
     },
@@ -85,7 +85,7 @@ export const inf17: InfoGraphicData = {
       type: "example",
       title: "Morning Login Scenario",
       steps: [
-        "Analyst opens WOVO+ at 8:30 AM and sees 2 critical, 3 watch, and 1 positive item.",
+        "Analyst opens SupplyChain+ at 8:30 AM and sees 2 critical, 3 watch, and 1 positive item.",
         "Critical item: a supplier\u2019s risk score jumped from 58 to 81 overnight after new survey results.",
         "Analyst clicks \u201CAsk AI\u201D next to the item \u2014 the AI explains the three survey questions driving the spike.",
         "Watch item: payslip anomaly detector flagged a new pattern at a factory in Vietnam.",

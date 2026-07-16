@@ -8,6 +8,7 @@ import { eq } from "drizzle-orm";
 import { logger } from "@/lib/logger";
 import { deriveRegion } from "@/lib/risk-utils";
 import { getLastActivityDate } from "@/lib/last-activity";
+import { isDemoMode } from "@/lib/demo-mode/profile";
 
 export async function GET(
   request: Request,
@@ -15,6 +16,52 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+
+    if (isDemoMode()) {
+      const riskData = await db
+        .select()
+        .from(supplierRiskScoresSchema)
+        .where(eq(supplierRiskScoresSchema.supplierId, id))
+        .limit(1);
+
+      const risk = riskData[0];
+      if (!risk) {
+        return NextResponse.json(
+          { error: "Supplier not found" },
+          { status: 404 },
+        );
+      }
+
+      const riskScore = risk.riskScore ?? 50;
+      const supplier: Supplier = {
+        id,
+        name: risk.supplierName || `Supplier ${id}`,
+        region: risk.region || deriveRegion(risk.country || ""),
+        country: risk.country || "Unknown",
+        location: risk.country || "Unknown",
+        workerCount: 0,
+        contactName: "N/A",
+        contactEmail: "N/A",
+        riskScore,
+        riskLevel: riskScore > 70 ? "high" : riskScore > 30 ? "medium" : "low",
+        status: "active",
+        lastActivityDate:
+          (await getLastActivityDate(id)) ||
+          new Date().toISOString().split("T")[0],
+        riskBreakdown: {
+          caseScore: risk.caseScore ?? 50,
+          surveyScore: risk.surveyScore ?? 50,
+          trainingScore: risk.trainingScore ?? 50,
+          engagementScore: risk.engagementScore ?? 50,
+          reasons: risk.reasons ?? [],
+        },
+        ...(risk.latitude != null && { latitude: risk.latitude }),
+        ...(risk.longitude != null && { longitude: risk.longitude }),
+        ...(risk.parentCompanyId && { parentCompanyId: risk.parentCompanyId }),
+      };
+
+      return NextResponse.json(supplier);
+    }
 
     // 1. Get supplier basic info from Postgres using client_key (maps to SQL Server Company.Id)
     const supplierRes = await pgQuery(
