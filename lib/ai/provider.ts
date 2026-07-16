@@ -72,7 +72,8 @@ function cerebrasFetch(
 function createCerebrasProvider(apiKey?: string) {
   return createCerebras({
     apiKey: apiKey ?? process.env.CEREBRAS_API_KEY ?? "",
-    fetch: cerebrasFetch,
+    // Node's `typeof fetch` includes `preconnect`; our wrapper only needs call signature.
+    fetch: cerebrasFetch as typeof fetch,
   });
 }
 
