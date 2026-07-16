@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db/drizzle";
 import { aiChatHistory } from "@/lib/db/schema";
 import { asc, eq } from "drizzle-orm";
+import { rejectIfDemoMutation } from "@/lib/demo-mode/guards";
 import { logger } from "@/lib/logger";
 
 const SESSION_ID_PATTERN = /^[a-zA-Z0-9_-]{1,128}$/;
@@ -88,6 +89,9 @@ export async function GET() {
 }
 
 export async function PATCH(request: NextRequest) {
+  const blocked = rejectIfDemoMutation();
+  if (blocked) return blocked;
+
   try {
     const body = await request.json();
     const { sessionId, title, isPinned } = body as {

@@ -30,6 +30,7 @@ const mockInsertChain: InsertChain = {
 const mockDb = {
   select: (_fields?: unknown) => mockSelectChain,
   insert: (_table: unknown) => mockInsertChain,
+  transaction: async (fn: (tx: typeof mockDb) => Promise<void>) => fn(mockDb),
 };
 
 mock.module("@/lib/db/drizzle", () => ({

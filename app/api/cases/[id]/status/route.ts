@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { rejectIfDemoMutation } from "@/lib/demo-mode/guards";
 import { invalidateAfterCaseStatusChange } from "@/lib/cache/invalidate";
 import { getPool } from "@/lib/db/sql-server";
 import { logger } from "@/lib/logger";
@@ -14,6 +15,9 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const blocked = rejectIfDemoMutation();
+  if (blocked) return blocked;
+
   try {
     const { id } = await params;
     const pool = await getPool();

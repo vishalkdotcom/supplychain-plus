@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 import { QueryProvider } from "@/components/providers/query-provider";
@@ -12,6 +13,8 @@ import { Toaster } from "@/components/ui/sonner";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ErrorBoundary } from "@/components/error-boundary";
+import { DemoModeBanner } from "@/components/demo-mode-banner";
+import { isDemoMode } from "@/lib/demo-mode/profile";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -30,11 +33,42 @@ export const metadata: Metadata = {
   description: "Cross-module intelligence for supply chain management",
 };
 
-export default function RootLayout({
+function AppShell({
+  children,
+  demoMode,
+}: {
+  children: React.ReactNode;
+  demoMode: boolean;
+}) {
+  return (
+    <DemoUserProvider>
+      <ViewProvider>
+        <SidebarProvider>
+          <Suspense>
+            <AppSidebar demoMode={demoMode} />
+          </Suspense>
+          <div className="flex flex-1 flex-col overflow-hidden">
+            <DemoModeBanner />
+            <AppHeader />
+            <main className="flex-1 overflow-y-auto p-6 md:p-8">
+              <ErrorBoundary>{children}</ErrorBoundary>
+            </main>
+          </div>
+        </SidebarProvider>
+      </ViewProvider>
+    </DemoUserProvider>
+  );
+}
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const demoMode = isDemoMode();
+  const headersList = await headers();
+  const isLoginPage = headersList.get("x-pathname") === "/login";
+
   return (
     <html lang="en" className={inter.variable} suppressHydrationWarning>
       <body
@@ -48,21 +82,11 @@ export default function RootLayout({
         >
           <NuqsAdapter>
             <QueryProvider>
-              <DemoUserProvider>
-              <ViewProvider>
-                <SidebarProvider>
-                  <Suspense>
-                    <AppSidebar />
-                  </Suspense>
-                  <div className="flex flex-1 flex-col overflow-hidden">
-                    <AppHeader />
-                    <main className="flex-1 overflow-y-auto p-6 md:p-8">
-                      <ErrorBoundary>{children}</ErrorBoundary>
-                    </main>
-                  </div>
-                </SidebarProvider>
-              </ViewProvider>
-              </DemoUserProvider>
+              {isLoginPage ? (
+                <ErrorBoundary>{children}</ErrorBoundary>
+              ) : (
+                <AppShell demoMode={demoMode}>{children}</AppShell>
+              )}
             </QueryProvider>
           </NuqsAdapter>
           <Toaster />

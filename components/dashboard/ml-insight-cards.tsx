@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { fetchMLInsights } from "@/lib/api";
 import { MLInsightsSummary } from "@/types";
@@ -13,7 +12,9 @@ import {
   IconMessageCircle,
 } from "@tabler/icons-react";
 
-export function MLInsightCards() {
+import { DemoSafeLink } from "@/components/demo-safe-link";
+
+export function MLInsightCards({ demoMode = false }: { demoMode?: boolean }) {
   const { data: insights, isLoading } = useQuery<MLInsightsSummary>({
     queryKey: ["ml-insights"],
     queryFn: fetchMLInsights,
@@ -68,7 +69,7 @@ export function MLInsightCards() {
   return (
     <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
       {/* Systemic Patterns */}
-      <Link href="/connect/clusters" className="group">
+      <DemoSafeLink href="/connect/clusters" demoMode={demoMode} className="group">
         <Card className="hover:shadow-md transition-shadow h-full">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Systemic Patterns</CardTitle>
@@ -83,10 +84,10 @@ export function MLInsightCards() {
             </p>
           </CardContent>
         </Card>
-      </Link>
+      </DemoSafeLink>
 
       {/* Forecast Alerts */}
-      <Link href="/suppliers" className="group">
+      <DemoSafeLink href="/suppliers" demoMode={demoMode} className="group">
         <Card className="hover:shadow-md transition-shadow h-full">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Forecast Alerts</CardTitle>
@@ -108,10 +109,10 @@ export function MLInsightCards() {
             )}
           </CardContent>
         </Card>
-      </Link>
+      </DemoSafeLink>
 
       {/* Wage Anomalies */}
-      <Link href="/connect/payslip-anomalies" className="group">
+      <DemoSafeLink href="/connect/payslip-anomalies" demoMode={demoMode} className="group">
         <Card className="hover:shadow-md transition-shadow h-full">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Wage Anomalies</CardTitle>
@@ -124,10 +125,10 @@ export function MLInsightCards() {
             </p>
           </CardContent>
         </Card>
-      </Link>
+      </DemoSafeLink>
 
       {/* Voice Trends */}
-      <Link href="/engage/voice-trends" className="group">
+      <DemoSafeLink href="/engage/voice-trends" demoMode={demoMode} className="group">
         <Card className="hover:shadow-md transition-shadow h-full">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Voice Trends</CardTitle>
@@ -143,7 +144,7 @@ export function MLInsightCards() {
             </p>
           </CardContent>
         </Card>
-      </Link>
+      </DemoSafeLink>
     </div>
   );
 }

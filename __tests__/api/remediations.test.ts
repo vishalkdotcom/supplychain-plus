@@ -91,6 +91,7 @@ const mockDb = {
       };
     },
   }),
+  transaction: async (fn: (tx: typeof mockDb) => Promise<unknown>) => fn(mockDb),
 };
 
 mock.module("@/lib/db/drizzle", () => ({ db: mockDb }));

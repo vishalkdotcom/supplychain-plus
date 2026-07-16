@@ -5,11 +5,48 @@ import { query } from "@/lib/db/postgres";
 import { isNotNull, sql } from "drizzle-orm";
 import { Brand } from "@/types";
 import { logger } from "@/lib/logger";
+import { isDemoMode } from "@/lib/demo-mode/profile";
 
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const search = searchParams.get("search") || "";
+
+    if (isDemoMode()) {
+      const brandRows = await db.execute(sql`
+        SELECT
+          parent_company_id as id,
+          MAX(CASE WHEN supplier_id = parent_company_id THEN supplier_name END) as name,
+          MAX(CASE WHEN supplier_id = parent_company_id THEN country END) as country,
+          COUNT(*) FILTER (WHERE supplier_id != parent_company_id)::int as supplier_count,
+          ROUND(AVG(risk_score))::int as avg_risk_score
+        FROM supplier_risk_scores
+        WHERE parent_company_id IS NOT NULL
+        GROUP BY parent_company_id
+        ORDER BY supplier_count DESC
+      `);
+
+      let brands: Brand[] = (Array.isArray(brandRows) ? brandRows : []).map(
+        (row: Record<string, unknown>) => ({
+          id: String(row.id),
+          name: String(row.name || `Brand ${row.id}`),
+          country: row.country ? String(row.country) : undefined,
+          supplierCount: Number(row.supplier_count ?? 0),
+          avgRiskScore: Number(row.avg_risk_score ?? 0),
+        }),
+      );
+
+      if (search) {
+        const searchLower = search.toLowerCase();
+        brands = brands.filter(
+          (b) =>
+            b.name.toLowerCase().includes(searchLower) ||
+            (b.country && b.country.toLowerCase().includes(searchLower)),
+        );
+      }
+
+      return NextResponse.json(brands);
+    }
 
     // 1. Get all brands from the authoritative source: clients_clientrelation
     //    relation_type=0 means PARENT (brand). relation_id points to the brand's clients_clientinfo.id

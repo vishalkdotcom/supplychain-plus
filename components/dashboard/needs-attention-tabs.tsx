@@ -27,7 +27,9 @@ import { markAlertRead } from "@/lib/api";
 import { useView } from "@/components/view-context";
 import { CreatePlanDialog, type RemediationSource } from "@/components/remediation/create-plan-dialog";
 
-export function NeedsAttentionTabs() {
+import { DemoSafeLink } from "@/components/demo-safe-link";
+
+export function NeedsAttentionTabs({ demoMode = false }: { demoMode?: boolean }) {
   const [activeTab, setActiveTab] = useQueryState(
     "attention",
     parseAsString.withDefault("alerts")
@@ -52,7 +54,7 @@ export function NeedsAttentionTabs() {
   });
 
   const alertCount = alerts?.length ?? 0;
-  const urgentCount = briefing?.urgentCases?.length ?? 0;
+  const urgentCount = demoMode ? 0 : (briefing?.urgentCases?.length ?? 0);
   const movementCount = briefing?.riskMovements?.filter((m) => m.direction === "worsened").length ?? 0;
   const forecastCount = mlInsights?.risingForecastSuppliers?.length ?? 0;
   const totalForecasts = mlInsights?.totalForecasts ?? 0;
@@ -64,7 +66,7 @@ export function NeedsAttentionTabs() {
       </CardHeader>
       <CardContent className="pt-4">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="w-full grid grid-cols-4">
+          <TabsList className={`w-full grid ${demoMode ? "grid-cols-3" : "grid-cols-4"}`}>
             <TabsTrigger value="alerts" className="text-xs gap-1">
               <IconBell className="h-3.5 w-3.5" />
               Alerts
@@ -74,15 +76,17 @@ export function NeedsAttentionTabs() {
                 </Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="cases" className="text-xs gap-1">
-              <IconAlertTriangle className="h-3.5 w-3.5" />
-              Urgent
-              {urgentCount > 0 && (
-                <Badge variant="destructive" className="text-[10px] px-1.5 py-0 ml-1">
-                  {urgentCount}
-                </Badge>
-              )}
-            </TabsTrigger>
+            {!demoMode ? (
+              <TabsTrigger value="cases" className="text-xs gap-1">
+                <IconAlertTriangle className="h-3.5 w-3.5" />
+                Urgent
+                {urgentCount > 0 && (
+                  <Badge variant="destructive" className="text-[10px] px-1.5 py-0 ml-1">
+                    {urgentCount}
+                  </Badge>
+                )}
+              </TabsTrigger>
+            ) : null}
             <TabsTrigger value="risk" className="text-xs gap-1">
               <IconTrendingUp className="h-3.5 w-3.5" />
               Risk
@@ -105,15 +109,17 @@ export function NeedsAttentionTabs() {
 
           <TabsContent value="alerts" className="mt-3">
             <ScrollArea className="h-[340px]">
-              <AlertsTabContent />
+              <AlertsTabContent demoMode={demoMode} />
             </ScrollArea>
           </TabsContent>
 
-          <TabsContent value="cases" className="mt-3">
-            <ScrollArea className="h-[340px]">
-              <UrgentCasesTabContent />
-            </ScrollArea>
-          </TabsContent>
+          {!demoMode ? (
+            <TabsContent value="cases" className="mt-3">
+              <ScrollArea className="h-[340px]">
+                <UrgentCasesTabContent />
+              </ScrollArea>
+            </TabsContent>
+          ) : null}
 
           <TabsContent value="risk" className="mt-3">
             <ScrollArea className="h-[340px]">
@@ -144,7 +150,12 @@ export function NeedsAttentionTabs() {
               ) : (
                 <div className="space-y-2 p-1">
                   {mlInsights?.risingForecastSuppliers.map((f) => (
-                    <Link key={f.supplierId} href={`/suppliers/${f.supplierId}`} className="block">
+                    <DemoSafeLink
+                      key={f.supplierId}
+                      href={`/suppliers/${f.supplierId}`}
+                      demoMode={demoMode}
+                      className="block"
+                    >
                       <div className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors">
                         <div className="flex items-center gap-3">
                           <IconTrendingUp className="h-4 w-4 text-red-500" />
@@ -159,7 +170,7 @@ export function NeedsAttentionTabs() {
                           {f.trendDirection}
                         </Badge>
                       </div>
-                    </Link>
+                    </DemoSafeLink>
                   ))}
                 </div>
               )}
@@ -171,7 +182,7 @@ export function NeedsAttentionTabs() {
   );
 }
 
-function AlertsTabContent() {
+function AlertsTabContent({ demoMode = false }: { demoMode?: boolean }) {
   const queryClient = useQueryClient();
   const [selectedAlert, setSelectedAlert] = React.useState<Alert | null>(null);
   const [dialogOpen, setDialogOpen] = React.useState(false);
@@ -228,12 +239,13 @@ function AlertsTabContent() {
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between gap-2">
-                <Link
+                <DemoSafeLink
                   href={`/suppliers/${alert.supplierId}`}
+                  demoMode={demoMode}
                   className="font-medium text-sm hover:underline truncate"
                 >
                   {alert.title}
-                </Link>
+                </DemoSafeLink>
                 <span className="text-[10px] text-muted-foreground whitespace-nowrap">
                   {new Date(alert.createdAt).toLocaleDateString()}
                 </span>
@@ -254,16 +266,18 @@ function AlertsTabContent() {
                   <IconClipboardList className="w-3 h-3 mr-1" />
                   Create Plan
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 text-xs px-2"
-                  onClick={() => markReadMutation.mutate(alert.id)}
-                  disabled={markReadMutation.isPending}
-                >
-                  <IconCheck className="w-3 h-3 mr-1" />
-                  Acknowledge
-                </Button>
+                {!demoMode ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 text-xs px-2"
+                    onClick={() => markReadMutation.mutate(alert.id)}
+                    disabled={markReadMutation.isPending}
+                  >
+                    <IconCheck className="w-3 h-3 mr-1" />
+                    Acknowledge
+                  </Button>
+                ) : null}
               </div>
             </div>
           </div>

@@ -1,23 +1,7 @@
 import { streamText, convertToModelMessages, UIMessage, stepCountIs } from "ai";
 import { model } from "@/lib/ai/provider";
-import { CHAT_SYSTEM_PROMPT } from "@/lib/ai/prompts";
-import {
-  querySupplierRisk,
-  queryCases,
-  querySurveys,
-  queryTrainingCompletion,
-  getAlerts,
-  markAlertRead,
-  triggerRiskRecalculation,
-  queryPlaybook,
-  queryClusters,
-  queryVoiceTrends,
-  queryAnomalies,
-  queryForecasts,
-  queryMonitoringSignals,
-  queryRemediations,
-  queryRiskHistory,
-} from "@/lib/ai/tools";
+import { getChatSystemPrompt } from "@/lib/ai/prompts";
+import { buildChatTools } from "@/lib/ai/chat-tools";
 import { db } from "@/lib/db/drizzle";
 import { aiChatHistory } from "@/lib/db/schema";
 import { logger } from "@/lib/logger";
@@ -55,25 +39,9 @@ export async function POST(req: Request) {
 
   const result = streamText({
     model,
-    system: CHAT_SYSTEM_PROMPT,
+    system: getChatSystemPrompt(),
     messages: await convertToModelMessages(messages),
-    tools: {
-      querySupplierRisk,
-      queryCases,
-      querySurveys,
-      queryTrainingCompletion,
-      getAlerts,
-      markAlertRead,
-      triggerRiskRecalculation,
-      queryPlaybook,
-      queryClusters,
-      queryVoiceTrends,
-      queryAnomalies,
-      queryForecasts,
-      queryMonitoringSignals,
-      queryRemediations,
-      queryRiskHistory,
-    },
+    tools: buildChatTools(),
     stopWhen: stepCountIs(5),
     onFinish: async ({ text }) => {
       // Save assistant response to chat history

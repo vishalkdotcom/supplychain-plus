@@ -3,6 +3,7 @@ import { query } from "@/lib/db/postgres";
 import { db } from "@/lib/db/drizzle";
 import { surveyAnalysis } from "@/lib/db/schema";
 import { inArray } from "drizzle-orm";
+import { rejectIfDemoMutation } from "@/lib/demo-mode/guards";
 import { Survey, PaginatedResponse } from "@/types";
 import { extractEnglishFromMlang } from "@/lib/mlang";
 import { logger } from "@/lib/logger";
@@ -167,6 +168,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const blocked = rejectIfDemoMutation();
+  if (blocked) return blocked;
+
   try {
     const body = await request.json();
     const { questions, languages, title } = body;

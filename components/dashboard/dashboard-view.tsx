@@ -72,7 +72,7 @@ const RiskDistributionChart = dynamic(
   },
 );
 
-export function DashboardView() {
+export function DashboardView({ demoMode = false }: { demoMode?: boolean }) {
   const { viewMode, currentBrandId } = useView();
   const parentCompanyId = viewMode === "brand" ? currentBrandId : undefined;
   const [vizOpen, setVizOpen] = useState(true);
@@ -129,13 +129,13 @@ export function DashboardView() {
       </div>
 
       {/* Data freshness indicators */}
-      <PipelineFreshnessBar />
+      <PipelineFreshnessBar demoMode={demoMode} />
 
       {/* Row 0: AI Briefing Bar */}
       <AIBriefingBar />
 
       {/* Row 1: Priority Metrics */}
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+      <div className={`grid gap-4 grid-cols-2 ${demoMode ? "lg:grid-cols-2" : "lg:grid-cols-4"}`}>
         <MetricCard
           title="High-Risk Suppliers"
           icon={<IconAlertTriangle className="h-4 w-4" />}
@@ -145,13 +145,15 @@ export function DashboardView() {
           trend={highRiskCount > 0 ? "up" : undefined}
           trendIsPositive={false}
         />
-        <MetricCard
-          title="Urgent Cases"
-          icon={<IconMessage className="h-4 w-4" />}
-          value={metrics.activeCases}
-          subtitle="Active cases across all suppliers"
-          variant={metrics.activeCases > 10 ? "urgent" : "default"}
-        />
+        {!demoMode ? (
+          <MetricCard
+            title="Urgent Cases"
+            icon={<IconMessage className="h-4 w-4" />}
+            value={metrics.activeCases}
+            subtitle="Active cases across all suppliers"
+            variant={metrics.activeCases > 10 ? "urgent" : "default"}
+          />
+        ) : null}
         <MetricCard
           title="Supplier Trends"
           icon={<IconHeartRateMonitor className="h-4 w-4" />}
@@ -160,25 +162,27 @@ export function DashboardView() {
           trend={metrics.trendsImproving > metrics.trendsWorsening ? "up" : "down"}
           trendIsPositive={true}
         />
-        <MetricCard
-          title="Training Coverage"
-          icon={<IconSchool className="h-4 w-4" />}
-          value={`${metrics.trainingCompletion}%`}
-          subtitle="Average completion rate"
-          progress={metrics.trainingCompletion}
-        />
+        {!demoMode ? (
+          <MetricCard
+            title="Training Coverage"
+            icon={<IconSchool className="h-4 w-4" />}
+            value={`${metrics.trainingCompletion}%`}
+            subtitle="Average completion rate"
+            progress={metrics.trainingCompletion}
+          />
+        ) : null}
       </div>
 
       {/* Row 1.5: ML Intelligence Signals */}
-      <MLInsightCards />
+      <MLInsightCards demoMode={demoMode} />
 
       {/* Row 2: Needs Attention (2/3) + AI Co-Pilot (1/3) */}
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <NeedsAttentionTabs />
+          <NeedsAttentionTabs demoMode={demoMode} />
         </div>
         <div>
-          <AICopilotFeed />
+          <AICopilotFeed demoMode={demoMode} />
         </div>
       </div>
 
