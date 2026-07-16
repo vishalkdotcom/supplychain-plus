@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { rejectIfDemoMutation } from "@/lib/demo-mode/guards";
 import { invalidateAfterRemediationUpdate } from "@/lib/cache/invalidate";
 import { db } from "@/lib/db/drizzle";
 import { remediationPlans, remediationAuditLog } from "@/lib/db/schema";
@@ -56,6 +57,9 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const blocked = rejectIfDemoMutation();
+  if (blocked) return blocked;
+
   try {
     const body = await request.json();
     const {

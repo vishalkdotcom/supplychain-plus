@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { rejectIfDemoMutation } from "@/lib/demo-mode/guards";
 import { invalidateAfterRemediationUpdate } from "@/lib/cache/invalidate";
 import { db } from "@/lib/db/drizzle";
 import { remediationPlans, remediationEvidence, remediationAuditLog } from "@/lib/db/schema";
@@ -53,6 +54,9 @@ const VALID_STATUSES = [
 ];
 
 export async function PATCH(request: Request, { params }: RouteParams) {
+  const blocked = rejectIfDemoMutation();
+  if (blocked) return blocked;
+
   try {
     const { id } = await params;
     const remediationId = parseInt(id);

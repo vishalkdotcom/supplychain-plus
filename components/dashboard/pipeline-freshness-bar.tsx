@@ -15,7 +15,9 @@ const PIPELINES: { key: string; label: string }[] = [
   { key: "generate-briefing", label: "Briefing" },
 ];
 
-export function PipelineFreshnessBar() {
+const DEMO_HIDDEN_PIPELINES = new Set(["analyze-surveys"]);
+
+export function PipelineFreshnessBar({ demoMode = false }: { demoMode?: boolean }) {
   const { data: freshness } = useQuery({
     queryKey: ["freshness"],
     queryFn: fetchFreshness,
@@ -28,7 +30,7 @@ export function PipelineFreshnessBar() {
         <IconClock className="h-3.5 w-3.5" />
         Data as of:
       </span>
-      {PIPELINES.map(({ key, label }) => {
+      {PIPELINES.filter(({ key }) => !demoMode || !DEMO_HIDDEN_PIPELINES.has(key)).map(({ key, label }) => {
         const entry = freshness?.[key];
         return (
           <DataFreshnessBadge

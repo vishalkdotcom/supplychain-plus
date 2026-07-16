@@ -42,6 +42,20 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { DemoUserSelector } from "@/components/demo-user-selector";
 
+const DEMO_BLOCKED_URLS = new Set(["/connect", "/engage", "/educate"]);
+
+type ModuleNavChild = {
+  title: string;
+  url: string;
+};
+
+type ModuleNavItem = {
+  title: string;
+  url: string;
+  icon: React.ComponentType<{ className?: string }>;
+  children?: ModuleNavChild[];
+};
+
 const primaryNav = [
   {
     title: "Control Center",
@@ -65,7 +79,7 @@ const primaryNav = [
   },
 ];
 
-const moduleNav = [
+const moduleNav: ModuleNavItem[] = [
   {
     title: "Connect (Cases)",
     url: "/connect",
@@ -92,8 +106,31 @@ const moduleNav = [
   },
 ];
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+function getVisibleModuleNav(demoMode: boolean): ModuleNavItem[] {
+  if (!demoMode) return moduleNav;
+
+  return moduleNav
+    .map((item) => {
+      if (item.children) {
+        const children = item.children.filter(
+          (child) => !DEMO_BLOCKED_URLS.has(child.url),
+        );
+        if (children.length === 0) return null;
+        return { ...item, children };
+      }
+
+      if (DEMO_BLOCKED_URLS.has(item.url)) return null;
+      return item;
+    })
+    .filter((item): item is ModuleNavItem => item !== null);
+}
+
+export function AppSidebar({
+  demoMode = false,
+  ...props
+}: React.ComponentProps<typeof Sidebar> & { demoMode?: boolean }) {
   const pathname = usePathname();
+  const visibleModuleNav = getVisibleModuleNav(demoMode);
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -144,7 +181,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarGroupLabel>Modules</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {moduleNav.map((item) =>
+              {visibleModuleNav.map((item) =>
                 item.children ? (
                   <Collapsible
                     key={item.title}

@@ -2,6 +2,7 @@ import { db } from "@/lib/db/drizzle";
 import { client } from "@/lib/db/drizzle";
 import { jobRuns, jobQueue, jobSchedules } from "@/lib/db/schema";
 import { eq, and, lte } from "drizzle-orm";
+import { areJobsExecutable } from "@/lib/demo-mode/profile";
 import { logger } from "@/lib/logger";
 import {
   type JobType,
@@ -28,6 +29,11 @@ export async function enqueueJob(
   triggeredBy: "manual" | "schedule" | "seed-script" = "manual",
   priority: number = 0,
 ): Promise<number> {
+  if (!areJobsExecutable()) {
+    logger.warn("jobs/queue", `Skipping enqueue for ${jobType} in demo mode`);
+    throw new Error("Jobs cannot run in Demo Mode");
+  }
+
   const [run] = await db
     .insert(jobRuns)
     .values({
@@ -58,6 +64,11 @@ export async function enqueueJob(
 export async function enqueueAll(
   triggeredBy: "manual" | "schedule" = "manual",
 ): Promise<number[]> {
+  if (!areJobsExecutable()) {
+    logger.warn("jobs/queue", "Skipping enqueueAll in demo mode");
+    throw new Error("Jobs cannot run in Demo Mode");
+  }
+
   const runIds: number[] = [];
   for (let i = 0; i < RUN_ALL_ORDER.length; i++) {
     const runId = await enqueueJob(RUN_ALL_ORDER[i], triggeredBy, i);
@@ -107,6 +118,8 @@ export async function cancelJob(jobRunId: number): Promise<boolean> {
  * Uses raw SQL for FOR UPDATE SKIP LOCKED (not supported by Drizzle ORM).
  */
 async function pollQueue(): Promise<void> {
+  if (!areJobsExecutable()) return;
+
   try {
     // Promote retry-pending jobs whose backoff has elapsed
     await db
@@ -272,6 +285,8 @@ async function pollQueue(): Promise<void> {
  * Check for due schedules and enqueue them.
  */
 async function checkSchedules(): Promise<void> {
+  if (!areJobsExecutable()) return;
+
   try {
     const now = new Date();
     const dueSchedules = await db

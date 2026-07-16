@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { rejectIfDemoMutation } from "@/lib/demo-mode/guards";
 import { db } from "@/lib/db/drizzle";
 import { jobSchedules } from "@/lib/db/schema";
 import { desc } from "drizzle-orm";
@@ -15,6 +16,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const blocked = rejectIfDemoMutation();
+  if (blocked) return blocked;
+
   const body = await request.json();
   const { jobType, cronExpression } = body as {
     jobType?: string;

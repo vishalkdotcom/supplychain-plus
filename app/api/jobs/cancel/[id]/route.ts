@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
+import { rejectIfDemoJobExecution } from "@/lib/demo-mode/guards";
 import { cancelJob } from "@/lib/jobs/queue-engine";
 
 export async function POST(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const blocked = rejectIfDemoJobExecution();
+  if (blocked) return blocked;
+
   const { id } = await params;
   const success = await cancelJob(parseInt(id));
 

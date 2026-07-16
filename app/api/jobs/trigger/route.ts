@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
+import { rejectIfDemoJobExecution } from "@/lib/demo-mode/guards";
 import { enqueueJob, enqueueAll } from "@/lib/jobs/queue-engine";
 import { JOB_TYPES, type JobType } from "@/lib/jobs/constants";
 
 export async function POST(request: Request) {
+  const blocked = rejectIfDemoJobExecution();
+  if (blocked) return blocked;
+
   const body = await request.json().catch(() => ({}));
   const { jobType, all } = body as { jobType?: string; all?: boolean };
 
